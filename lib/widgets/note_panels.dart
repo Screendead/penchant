@@ -417,8 +417,9 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
           padding: const EdgeInsets.only(top: DialSpace.xs),
           child: Text(
             NotePanels.readsHint,
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: DialColors.of(context).muted),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: DialColors.of(context).muted,
+            ),
           ),
         ),
     ],
@@ -792,8 +793,9 @@ class _FlyingTag extends StatelessWidget {
           child: Text(
             label,
             maxLines: 1,
-            style: Theme.of(context).textTheme.labelLarge
-                ?.copyWith(color: scheme.onPrimary),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: scheme.onPrimary),
           ),
         ),
       ),

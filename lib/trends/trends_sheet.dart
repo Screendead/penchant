@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/habit_line.dart';
+import 'package:tracker/data/habit_strength.dart';
 import 'package:tracker/data/trend_breakdowns.dart';
 import 'package:tracker/data/usage_series.dart';
 import 'package:tracker/data/vice.dart';
@@ -37,6 +38,10 @@ import 'package:tracker/widgets/circle_button.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/pill_toggle.dart';
 
+// What the chart counts: the habit's own amounts, their cost at its price, or
+// its strength's units.
+enum TrendsView { count, spend, units }
+
 typedef TrendsSelection = ({
   String? viceID,
   int rangeDays,
@@ -44,7 +49,7 @@ typedef TrendsSelection = ({
   int pickedWindow,
   bool comparing,
   List<String> compared,
-  bool spend,
+  TrendsView view,
   bool healthOn,
   String? healthMetric,
 });
@@ -140,6 +145,12 @@ class TrendsSheet extends ConsumerStatefulWidget {
   static const String closeLabel = 'Close Trends';
   static const String spentWeek = 'Spent, last 7 days';
   static const String spentRange = 'Spent in all';
+  static String unitsWeek(HabitStrength strength) =>
+      '${_capital(strength.noun)}, last 7 days';
+  static String unitsRange(HabitStrength strength) =>
+      '${_capital(strength.noun)} in all';
+  static String _capital(String words) =>
+      '${words[0].toUpperCase()}${words.substring(1)}';
   static const String shorterAverage = 'Shorter average';
   static const String longerAverage = 'Longer average';
   static const List<int> ranges = <int>[7, 30, 90, 365];
@@ -246,6 +257,13 @@ class TrendsSheet extends ConsumerStatefulWidget {
   static const String healthLabel = 'Health';
   static const String countLabel = 'Count';
   static const String spendLabel = 'Spend';
+  static const String unitsLabel = 'Units';
+
+  // Under the Units tiles when some entries in the range could not count.
+  static String noStrength(int entries) =>
+      '${formatCount(entries)} ${pluralWord(entries, one: 'entry', other: 'entries')} '
+      'had no strength, so ${entries == 1 ? 'it counts' : 'they count'} '
+      'nothing here. Set a usual strength on the habit, or one on the entry.';
 
   // Under a chart whose buckets are not the line's period.
   static String lineElsewhere(HabitLine line) =>
@@ -321,7 +339,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
   int stepDays = 1;
   int pickedWindow = defaultWindow(1);
   bool comparing = false;
-  bool spend = false;
+  TrendsView view = TrendsView.count;
   bool healthOn = false;
   String? healthMetric;
   // Habits drawn over the chosen one, in the order picked.
@@ -362,7 +380,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       pickedWindow = saved.pickedWindow;
       comparing = saved.comparing;
       compared = saved.compared;
-      spend = saved.spend;
+      view = saved.view;
       healthOn = saved.healthOn;
       healthMetric = saved.healthMetric;
     }
@@ -377,7 +395,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
       pickedWindow: pickedWindow,
       comparing: comparing,
       compared: compared,
-      spend: spend,
+      view: view,
       healthOn: healthOn,
       healthMetric: healthMetric,
     );
@@ -646,7 +664,12 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
             overlays: overlays,
             comparing: comparing,
             compared: compared,
-            spend: spend && vice.costPerUnit != null,
+            view: switch (view) {
+              TrendsView.spend when vice.costPerUnit != null =>
+                TrendsView.spend,
+              TrendsView.units when vice.strength != null => TrendsView.units,
+              _ => TrendsView.count,
+            },
             healthShown: healthHere,
             healthOn: healthHere && healthOn,
             healthState: healthState,
@@ -667,7 +690,7 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
               cursor = null;
             }),
             onCompare: () => _update(() => comparing = !comparing),
-            onSpend: (bool on) => _update(() => spend = on),
+            onView: (TrendsView picked) => _update(() => view = picked),
             onHealth: () => _update(() => healthOn = !healthOn),
             onHealthMetric: (String id) => _update(() => healthMetric = id),
             onCompared: (Vice v) => _update(
@@ -1123,7 +1146,7 @@ class _TrendsPanel extends StatelessWidget {
     required this.overlays,
     required this.comparing,
     required this.compared,
-    required this.spend,
+    required this.view,
     required this.healthShown,
     required this.healthOn,
     required this.healthState,
@@ -1137,7 +1160,7 @@ class _TrendsPanel extends StatelessWidget {
     required this.chartFocus,
     required this.onHabit,
     required this.onCompare,
-    required this.onSpend,
+    required this.onView,
     required this.onHealth,
     required this.onHealthMetric,
     required this.onCompared,
@@ -1165,8 +1188,9 @@ class _TrendsPanel extends StatelessWidget {
   final List<TrendsOverlay> overlays;
   final bool comparing;
   final List<String> compared;
-  // The chart in money; only for a habit with a price.
-  final bool spend;
+  // Spend only for a habit with a price, units only for one with a
+  // strength.
+  final TrendsView view;
   // Health can be drawn here (iOS).
   final bool healthShown;
   final bool healthOn;
@@ -1183,7 +1207,7 @@ class _TrendsPanel extends StatelessWidget {
   final FocusNode chartFocus;
   final ValueChanged<Vice> onHabit;
   final VoidCallback onCompare;
-  final ValueChanged<bool> onSpend;
+  final ValueChanged<TrendsView> onView;
   final VoidCallback onHealth;
   final ValueChanged<String> onHealthMetric;
   final ValueChanged<Vice> onCompared;
@@ -1240,34 +1264,54 @@ class _TrendsPanel extends StatelessWidget {
     } else {
       final int limit = smoothingLimit(range.bucketCount);
       final bool empty = s.stats.total == 0;
-      final double? price = spend ? vice.costPerUnit : null;
-      // A count, so never on spend; and only over buckets of its period.
-      final HabitLine? kept = price == null ? vice.line : null;
+      final double? price = view == TrendsView.spend ? vice.costPerUnit : null;
+      final HabitStrength? strength = vice.strength;
+      final UnitTotals? units = strength == null
+          ? null
+          : bucketUnits(range, s.activities, strength);
+      final TrendsScale? scale = switch (view) {
+        TrendsView.spend when price != null => moneyScale(vice.currency),
+        TrendsView.units when strength != null => strengthScale(strength),
+        _ => null,
+      };
+      // A count, so only on the count; and only over buckets of its period.
+      final HabitLine? kept = scale == null ? vice.line : null;
       final HabitLine? line =
           kept != null &&
               (kept.period == LinePeriod.day) == (range.stepDays == 1)
           ? kept
           : null;
-      List<double> priced(List<double> values) => price == null
-          ? values
-          : <double>[for (final double v in values) v * price];
+      // Units vary entry by entry, so their average is taken afresh.
+      final ({List<double> totals, List<double> smoothed}) values =
+          view == TrendsView.units && units != null
+          ? (
+              totals: units.totals,
+              smoothed: movingAverage(units.totals, s.window),
+            )
+          : price != null
+          ? (
+              totals: <double>[for (final double v in s.totals) v * price],
+              smoothed: <double>[for (final double v in s.smoothed) v * price],
+            )
+          : (totals: s.totals, smoothed: s.smoothed);
       Widget chart() => TrendsChart(
         key: ValueKey<String>('chart-${vice.id}'),
         vice: vice,
         mark: mark,
         range: range,
-        totals: priced(s.totals),
-        smoothed: priced(s.smoothed),
+        totals: values.totals,
+        smoothed: values.smoothed,
         window: s.window,
         cursor: cursor ?? s.totals.length - 1,
         onCursor: onCursor,
         onOpenBucket: onOpenDay,
         focusNode: chartFocus,
         fill: fill,
-        // Compared habits keep their own units, so they are left out of spend.
-        overlays: price == null ? overlays : const <TrendsOverlay>[],
+        // Compared habits keep their own units and prices, so they are left
+        // out of spend and units.
+        overlays: scale == null ? overlays : const <TrendsOverlay>[],
         health: health,
-        money: price == null ? null : (currency: vice.currency),
+        scale: scale,
         line: line,
       );
       body = <Widget>[
@@ -1282,6 +1326,13 @@ class _TrendsPanel extends StatelessWidget {
         if (vice.costPerUnit != null) ...<Widget>[
           const SizedBox(height: DialSpace.xs),
           _Spend(vice: vice, range: range, stats: s.stats, totals: s.totals),
+        ],
+        if ((strength, units) case (
+          final HabitStrength strength,
+          final UnitTotals units,
+        )) ...<Widget>[
+          const SizedBox(height: DialSpace.xs),
+          _Units(strength: strength, range: range, units: units),
         ],
         const SizedBox(height: DialSpace.s),
         if (empty)
@@ -1453,22 +1504,29 @@ class _TrendsPanel extends StatelessWidget {
               selected: stepDays,
               onChanged: onStep,
             ),
-            if (vice.costPerUnit != null)
-              PillSegments<bool>(
-                segments: const <({bool value, String label, String spoken})>[
+            if (vice.costPerUnit != null || vice.strength != null)
+              PillSegments<TrendsView>(
+                segments: <({TrendsView value, String label, String spoken})>[
                   (
-                    value: false,
+                    value: TrendsView.count,
                     label: TrendsSheet.countLabel,
                     spoken: 'Chart the amount',
                   ),
-                  (
-                    value: true,
-                    label: TrendsSheet.spendLabel,
-                    spoken: 'Chart the spend',
-                  ),
+                  if (vice.costPerUnit != null)
+                    (
+                      value: TrendsView.spend,
+                      label: TrendsSheet.spendLabel,
+                      spoken: 'Chart the spend',
+                    ),
+                  if (vice.strength case final HabitStrength strength)
+                    (
+                      value: TrendsView.units,
+                      label: TrendsSheet.unitsLabel,
+                      spoken: 'Chart the ${strength.noun}',
+                    ),
                 ],
-                selected: spend,
-                onChanged: onSpend,
+                selected: view,
+                onChanged: onView,
               ),
           ],
         ),
@@ -1582,6 +1640,65 @@ class _Spend extends StatelessWidget {
                 label: TrendsSheet.spentRange,
                 value: formatMoney(vice.spendOf(stats.total)!, currency),
                 detail: 'last ${formatCount(range.days)} days',
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// The habit's entries in its strength's unit: the last 7 days, the whole
+// range when it is longer, and how many entries had no strength to count.
+class _Units extends StatelessWidget {
+  const _Units({
+    required this.strength,
+    required this.range,
+    required this.units,
+  });
+
+  final HabitStrength strength;
+  final UsageRange range;
+  final UnitTotals units;
+
+  @override
+  Widget build(BuildContext context) {
+    final double? week = lastSevenDaysTotal(range, units.totals);
+    final double all = units.totals.fold<double>(0, (a, b) => a + b);
+    return Semantics(
+      container: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              if (week != null)
+                Expanded(
+                  child: _StatTile(
+                    label: TrendsSheet.unitsWeek(strength),
+                    value: strength.label(week),
+                    detail: strength.describe,
+                  ),
+                ),
+              if (range.days > 7) ...<Widget>[
+                const SizedBox(width: DialSpace.xs),
+                Expanded(
+                  child: _StatTile(
+                    label: TrendsSheet.unitsRange(strength),
+                    value: strength.label(all),
+                    detail: 'last ${formatCount(range.days)} days',
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (units.without > 0) ...<Widget>[
+            const SizedBox(height: DialSpace.xs),
+            Text(
+              TrendsSheet.noStrength(units.without),
+              style: DialTypeScale.bodyS.copyWith(
+                color: DialColors.of(context).muted,
               ),
             ),
           ],

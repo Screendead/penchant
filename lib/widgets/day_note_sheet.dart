@@ -117,8 +117,9 @@ class _DayNoteSheetState extends NotePanelsState<DayNoteSheet> {
                     ref.watch(trackerWritesProvider).canCreate
                         ? DayNoteSheet.lockedMessage
                         : DayNoteSheet.noKeyMessage,
-                    style: Theme.of(context).textTheme.bodyMedium
-                        ?.copyWith(color: DialColors.of(context).muted),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: DialColors.of(context).muted,
+                    ),
                   ),
                 ],
               ),
