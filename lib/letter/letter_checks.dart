@@ -79,15 +79,18 @@ final RegExp _quoteMark = RegExp(r'[“”"]');
 class LetterContext {
   LetterContext._(this.numerals, this.notes, this.phrases)
     : hours = const <int>{},
-      counts = const <int>{};
+      counts = const <int>{},
+      cells = const <String>{};
 
   /// The analyst's: numerals from the results it saw, no notes to quote,
-  /// [phrases] longest first, and the [hours] and [counts] it was shown.
+  /// [phrases] longest first, and the [hours], [counts] and [cells] it was
+  /// shown.
   LetterContext.figures(
     this.numerals,
     Iterable<String> phrases, {
     this.hours = const <int>{},
     this.counts = const <int>{},
+    this.cells = const <String>{},
   }) : notes = const <String>[],
        phrases =
            phrases.where((String p) => p.trim().isNotEmpty).toSet().toList()
@@ -169,6 +172,9 @@ class LetterContext {
   /// Values a count word two to twelve may name.
   final Set<int> counts;
 
+  /// Texts a passage may quote whole; their words are still checked.
+  final Set<String> cells;
+
   bool quotes(String text) => notes.any((String n) => n.contains(text));
 }
 
@@ -192,7 +198,13 @@ String checkPassage(String passage, LetterContext context) {
     final bool known =
         quoted.trim().isNotEmpty &&
         (context.quotes(quoted) || context.phrases.contains(quoted));
-    if (!known) bad ??= 'quote';
+    if (known) return ' ';
+    // A whole cell may be quoted, but it is still read as the passage's own
+    // words: a query's literal can fill a cell with anything.
+    if (quoted.trim().isNotEmpty && context.cells.contains(quoted)) {
+      return ' $quoted ';
+    }
+    bad ??= 'quote';
     return ' ';
   });
   if (bad != null) return bad!;

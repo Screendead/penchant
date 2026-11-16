@@ -226,3 +226,23 @@ test('distinct values ignore nulls, as on the device', () => {
   assert.equal(judged(withResults(rows), 'All three habits peaked at 20:00 or 08:00.').reason, 'ok');
   assert.equal(judged(withResults(rows), 'Two days.').reason, 'ok');
 });
+
+test('a whole-number cell lets its count word stand, and a quoted whole cell passes as words', () => {
+  const periods = {
+    columns: ['period', 'days', 'cigarettes'],
+    rows: [['1 all earlier days', '425', '1054'], ['2 eight days before', '8', '33'], ['3 from 8 Nov', '8', '20']],
+    truncated: false,
+  };
+  assert.equal(judged(withResults(periods), 'Against 33 in the eight days just before.').reason, 'ok');
+  assert.equal(judged(withResults(periods), 'Against 33 in the nine days just before.').why, 'number_word:nine');
+  const tags = {
+    columns: ['label', 'december_glasses'],
+    rows: [['With friends', '12'], ['Work drinks', '12'], ['Stressed', '8'], ['after work', '8']],
+    truncated: false,
+  };
+  assert.equal(judged(withResults(tags), '"Work drinks" 12 and "after work" 8.').reason, 'ok');
+  assert.equal(judged(withResults(tags), '"work drinks" 12.').why, 'quote');
+  assert.equal(judged(withResults(tags), '"Work" 12.').why, 'quote');
+  const literal = { columns: ['x'], rows: [['Work led to more Wine']], truncated: false };
+  assert.equal(judged(withResults(literal), '"Work led to more Wine".').why, 'cause:led to');
+});

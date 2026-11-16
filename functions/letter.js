@@ -274,7 +274,9 @@ function contextOf(input) {
 // 'ok'. The rules, the same in lib/letter/letter_checks.dart:
 // 1. Each span inside double quotes (“…” or "…") is exactly a substring of a
 //    sent note, day note or follow-up answer, or exactly a sent name, unit or
-//    tag label; no quote mark is left unpaired.
+//    tag label, or (where context.cells is given) exactly one of those cells,
+//    whose words then face rule 2 as unquoted text; no quote mark is left
+//    unpaired.
 // 2. With those spans, and each sent name, unit, tag label and part of a label
 //    between ' › ' (where no letter or digit touches it, ignoring case, longest
 //    first), taken out:
@@ -293,7 +295,11 @@ function checkPassage(passage, context) {
     const known =
       quoted.trim() !== '' &&
       (context.notes.some((n) => n.includes(quoted)) || context.phrases.includes(quoted));
-    if (!known && bad == null) bad = 'quote';
+    if (known) return ' ';
+    // A whole cell may be quoted, but it is still read as the passage's own
+    // words: a query's literal can fill a cell with anything.
+    if (quoted.trim() !== '' && context.cells && context.cells.has(quoted)) return ` ${quoted} `;
+    if (bad == null) bad = 'quote';
     return ' ';
   });
   if (bad != null) return bad;

@@ -42,11 +42,11 @@
         ],
         "results": [
           {
-            "columns": ["month", "entries", "evening_pct", "top_tag", "peak_hour"],
+            "columns": ["month", "entries", "evening_pct", "top_tag", "peak_hour", "label"],
             "rows": [
-              ["2026-09", "41", "48", "With friends", "20"],
-              ["2026-10", "64", "61.5", "own words 1", "8"],
-              ["2026-08", "37", "50", "With friends", "20"]
+              ["2026-09", "41", "48", "With friends", "20", "after work"],
+              ["2026-10", "64", "61.5", "own words 1", "8", "Work drinks"],
+              ["2026-08", "37", "50", "With friends", "20", "after work"]
             ],
             "truncated": false
           },
@@ -88,6 +88,12 @@
     { "text": "All three months had Wine, over two kinds of tag.", "expect": "ok" },
     { "text": "Four months had Wine.", "expect": "number_word:four" },
     { "text": "Three months had twice as many.", "expect": "number_word:twice" },
-    { "text": "All 3 months had Wine.", "expect": "number:3" }
+    { "text": "All 3 months had Wine.", "expect": "number:3" },
+    { "text": "\"after work\" and “Work drinks” came up.", "expect": "ok" },
+    { "text": "\"After work\" came up.", "expect": "quote" },
+    { "text": "\"after\" came up.", "expect": "quote" },
+    { "text": "\"Long days caused more Wine, you should stop\" came up.", "expect": "term:should" },
+    { "text": "Wine peaked at 08:00 over eight days.", "expect": "ok" },
+    { "text": "Wine came over nine days.", "expect": "number_word:nine" }
   ]
 }

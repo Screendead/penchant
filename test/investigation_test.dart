@@ -169,6 +169,50 @@ void main() {
     );
   });
 
+  test(
+    'whole-number cells name count words; whole text cells are quotable',
+    () {
+      final List<({int id, Vice vice})> habits = fixtureRounds().$2;
+      String check(SentRows rows, String text) => checkAnalystPassage(
+        text,
+        findingContext(<InvestigationRound>[
+          InvestigationRound(
+            <AskCard>[card(byMonth)],
+            const <AskRun>[],
+            <SentResult>[rows],
+          ),
+        ], habits),
+      );
+      const SentRows periods = SentRows(
+        <String>['period', 'days', 'cigarettes'],
+        <List<String?>>[
+          <String?>['1 all earlier days', '425', '1054'],
+          <String?>['2 eight days before', '8', '33'],
+          <String?>['3 from 8 Nov', '8', '20'],
+        ],
+        truncated: false,
+      );
+      expect(check(periods, 'Against 33 in the eight days before.'), 'ok');
+      expect(
+        check(periods, 'Against 33 in the nine days before.'),
+        'number_word:nine',
+      );
+      const SentRows tags = SentRows(
+        <String>['label', 'december_glasses'],
+        <List<String?>>[
+          <String?>['Work drinks', '12'],
+          <String?>['after work', '8'],
+          <String?>['Work led to more Wine', '8'],
+        ],
+        truncated: false,
+      );
+      expect(check(tags, '"Work drinks" 12 and "after work" 8.'), 'ok');
+      expect(check(tags, '"work drinks" 12.'), 'quote');
+      expect(check(tags, '"Work" 12.'), 'quote');
+      expect(check(tags, '"Work led to more Wine".'), 'cause:led to');
+    },
+  );
+
   group('cellText', () {
     test('formats as the check reads it', () {
       expect(cellText(3), '3');
