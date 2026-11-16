@@ -493,7 +493,8 @@ alone.
 the server's orphan sweep take their collections from `Account.ownedCollections` and `OWNED_COLLECTIONS`
 (`functions/cleanup.js`), which must match; the export adds a day-notes CSV. `DayNoteSheet`
 (`lib/widgets/day_note_sheet.dart`, route `/day-notes/yyyy-MM-dd`, `dayNoteRoute`) is two `NotePanels`, text then
-tags; Today shows the note's first line under the tallies. Insights reads none of it yet.
+tags; Today shows the note's first line under the tallies. Insights reads the tags alone (What sets it off,
+below), never the text or follow-up.
 
 The rules check `ownerID` against the stored document on read, update and delete and the incoming one on create, fix
 each collection's field set and types on create, allow updates only to `name`/`unit`/`archived`/`category` (vices) and
@@ -805,7 +806,18 @@ What sets it off also compares triggers (`lib/insights/trigger_amounts.dart`, ca
 tagged entries (untagged ones say nothing, so they are left out, and the card says how many were tagged), each day's
 mean per entry as the unit, in the page's false-discovery family. A trigger counts under its tree path, its top-level
 area, or as its free-text label; `HabitUse.triggers` carries them from the opened entries, so a locked entry reads as
-untagged. Each unarchived habit on no before-a-use, pair (either side), calendar, place or trigger card gets one reason, on a
+untagged. Day-note tags are compared the same way at day level (`lib/insights/day_tags.dart`, cards in
+`lib/widgets/day_tags_card.dart`): `insightsProvider` reads every note once per open through `allDayNotesProvider`
+(a failed read leaves them out; a locked note reads as untagged) and `dayTagsFrom` passes each tagged day as
+`InsightsInput.dayTags`. Per habit, the rows are the tagged days of its span (untagged days say nothing and are left
+out, a day with no entry counts as 0) and the response its `lateDayTotal`, fitted on the tag with the habit's usual
+total on that weekday (over its whole span), a trend, period levels and the day before's total held fixed, widened by
+`judgeDays` and its block bootstrap like `calendarDays`; at least `minExposedDays` days each side and 10 residual days,
+in the page's family, floor 20% (`dayTagFloor`, the entry triggers', read on both the held-fixed and the shown
+difference). `test/insights/day_tags_test.dart` holds its null simulations (independent tags, and tags kept for the
+heavy weekdays, which without the weekday column gave 42% false cards) and its power. Where a habit's day-tag finding
+and its entry-trigger finding name the same tag or area and point the same way, `dayTagCards` says both on one card
+("By day and by entry") and takes it off the trigger card. Each unarchived habit on no before-a-use, pair (either side), calendar, place trigger or day-tag card gets one reason, on a
 drill-in page (`InsightsSetsOffPage`) as What it costs keeps its refusals: `setsOffRefusals`
 (`lib/insights/sets_off_refusal.dart`) picks the most telling refused comparison by `refusalRank`, else says the habit
 has no entries or nothing to compare against.

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/calendar_days.dart';
+import 'package:tracker/insights/day_tags.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/places.dart';
@@ -72,8 +73,10 @@ InsightsReport _report({
   List<CalendarDay> calendarDays = const <CalendarDay>[],
   List<HabitTriggers> triggers = const <HabitTriggers>[],
   List<AtPlace> atPlace = const <AtPlace>[],
+  List<HabitDayTags> dayTags = const <HabitDayTags>[],
 }) => InsightsReport(
   triggers: triggers,
+  dayTags: dayTags,
   calendarDays: calendarDays,
   atPlace: atPlace,
   findings: const <HabitFinding>[],
@@ -250,7 +253,8 @@ void main() {
     expect(
       _why(got.single),
       'Nothing to compare it with yet: no sleep or heart readings in Health, '
-      'no calendar events, no other habit logged and no triggers tagged',
+      'no calendar events, no other habit logged and no triggers tagged on '
+      'entries or days',
     );
   });
 
@@ -424,5 +428,60 @@ void main() {
 
     expect(got.first.calendar, isNotNull);
     expect(got.last.place, isNotNull);
+  });
+
+  test('a day tag refused reaches the habit\'s reason, with the tagged days '
+      'counted, and ranks after an entry trigger on a tie', () {
+    HabitDayTags days(RefusalReason reason, {int withDays = 15}) =>
+        HabitDayTags(
+          habitId: 'wine',
+          days: 130,
+          tagged: 48,
+          tags: <DayTagAmount>[
+            DayTagAmount(
+              tag: 'Bad day',
+              withDays: withDays,
+              withoutDays: 33,
+              withMean: 3.1,
+              withoutMean: 1.8,
+              refusal: reason,
+            ),
+          ],
+        );
+    expect(
+      _why(
+        _pick(
+          _report(
+            dayTags: <HabitDayTags>[
+              days(RefusalReason.tooFewDays, withDays: 4),
+            ],
+          ),
+          habits: const <String>['wine'],
+        ).single,
+      ),
+      'Days tagged Bad day: too few days with it yet: 4 of 7 (48 of 130 days '
+      'tagged)',
+    );
+    expect(
+      _why(
+        _pick(
+          _report(dayTags: <HabitDayTags>[days(RefusalReason.chance)]),
+          habits: const <String>['wine'],
+        ).single,
+      ),
+      'Days tagged Bad day: could be chance, one of many comparisons',
+    );
+    final SetsOffRefusal tie = _pick(
+      _report(
+        dayTags: <HabitDayTags>[days(RefusalReason.chance)],
+        triggers: <HabitTriggers>[
+          _tagged('wine', <TriggerAmount>[
+            _trigger('Bad day', TriggerVerdict.chance),
+          ]),
+        ],
+      ),
+      habits: const <String>['wine'],
+    ).single;
+    expect(tie.trigger, isNotNull);
   });
 }

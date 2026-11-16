@@ -264,7 +264,7 @@ CalendarDay _judge(
     return result(refusal: RefusalReason.withinNoise);
   }
   final List<int> period = periodsOf(days, gates.minPeriodDays);
-  if (period.last > 0 && _varyingPeriods(x, period) < gates.minMixedPeriods) {
+  if (period.last > 0 && varyingPeriods(x, period) < gates.minMixedPeriods) {
     return result(refusal: RefusalReason.uneven);
   }
   final List<List<double>> fixed = <List<double>>[
@@ -334,7 +334,8 @@ CalendarDay _judge(
   return result(effect: effect, interval: interval, pValue: p);
 }
 
-int _varyingPeriods(List<double> x, List<int> period) {
+/// How many of the periods [period] numbers hold both values of [x].
+int varyingPeriods(List<double> x, List<int> period) {
   final Map<int, Set<double>> seen = <int, Set<double>>{};
   for (int r = 0; r < x.length; r++) {
     seen.putIfAbsent(period[r], () => <double>{}).add(x[r]);
