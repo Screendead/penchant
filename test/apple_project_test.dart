@@ -127,9 +127,8 @@ void main() {
 
     // Crashlytics processes dSYMs only from the target's last build phase.
     test('the $platform Runner uploads Crashlytics symbols last', () {
-      final String source = File(
-        '$platform/Runner.xcodeproj/project.pbxproj',
-      ).readAsStringSync();
+      final String source = File('$platform/Runner.xcodeproj/project.pbxproj')
+          .readAsStringSync();
       final String runner = RegExp(
         r'/\* Runner \*/ = \{\s*isa = PBXNativeTarget;.*?buildPhases = \((.*?)\);',
         dotAll: true,
@@ -164,9 +163,8 @@ void main() {
     final String plist = File('macos/Runner/Info.plist').readAsStringSync();
     expect(plist, contains('<key>NSCalendarsFullAccessUsageDescription</key>'));
     expect(plist, contains('<key>NSCalendarsUsageDescription</key>'));
-    final String source = File(
-      'macos/Runner.xcodeproj/project.pbxproj',
-    ).readAsStringSync();
+    final String source = File('macos/Runner.xcodeproj/project.pbxproj')
+        .readAsStringSync();
     final String runnerSources = RegExp(
       r'33CC10E92044A3C60003C045 /\* Sources \*/ = \{(.*?)\};',
       dotAll: true,

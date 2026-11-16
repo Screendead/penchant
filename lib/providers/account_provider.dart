@@ -6,6 +6,7 @@ import 'package:tracker/account/export.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/providers/device_files_provider.dart';
 import 'package:tracker/providers/journal_read.dart';
+import 'package:tracker/reminder/check_ins.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/reminder/heavy_day_nudge.dart';
 import 'package:tracker/writes/queued_write_journal.dart';
@@ -31,6 +32,9 @@ final accountProvider = Provider<Account>((ref) {
         // no urge to write to.
       }
       await ref.read(heavyDayNudgeProvider.notifier).forget();
+      // Off and withdrawn: a prompt names nothing, but the next account on
+      // this device never turned them on.
+      await ref.read(checkInsProvider.notifier).forget();
       // The delta read's cursors describe the cache just cleared.
       await PrefsJournalCursorStore.clearAll();
     },

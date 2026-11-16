@@ -76,9 +76,8 @@ void main() {
           }),
         ],
         child: MediaQuery(
-          data: MediaQueryData.fromView(
-            tester.view,
-          ).copyWith(alwaysUse24HourFormat: alwaysUse24HourFormat),
+          data: MediaQueryData.fromView(tester.view)
+              .copyWith(alwaysUse24HourFormat: alwaysUse24HourFormat),
           child: MaterialApp(home: ViceActivityHistoryPage(viceID: coffee.id)),
         ),
       ),

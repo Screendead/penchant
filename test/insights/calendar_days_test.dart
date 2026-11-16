@@ -72,14 +72,16 @@ void main() {
   test('a day\'s features: minutes overlap once, runs, crowded and long', () {
     final DateTime nine = DateTime(2025, 3, 3, 9);
     DateTime at(int minutes) => nine.add(Duration(minutes: minutes));
-    final Map<CalendarDayFeature, Map<DateTime, double>> v =
-        calendarDayValues(<CalendarEvent>[
-          CalendarEvent(at(0), at(60), attendees: 6),
-          CalendarEvent(at(30), at(90)),
-          CalendarEvent(at(95), at(125)),
-          CalendarEvent(at(300), at(305)),
-          CalendarEvent(at(400), at(430), attendees: 2),
-        ], through: DateTime(2025, 3, 4));
+    final Map<CalendarDayFeature, Map<DateTime, double>> v = calendarDayValues(
+      <CalendarEvent>[
+        CalendarEvent(at(0), at(60), attendees: 6),
+        CalendarEvent(at(30), at(90)),
+        CalendarEvent(at(95), at(125)),
+        CalendarEvent(at(300), at(305)),
+        CalendarEvent(at(400), at(430), attendees: 2),
+      ],
+      through: DateTime(2025, 3, 4),
+    );
     final DateTime day = DateTime(2025, 3, 3);
     expect(v[CalendarDayFeature.meetingMinutes]![day], 150);
     expect(v[CalendarDayFeature.events]![day], 4);

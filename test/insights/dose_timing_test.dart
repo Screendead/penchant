@@ -161,16 +161,16 @@ void main() {
       final int found = all.whereType<HabitFinding>().length;
       raw += found;
       if (found > 0) rawReports++;
-      final int kept = controlFalseDiscoveries(
-        all,
-      ).whereType<HabitFinding>().length;
+      final int kept = controlFalseDiscoveries(all)
+          .whereType<HabitFinding>()
+          .length;
       if (seed < 10) {
         expect(
           computeInsights(input).findings.length,
           oneOfSlopeAndLine(<HabitFinding>[
-            ...controlFalseDiscoveries(
-              all,
-            ).whereType<HabitFinding>().where((f) => practicalSize(f) >= 1),
+            ...controlFalseDiscoveries(all)
+                .whereType<HabitFinding>()
+                .where((f) => practicalSize(f) >= 1),
           ]).length,
         );
       }
@@ -338,13 +338,11 @@ void main() {
         from: start,
         through: addDays(start, days),
       );
-      final HabitRefusal time =
-          lastUseFollows(
-                habits: DailyHabitSeries.fromUses(input.uses),
-                outcomes: OutcomeSeries.fromOutcomes(input.outcomes),
-                metricId: deep,
-              ).singleWhere((r) => r.habitId == 'Beer')
-              as HabitRefusal;
+      final HabitRefusal time = lastUseFollows(
+        habits: DailyHabitSeries.fromUses(input.uses),
+        outcomes: OutcomeSeries.fromOutcomes(input.outcomes),
+        metricId: deep,
+      ).singleWhere((r) => r.habitId == 'Beer') as HabitRefusal;
       expect(time.reason, RefusalReason.followsAmount);
       expect(time.entangledWith, isNull);
       expect(
@@ -620,13 +618,12 @@ void main() {
   });
 }
 
-typedef Judge =
-    List<HabitInsight> Function({
-      required DailyHabitSeries habits,
-      required OutcomeSeries outcomes,
-      required String metricId,
-      int lagDays,
-      DateTime? from,
-      DateTime? through,
-      InsightGates gates,
-    });
+typedef Judge = List<HabitInsight> Function({
+  required DailyHabitSeries habits,
+  required OutcomeSeries outcomes,
+  required String metricId,
+  int lagDays,
+  DateTime? from,
+  DateTime? through,
+  InsightGates gates,
+});

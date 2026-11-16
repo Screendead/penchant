@@ -147,9 +147,8 @@ void main() {
           final ByteData? png = await image.toByteData(
             format: ui.ImageByteFormat.png,
           );
-          await File(
-            '$_dir/deleted-habit-$name-${brightness.name}.png',
-          ).writeAsBytes(png!.buffer.asUint8List());
+          await File('$_dir/deleted-habit-$name-${brightness.name}.png')
+              .writeAsBytes(png!.buffer.asUint8List());
         });
         debugDisableShadows = true;
       }, skip: _dir.isEmpty);

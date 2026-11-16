@@ -458,9 +458,9 @@ void main() {
     });
 
     test('the JSON holds every day note field', () {
-      final Map<String, dynamic> json =
-          jsonDecode(exportJson(data(notes: notes), DateTime.utc(2026)))
-              as Map<String, dynamic>;
+      final Map<String, dynamic> json = jsonDecode(
+        exportJson(data(notes: notes), DateTime.utc(2026)),
+      ) as Map<String, dynamic>;
       final List<dynamic> exported = json['dayNotes'] as List<dynamic>;
       expect(exported, hasLength(2));
       expect(exported.first['text'], 'Late meeting, "again"');

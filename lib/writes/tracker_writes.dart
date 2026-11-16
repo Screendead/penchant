@@ -421,9 +421,8 @@ class TrackerWrites {
       if (data == null) {
         return null;
       }
-      final Map<String, Object?>? opened = await SealedOpener(
-        sealer,
-      ).open(_activities.id, activityID, data);
+      final Map<String, Object?>? opened = await SealedOpener(sealer)
+          .open(_activities.id, activityID, data);
       if (isSealed(data) && opened == null) {
         return null;
       }

@@ -9,9 +9,9 @@ import 'firestore_index_coverage.dart';
 // lacks passes every other check and fails in production with
 // failed-precondition.
 
-final Map<String, dynamic> _indexFile =
-    jsonDecode(File('firestore.indexes.json').readAsStringSync())
-        as Map<String, dynamic>;
+final Map<String, dynamic> _indexFile = jsonDecode(
+  File('firestore.indexes.json').readAsStringSync(),
+) as Map<String, dynamic>;
 
 final List<Map<String, dynamic>> _indexes =
     (_indexFile['indexes'] as List<dynamic>).cast<Map<String, dynamic>>();

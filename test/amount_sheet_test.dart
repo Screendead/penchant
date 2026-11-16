@@ -70,9 +70,8 @@ Future<void> _open(
                         context,
                         initialViceID: initialViceID,
                       )
-                    : Navigator.of(
-                        context,
-                      ).push(MaterialPageRoute<void>(builder: (_) => page)),
+                    : Navigator.of(context)
+                          .push(MaterialPageRoute<void>(builder: (_) => page)),
                 child: const Text('open'),
               );
             },
@@ -308,9 +307,9 @@ void main() {
               builder: (BuildContext context, WidgetRef ref, _) {
                 ref.watch(userProvider);
                 return TextButton(
-                  onPressed: () => Navigator.of(
-                    context,
-                  ).pushNamed('/vices/coffee/activities/$id'),
+                  onPressed: () =>
+                      Navigator.of(context)
+                          .pushNamed('/vices/coffee/activities/$id'),
                   child: const Text('open'),
                 );
               },

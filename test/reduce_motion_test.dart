@@ -225,9 +225,9 @@ void main() {
     ) async {
       await fullOnReducingSystem(tester);
       final NavigatorState navigator = tester.state(find.byType(Navigator));
-      final TransitionRoute<void> route =
-          generateRoute(const RouteSettings(name: '/nowhere'))
-              as TransitionRoute<void>;
+      final TransitionRoute<void> route = generateRoute(
+        const RouteSettings(name: '/nowhere'),
+      ) as TransitionRoute<void>;
       navigator.push(route);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));

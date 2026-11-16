@@ -115,9 +115,8 @@ void main() {
                 debugShowCheckedModeBanner: false,
                 theme: appTheme(Brightness.light),
                 builder: (BuildContext context, Widget? child) => MediaQuery(
-                  data: MediaQuery.of(
-                    context,
-                  ).copyWith(alwaysUse24HourFormat: true),
+                  data: MediaQuery.of(context)
+                      .copyWith(alwaysUse24HourFormat: true),
                   child: child!,
                 ),
                 home: const Scaffold(),
@@ -184,9 +183,8 @@ void main() {
           final ByteData? png = await image.toByteData(
             format: ui.ImageByteFormat.png,
           );
-          await File(
-            '$_dir/capture-detail-$name-light.png',
-          ).writeAsBytes(png!.buffer.asUint8List());
+          await File('$_dir/capture-detail-$name-light.png')
+              .writeAsBytes(png!.buffer.asUint8List());
         });
         debugDisableShadows = true;
       });

@@ -199,11 +199,9 @@ void main() {
       WidgetTester tester,
     ) async {
       await pump(tester, offline: false, state: SyncState.pending);
-      final _Fixed tracker =
-          ProviderScope.containerOf(
-                tester.element(find.byType(SyncPill)),
-              ).read(syncStatusProvider.notifier)
-              as _Fixed;
+      final _Fixed tracker = ProviderScope.containerOf(
+        tester.element(find.byType(SyncPill)),
+      ).read(syncStatusProvider.notifier) as _Fixed;
       for (final SyncState next in <SyncState>[
         SyncState.synced,
         SyncState.pending,

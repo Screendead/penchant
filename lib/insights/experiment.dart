@@ -180,9 +180,10 @@ class ExperimentPlan {
     return night ? left <= 0 : left < 0;
   }
 
-  int get noneDays => <bool>[
-    for (int w = 0; w < weeks; w++) ...experimentWeek(seed, w),
-  ].where((bool n) => n).length;
+  int get noneDays =>
+      <bool>[for (int w = 0; w < weeks; w++) ...experimentWeek(seed, w)]
+          .where((bool n) => n)
+          .length;
 
   /// [extra] weeks more, from the day after [today] or straight after the
   /// plan when it is still running.

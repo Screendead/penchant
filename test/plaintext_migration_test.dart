@@ -210,44 +210,39 @@ void main() {
       );
     });
 
-    test(
-      'what it writes, the reader opens to the same vice, on that document only',
-      () async {
-        final Map<String, dynamic> stored = <String, dynamic>{
-          'name': 'Tea',
-          'unit': 'drink',
-          'ownerID': ownerID,
-          'createdAt': Timestamp.fromMillisecondsSinceEpoch(0),
-          'archived': false,
-        };
-        final Map<String, Object> update = (await migrator.update(
-          'vices',
-          'v1',
-          stored,
-        ))!;
-        for (final MapEntry<String, Object>(:key, :value) in update.entries) {
-          value == FieldValue.delete()
-              ? stored.remove(key)
-              : stored[key] = value;
-        }
-        expect(stored.keys, isNot(contains('name')));
+    test('what it writes, the reader opens to the same vice, on that document only', () async {
+      final Map<String, dynamic> stored = <String, dynamic>{
+        'name': 'Tea',
+        'unit': 'drink',
+        'ownerID': ownerID,
+        'createdAt': Timestamp.fromMillisecondsSinceEpoch(0),
+        'archived': false,
+      };
+      final Map<String, Object> update = (await migrator.update(
+        'vices',
+        'v1',
+        stored,
+      ))!;
+      for (final MapEntry<String, Object>(:key, :value) in update.entries) {
+        value == FieldValue.delete() ? stored.remove(key) : stored[key] = value;
+      }
+      expect(stored.keys, isNot(contains('name')));
 
-        final SealedOpener opener = SealedOpener(sealer);
-        final Vice vice = Vice.fromJson(
-          id: 'v1',
-          json: stored,
-          opened: await opener.open('vices', 'v1', stored),
-        );
-        expect((vice.name, vice.unit, vice.locked), ('Tea', Unit.drink, false));
+      final SealedOpener opener = SealedOpener(sealer);
+      final Vice vice = Vice.fromJson(
+        id: 'v1',
+        json: stored,
+        opened: await opener.open('vices', 'v1', stored),
+      );
+      expect((vice.name, vice.unit, vice.locked), ('Tea', Unit.drink, false));
 
-        final Vice copied = Vice.fromJson(
-          id: 'v2',
-          json: stored,
-          opened: await opener.open('vices', 'v2', stored),
-        );
-        expect(copied.locked, isTrue);
-      },
-    );
+      final Vice copied = Vice.fromJson(
+        id: 'v2',
+        json: stored,
+        opened: await opener.open('vices', 'v2', stored),
+      );
+      expect(copied.locked, isTrue);
+    });
 
     test('deletes only the plaintext fields a legacy document has', () async {
       final Map<String, Object>? update = await migrator.update('vices', 'v1', {

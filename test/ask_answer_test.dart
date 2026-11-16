@@ -62,9 +62,8 @@ void main() {
         hasLength(3),
       );
       expect(
-        parseAskAnswer(
-          answer(kind: 'needs_insights', cards: <Object?>[]),
-        )!.kind,
+        parseAskAnswer(answer(kind: 'needs_insights', cards: <Object?>[]))!
+            .kind,
         AskKind.needsInsights,
       );
       final AskAnswer cannot = parseAskAnswer(
@@ -275,9 +274,9 @@ void main() {
       habit('vice-locked', 'Locked', 2, locked: true),
       habit('vice-def', 'Beer', 3),
     ];
-    final List<({int id, Vice vice})> sent = numberedHabits(
-      vices,
-    ).take(askHabits(vices).length).toList();
+    final List<({int id, Vice vice})> sent = numberedHabits(vices)
+        .take(askHabits(vices).length)
+        .toList();
     final DateTime today = DateTime(2026, 11, 15, 14);
 
     AskTurn turn(int i) => AskTurn('question $i', parseAskAnswer(answer())!);
@@ -416,9 +415,9 @@ void main() {
 
   test('every function the prompt offers is on the device allow-list', () {
     final String js = File('functions/ask_journal.js').readAsStringSync();
-    final String list = RegExp(
-      r'const SQL_FUNCTIONS = \[([^\]]*)\]',
-    ).firstMatch(js)!.group(1)!;
+    final String list = RegExp(r'const SQL_FUNCTIONS = \[([^\]]*)\]')
+        .firstMatch(js)!
+        .group(1)!;
     final List<String> offered = <String>[
       for (final RegExpMatch m in RegExp(r"'([a-z_0-9]+)'").allMatches(list))
         m.group(1)!,

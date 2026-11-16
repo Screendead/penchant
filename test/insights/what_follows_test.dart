@@ -242,16 +242,14 @@ void main() {
         if (random.nextBool()) 'Tea',
       },
     );
-    final HabitRefusal coffee =
-        forHabit(
-              whatFollows(
-                habits: data.habits,
-                outcomes: data.outcomes,
-                metricId: sleep,
-              ),
-              'Coffee',
-            )
-            as HabitRefusal;
+    final HabitRefusal coffee = forHabit(
+      whatFollows(
+        habits: data.habits,
+        outcomes: data.outcomes,
+        metricId: sleep,
+      ),
+      'Coffee',
+    ) as HabitRefusal;
 
     expect(coffee.reason, RefusalReason.tooFewDays);
     expect(coffee.usableDays - coffee.exposedDays, lessThan(7));
@@ -299,16 +297,14 @@ void main() {
       },
       effectOf: (used) => used.contains('Coffee') ? -200 : 0,
     );
-    final HabitRefusal coffee =
-        forHabit(
-              whatFollows(
-                habits: data.habits,
-                outcomes: data.outcomes,
-                metricId: sleep,
-              ),
-              'Coffee',
-            )
-            as HabitRefusal;
+    final HabitRefusal coffee = forHabit(
+      whatFollows(
+        habits: data.habits,
+        outcomes: data.outcomes,
+        metricId: sleep,
+      ),
+      'Coffee',
+    ) as HabitRefusal;
 
     expect(coffee.usableDays, 120);
     expect(coffee.raw!.exposedDays, 5);

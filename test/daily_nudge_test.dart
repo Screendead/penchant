@@ -11,6 +11,7 @@ import 'package:tracker/insights/experiment.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/reminder/check_ins.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/reminder/heavy_day.dart';
 import 'package:tracker/reminder/heavy_day_nudge.dart';
@@ -83,6 +84,15 @@ class _FakeScheduler implements NudgeScheduler {
 
   @override
   Future<void> cancelUrgeChecks() async {}
+
+  @override
+  Future<void> scheduleCheckIns(List<CheckInPrompt> prompts) async {}
+
+  @override
+  Future<void> cancelCheckIns() async {}
+
+  @override
+  Future<void> withdrawCheckIn(String id) async {}
 }
 
 Widget _app(_FakeScheduler scheduler, {Widget home = const Settings()}) =>

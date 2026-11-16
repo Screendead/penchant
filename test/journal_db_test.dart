@@ -149,36 +149,37 @@ void main() {
       );
     });
 
-    test('entries carry local text dates, and an unknown habit is left out', () {
-      final AskRan ran =
-          db.run(
-                'SELECT at, day, hour, weekday, week, month, year, amount FROM entries ORDER BY id LIMIT 1',
-              )
-              as AskRan;
-      expect(ran.rows.columns, <String>[
-        'at',
-        'day',
-        'hour',
-        'weekday',
-        'week',
-        'month',
-        'year',
-        'amount',
-      ]);
-      expect(ran.rows.rows.single, <Object?>[
-        '2026-11-01 20:15:00',
-        '2026-11-01',
-        20,
-        7,
-        '2026-10-26',
-        '2026-11',
-        2026,
-        2.0,
-      ]);
-      expect(rowsOf(db.run('SELECT count(*) FROM entries')), <List<Object?>>[
-        <Object?>[6],
-      ]);
-    });
+    test(
+      'entries carry local text dates, and an unknown habit is left out',
+      () {
+        final AskRan ran = db.run(
+          'SELECT at, day, hour, weekday, week, month, year, amount FROM entries ORDER BY id LIMIT 1',
+        ) as AskRan;
+        expect(ran.rows.columns, <String>[
+          'at',
+          'day',
+          'hour',
+          'weekday',
+          'week',
+          'month',
+          'year',
+          'amount',
+        ]);
+        expect(ran.rows.rows.single, <Object?>[
+          '2026-11-01 20:15:00',
+          '2026-11-01',
+          20,
+          7,
+          '2026-10-26',
+          '2026-11',
+          2026,
+          2.0,
+        ]);
+        expect(rowsOf(db.run('SELECT count(*) FROM entries')), <List<Object?>>[
+          <Object?>[6],
+        ]);
+      },
+    );
 
     test('a locked entry gives its plaintext columns only', () {
       expect(
@@ -655,9 +656,8 @@ void main() {
       expect(figuresTables['day_notes'], <String>['day']);
       for (final String table in askTables.keys) {
         expect(
-          <String>{
-            ...askTables[table]!,
-          }.difference(<String>{...figuresTables[table]!}),
+          <String>{...askTables[table]!}
+              .difference(<String>{...figuresTables[table]!}),
           switch (table) {
             'entries' => <String>{'note'},
             'day_notes' => <String>{'text'},

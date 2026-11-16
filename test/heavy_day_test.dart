@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/insights/experiment.dart';
+import 'package:tracker/reminder/check_ins.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/reminder/heavy_day.dart';
 import 'package:tracker/reminder/heavy_day_nudge.dart';
@@ -33,6 +34,15 @@ class _FakeScheduler implements NudgeScheduler {
 
   @override
   Future<void> cancelUrgeChecks() async {}
+
+  @override
+  Future<void> scheduleCheckIns(List<CheckInPrompt> prompts) async {}
+
+  @override
+  Future<void> cancelCheckIns() async {}
+
+  @override
+  Future<void> withdrawCheckIn(String id) async {}
 
   @override
   Future<bool> requestPermission() async => grant;

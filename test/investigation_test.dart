@@ -16,9 +16,9 @@ import 'fakes.dart';
 
 // functions/analyst_fixture.json: functions/analyst.test.js runs the same
 // cases through the server's checks.
-final Map<String, Object?> fixture =
-    jsonDecode(File('functions/analyst_fixture.json').readAsStringSync())
-        as Map<String, Object?>;
+final Map<String, Object?> fixture = jsonDecode(
+  File('functions/analyst_fixture.json').readAsStringSync(),
+) as Map<String, Object?>;
 
 final DateTime today = DateTime(2026, 11, 15);
 
@@ -166,19 +166,16 @@ void main() {
     });
 
     test('drops rows until the JSON is within 8000', () {
-      final SentRows sent =
-          cutResult(
-                AskRan(
-                  AskRows(
-                    <String>['a', 'b'],
-                    <List<Object?>>[
-                      for (int i = 0; i < 50; i++)
-                        <Object?>['y' * 150, 'z' * 150],
-                    ],
-                  ),
-                ),
-              )
-              as SentRows;
+      final SentRows sent = cutResult(
+        AskRan(
+          AskRows(
+            <String>['a', 'b'],
+            <List<Object?>>[
+              for (int i = 0; i < 50; i++) <Object?>['y' * 150, 'z' * 150],
+            ],
+          ),
+        ),
+      ) as SentRows;
       expect(
         jsonEncode(sent.toJson()).length,
         lessThanOrEqualTo(AnalystLimits.resultChars),

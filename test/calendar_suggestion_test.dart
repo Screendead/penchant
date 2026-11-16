@@ -168,13 +168,15 @@ void main() {
     final FakeTrackerWrites writes = FakeTrackerWrites();
     final vice = fakeVice('coffee');
     final DateTime now = DateTime.now();
-    final _FakeCalendar calendar =
-        _FakeCalendar(CalendarAccess.full, <CalendarEvent>[
-          CalendarEvent(
-            now.subtract(const Duration(minutes: 70)),
-            now.subtract(const Duration(minutes: 10)),
-          ),
-        ]);
+    final _FakeCalendar calendar = _FakeCalendar(
+      CalendarAccess.full,
+      <CalendarEvent>[
+        CalendarEvent(
+          now.subtract(const Duration(minutes: 70)),
+          now.subtract(const Duration(minutes: 10)),
+        ),
+      ],
+    );
 
     await tester.pumpWidget(
       ProviderScope(

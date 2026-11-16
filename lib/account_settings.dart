@@ -103,9 +103,8 @@ class _AccountSettingsBodyState extends ConsumerState<_AccountSettingsBody> {
 
   void _show(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     }
   }
 

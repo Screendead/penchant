@@ -17,11 +17,9 @@ import 'palette_names.dart';
 
 final List<dynamic> _pairs =
     (jsonDecode(
-              File(
-                'docs/design-system/day-dial/project/contrast-pairs.json',
-              ).readAsStringSync(),
-            )
-            as Map<String, dynamic>)['pairs']
+          File('docs/design-system/day-dial/project/contrast-pairs.json')
+              .readAsStringSync(),
+        ) as Map<String, dynamic>)['pairs']
         as List<dynamic>;
 
 final RegExp _layer = RegExp(

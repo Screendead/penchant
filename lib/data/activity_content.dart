@@ -157,9 +157,8 @@ class ActivityContent {
       abv != other.abv ||
       caffeineMg != other.caffeineMg ||
       triggers.length != other.triggers.length ||
-      Iterable<int>.generate(
-        triggers.length,
-      ).any((int i) => triggers[i] != other.triggers[i]);
+      Iterable<int>.generate(triggers.length)
+          .any((int i) => triggers[i] != other.triggers[i]);
 }
 
 int? readUrge(Object? value) =>

@@ -97,16 +97,18 @@ class ChannelPlacesSource implements PlacesSource {
     required bool dark,
   }) async {
     try {
-      final Object? png = await _channel
-          .invokeMethod<Object?>('mapSnapshot', <String, Object>{
-            'lat': latitude,
-            'lon': longitude,
-            'span': span,
-            'width': width,
-            'height': height,
-            'scale': scale,
-            'dark': dark,
-          });
+      final Object? png = await _channel.invokeMethod<Object?>(
+        'mapSnapshot',
+        <String, Object>{
+          'lat': latitude,
+          'lon': longitude,
+          'span': span,
+          'width': width,
+          'height': height,
+          'scale': scale,
+          'dark': dark,
+        },
+      );
       return png is Uint8List && png.isNotEmpty ? png : null;
     } catch (_) {
       return null;

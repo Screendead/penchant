@@ -60,10 +60,11 @@ class CheckInContent {
   };
 }
 
-/// Words for a check-in's strength, for the sheet and screen readers.
-String checkInWords(int strength) => switch (strength) {
-  0 => 'no urge',
-  1 => 'barely',
-  5 => 'couldn’t not',
+/// A check-in's strength as read aloud and in the bar: the ends named, as
+/// the sheet's scale names them.
+String checkInLabel(int strength) => switch (strength) {
+  0 => '0, no urge',
+  1 => '1 of $maxCheckIn, barely',
+  5 => '5 of $maxCheckIn, couldn’t not',
   _ => '$strength of $maxCheckIn',
 };

@@ -10,6 +10,7 @@ import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/insights/experiment.dart';
+import 'package:tracker/reminder/check_ins.dart';
 import 'package:tracker/reminder/heavy_day.dart';
 import 'package:tracker/reminder/heavy_day_nudge.dart';
 
@@ -33,6 +34,13 @@ class NudgeCopy {
   static const String urgePassed = 'Passed';
   static const String urgeStillThere = 'Still there';
   static const String urgeHadOne = 'Had one';
+  // A random check-in: names no habit. The buttons are the answer itself.
+  static const String checkInBody = 'Any urge right now?';
+  static String checkInAnswer(int strength) => switch (strength) {
+    0 => '0 · none',
+    5 => '5 · couldn’t not',
+    _ => '$strength',
+  };
 }
 
 /// What a press on the notification asks of the app.
@@ -47,27 +55,42 @@ enum NudgeAction {
   urgeHadOne,
   // The check-in itself tapped: the urge's sheet, to answer there.
   urge,
+  // A random check-in's 0 to 5, pressed on the notification.
+  checkInAnswer,
+  // A random check-in tapped: its sheet, to answer there.
+  checkIn,
 }
 
 /// A press on a notification, with the day a day-note one is about or the
 /// urge a check-in asks about.
 @immutable
 class NudgeTap {
-  const NudgeTap(this.action, {this.day, this.urgeID});
+  const NudgeTap(
+    this.action, {
+    this.day,
+    this.urgeID,
+    this.checkIn,
+    this.checkInStrength,
+  });
 
   final NudgeAction action;
   final DateTime? day;
   final String? urgeID;
+  final ({String id, DateTime promptedAt})? checkIn;
+  final int? checkInStrength;
 
   @override
   bool operator ==(Object other) =>
       other is NudgeTap &&
       other.action == action &&
       other.day == day &&
-      other.urgeID == urgeID;
+      other.urgeID == urgeID &&
+      other.checkIn == checkIn &&
+      other.checkInStrength == checkInStrength;
 
   @override
-  int get hashCode => Object.hash(action, day, urgeID);
+  int get hashCode =>
+      Object.hash(action, day, urgeID, checkIn, checkInStrength);
 }
 
 NudgeAction? nudgeActionFor(String? actionId, {String? payload}) =>
@@ -78,6 +101,10 @@ NudgeAction? nudgeActionFor(String? actionId, {String? payload}) =>
         _urgeHadOneId => NudgeAction.urgeHadOne,
         _ => NudgeAction.urge,
       },
+      _ when checkInOfPayload(payload) != null =>
+        checkInStrengthOfAction(actionId) == null
+            ? NudgeAction.checkIn
+            : NudgeAction.checkInAnswer,
       _logActionId => NudgeAction.log,
       _cleanActionId => NudgeAction.clean,
       _ when payload == _reviewPayload => NudgeAction.review,
@@ -93,7 +120,24 @@ NudgeTap? nudgeTapFor(String? actionId, {String? payload}) {
     action,
     day: action == NudgeAction.dayNote ? heavyDayOfPayload(payload) : null,
     urgeID: urgeOfPayload(payload),
+    checkIn: checkInOfPayload(payload),
+    checkInStrength: action == NudgeAction.checkInAnswer
+        ? checkInStrengthOfAction(actionId)
+        : null,
   );
+}
+
+const String _checkInCategory = 'check-in';
+const String _checkInActionPrefix = 'check-in-';
+
+String checkInActionId(int strength) => '$_checkInActionPrefix$strength';
+
+int? checkInStrengthOfAction(String? actionId) {
+  if (actionId == null || !actionId.startsWith(_checkInActionPrefix)) {
+    return null;
+  }
+  final int? n = int.tryParse(actionId.substring(_checkInActionPrefix.length));
+  return n != null && n >= 0 && n <= 5 ? n : null;
 }
 
 const String _urgePrefix = 'urge:';
@@ -200,6 +244,16 @@ abstract class NudgeScheduler {
 
   /// Withdraws every urge's check-in, as on sign-out.
   Future<void> cancelUrgeChecks();
+
+  /// Replaces every waiting random check-in with [prompts]; one already
+  /// shown stays until answered.
+  Future<void> scheduleCheckIns(List<CheckInPrompt> prompts);
+
+  /// Withdraws every random check-in, waiting or shown.
+  Future<void> cancelCheckIns();
+
+  /// Withdraws the check-in for answer [id] once answered in the app.
+  Future<void> withdrawCheckIn(String id);
 }
 
 class LocalNudgeScheduler implements NudgeScheduler {
@@ -241,6 +295,20 @@ class LocalNudgeScheduler implements NudgeScheduler {
               DarwinNotificationAction.plain(
                 id,
                 title,
+                options: <DarwinNotificationActionOption>{
+                  DarwinNotificationActionOption.foreground,
+                },
+              ),
+          ],
+        ),
+        // 0 to 5, each bringing the app forward for the same reason.
+        DarwinNotificationCategory(
+          _checkInCategory,
+          actions: <DarwinNotificationAction>[
+            for (int n = 0; n <= 5; n++)
+              DarwinNotificationAction.plain(
+                checkInActionId(n),
+                NudgeCopy.checkInAnswer(n),
                 options: <DarwinNotificationActionOption>{
                   DarwinNotificationActionOption.foreground,
                 },
@@ -457,13 +525,13 @@ class LocalNudgeScheduler implements NudgeScheduler {
 
   @override
   Future<void> cancelUrgeCheck(String urgeID) =>
-      _cancelUrgeChecks((String? payload) => payload == urgePayload(urgeID));
+      _cancelMatching((String? payload) => payload == urgePayload(urgeID));
 
   @override
   Future<void> cancelUrgeChecks() =>
-      _cancelUrgeChecks((String? payload) => urgeOfPayload(payload) != null);
+      _cancelMatching((String? payload) => urgeOfPayload(payload) != null);
 
-  Future<void> _cancelUrgeChecks(bool Function(String? payload) matches) async {
+  Future<void> _cancelMatching(bool Function(String? payload) matches) async {
     final Set<int> ids = <int>{
       for (final PendingNotificationRequest p
           in await _plugin.pendingNotificationRequests())
@@ -475,6 +543,45 @@ class LocalNudgeScheduler implements NudgeScheduler {
       await _plugin.cancel(id: id);
     }
   }
+
+  // Quiet, like an urge's check-in.
+  @override
+  Future<void> scheduleCheckIns(List<CheckInPrompt> prompts) async {
+    for (final PendingNotificationRequest p
+        in await _plugin.pendingNotificationRequests()) {
+      if (checkInOfPayload(p.payload) != null) {
+        await _plugin.cancel(id: p.id);
+      }
+    }
+    if (prompts.isEmpty) return;
+    await _setLocalZone();
+    const DarwinNotificationDetails darwin = DarwinNotificationDetails(
+      categoryIdentifier: _checkInCategory,
+      presentBadge: false,
+      presentSound: false,
+    );
+    for (final CheckInPrompt prompt in prompts) {
+      await _plugin.zonedSchedule(
+        id: prompt.notificationId,
+        body: NudgeCopy.checkInBody,
+        payload: checkInPayload(prompt),
+        scheduledDate: tz.TZDateTime.from(prompt.at, tz.local),
+        notificationDetails: const NotificationDetails(
+          iOS: darwin,
+          macOS: darwin,
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    }
+  }
+
+  @override
+  Future<void> cancelCheckIns() =>
+      _cancelMatching((String? payload) => checkInOfPayload(payload) != null);
+
+  @override
+  Future<void> withdrawCheckIn(String id) =>
+      _cancelMatching((String? payload) => checkInOfPayload(payload)?.id == id);
 
   // Delivered and still in Notification Centre; on a system the plugin
   // cannot ask, none.
@@ -836,6 +943,12 @@ final dailyNudgeStartupProvider = FutureProvider<void>((Ref ref) async {
         if (tap.urgeID case final String id) {
           ref.read(pendingUrgeAnswerProvider.notifier).request(tap.action, id);
         }
+      case NudgeAction.checkIn || NudgeAction.checkInAnswer:
+        if (tap.checkIn case (:final String id, :final DateTime promptedAt)) {
+          ref
+              .read(pendingCheckInProvider.notifier)
+              .request(id, promptedAt, strength: tap.checkInStrength);
+        }
       case NudgeAction.clean:
         break;
     }
@@ -853,6 +966,7 @@ final dailyNudgeStartupProvider = FutureProvider<void>((Ref ref) async {
   // Reads the saved setting, which schedules again if it is on.
   ref.read(dailyNudgeProvider);
   ref.read(weeklyReviewReminderProvider);
+  ref.read(checkInsProvider);
   final HeavyDayNudge heavy = ref.read(heavyDayNudgeProvider.notifier);
   ref.listen<HeavyDayVerdict?>(heavyDayVerdictProvider, (
     HeavyDayVerdict? _,

@@ -50,8 +50,9 @@ void main() {
       final Set<String> modal = <String>{
         for (final String name in pages.keys)
           if (name != entry &&
-              (generateRoute(RouteSettings(name: name)) as PageRoute<void>)
-                  .fullscreenDialog)
+              (generateRoute(
+                RouteSettings(name: name),
+              ) as PageRoute<void>).fullscreenDialog)
             name,
       };
       expect(modal, <String>{'/vices/add', '/vices/v1/edit'});

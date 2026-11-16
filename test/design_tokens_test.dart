@@ -9,17 +9,13 @@ import 'palette_names.dart';
 
 // The Dart tokens against what they mirror: the colours against the design
 // system's tokens.json, the rest against lib/design/tokens.json.
-final Map<String, dynamic> _json =
-    jsonDecode(File('lib/design/tokens.json').readAsStringSync())
-        as Map<String, dynamic>;
+final Map<String, dynamic> _json = jsonDecode(
+  File('lib/design/tokens.json').readAsStringSync(),
+) as Map<String, dynamic>;
 
-final Map<String, dynamic> _system =
-    jsonDecode(
-          File(
-            'docs/design-system/day-dial/project/tokens.json',
-          ).readAsStringSync(),
-        )
-        as Map<String, dynamic>;
+final Map<String, dynamic> _system = jsonDecode(
+  File('docs/design-system/day-dial/project/tokens.json').readAsStringSync(),
+) as Map<String, dynamic>;
 
 // The system's colours for one theme, by token name.
 Map<String, Color> _systemColours(String theme) => <String, Color>{

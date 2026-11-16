@@ -25,25 +25,22 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('compareLastNight', () {
-    test(
-      'last night against the median and 10th to 90th percentiles of the nights before',
-      () {
-        final NightCompare c = compareLastNight(
-          _nights(<int, double>{
-            0: 60,
-            for (int back = 1; back <= 20; back++) back: 50.0 + back % 5,
-            // Outside the baseline window.
-            40: 99,
-          }),
-          _today,
-        )!;
-        expect(c.value, 60);
-        expect(c.usual, 52);
-        expect(c.low, 50);
-        expect(c.high, 54);
-        expect(c.side, NightSide.above);
-      },
-    );
+    test('last night against the median and 10th to 90th percentiles of the nights before', () {
+      final NightCompare c = compareLastNight(
+        _nights(<int, double>{
+          0: 60,
+          for (int back = 1; back <= 20; back++) back: 50.0 + back % 5,
+          // Outside the baseline window.
+          40: 99,
+        }),
+        _today,
+      )!;
+      expect(c.value, 60);
+      expect(c.usual, 52);
+      expect(c.low, 50);
+      expect(c.high, 54);
+      expect(c.side, NightSide.above);
+    });
 
     test('nothing without last night or with too few nights before', () {
       expect(

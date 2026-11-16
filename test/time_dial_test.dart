@@ -100,9 +100,8 @@ Future<void> _open(
                         context,
                         initialViceID: _coffee.id,
                       )
-                    : Navigator.of(
-                        context,
-                      ).push(MaterialPageRoute<void>(builder: (_) => page)),
+                    : Navigator.of(context)
+                          .push(MaterialPageRoute<void>(builder: (_) => page)),
                 child: const Text('open'),
               );
             },
