@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account/claude_access.dart';
@@ -15,27 +17,28 @@ class AskJournalEnabled extends Notifier<bool> {
   static const String key = 'askJournal';
 
   bool _chosen = false;
-
   @override
   bool build() {
-    _load();
+    _load(ref.read(_askJournalReadProvider));
     return false;
   }
 
   // A failed read leaves it off.
-  Future<void> _load() async {
+  Future<void> _load(Completer<void> read) async {
     final bool? saved;
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       saved = prefs.getBool(key);
     } catch (e, stack) {
       reportError(e, stack, context: 'while reading the ask journal choice');
+      if (!read.isCompleted) read.complete();
       return;
     }
     // A choice made while the read was in flight is newer than what it read.
     if (saved != null && !_chosen) {
       state = saved;
     }
+    if (!read.isCompleted) read.complete();
   }
 
   Future<void> choose(bool on) async {
@@ -50,6 +53,17 @@ class AskJournalEnabled extends Notifier<bool> {
     }
   }
 }
+
+final _askJournalReadProvider = Provider<Completer<void>>(
+  (Ref ref) => Completer<void>(),
+);
+
+/// Done once [askJournalEnabledProvider] holds the saved choice (or failed to
+/// read it), so that false means off rather than not yet known.
+final askJournalChoiceReadProvider = FutureProvider<void>((Ref ref) {
+  ref.read(askJournalEnabledProvider);
+  return ref.read(_askJournalReadProvider).future;
+});
 
 /// The Settings row for [askJournalEnabledProvider]. Turning it on first
 /// says what is sent, habit names included, and asks again; turning it off

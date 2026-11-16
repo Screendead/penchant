@@ -7,6 +7,7 @@ import 'package:tracker/analyst/analyst_setting.dart';
 import 'package:tracker/analyst/investigation.dart';
 import 'package:tracker/analyst/investigation_view.dart';
 import 'package:tracker/ask/ask_answer.dart';
+import 'package:tracker/ask/ask_from_siri.dart';
 import 'package:tracker/ask/ask_chart.dart';
 import 'package:tracker/ask/ask_journal.dart';
 import 'package:tracker/ask/journal_db.dart';
@@ -159,6 +160,9 @@ class _AskPageState extends ConsumerState<AskPage> {
   /// behind by a closed page and has stopped.
   final Set<int> _investigating = <int>{};
 
+  /// Questions this page has sent and not yet heard back about.
+  int _asking = 0;
+
   @override
   void initState() {
     super.initState();
@@ -168,6 +172,29 @@ class _AskPageState extends ConsumerState<AskPage> {
         if (before != after) _drop();
       },
     );
+    ref.listenManual<SiriQuestion?>(
+      siriQuestionReadyProvider,
+      (_, _) => _takeSiriQuestion(),
+      fireImmediately: true,
+    );
+  }
+
+  // Asked as if typed, after the first frame (the field's rect is where the
+  // Claude-working screen grows from). One sent from here meanwhile is
+  // answered first, so the follow-up carries it.
+  void _takeSiriQuestion() {
+    if (ref.read(siriQuestionReadyProvider)?.outcome != SiriAskOutcome.ask) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final SiriQuestion? ready = ref.read(siriQuestionReadyProvider);
+      if (!mounted || _asking > 0 || ready?.outcome != SiriAskOutcome.ask) {
+        return;
+      }
+      ref.read(pendingSiriQuestionProvider.notifier).clear();
+      _controller.text = ready!.question;
+      unawaited(_ask());
+    });
   }
 
   @override
@@ -225,6 +252,7 @@ class _AskPageState extends ConsumerState<AskPage> {
     final AskSession session = ref.read(askSessionProvider.notifier);
     final List<AskTurn> history = askHistory(ref.read(askSessionProvider));
     final int id = session.start(question);
+    _asking++;
     _controller.clear();
     final ClaudeWork work = ClaudeWork(
       subject: question,
@@ -259,6 +287,8 @@ class _AskPageState extends ConsumerState<AskPage> {
       // Not reported: a report would carry the question.
       answer = null;
     }
+    _asking--;
+    if (mounted) _takeSiriQuestion();
     if (stopped || !mounted) return;
     session.settle(id, answer);
     work.finish(answer == null ? ClaudeWorkEnd.failed : ClaudeWorkEnd.answered);
