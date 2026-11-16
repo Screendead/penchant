@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/data/day.dart';
+import 'package:tracker/report/report_output.dart';
 
 // "Today" in the report tests: a Monday, so three months run from 1 September.
 final DateTime reportNow = DateTime(2026, 11, 16, 9, 30);
@@ -138,4 +141,31 @@ AccountData sampleJournal({int days = 380}) {
       ),
     ],
   );
+}
+
+// Records what would be drawn, written and shared.
+class FakeReportOutput implements ReportOutput {
+  FakeReportOutput([this.images = const <ui.Image>[]]);
+
+  final List<ui.Image> images;
+  Uint8List? rastered;
+  String? shared;
+  int discarded = 0;
+
+  @override
+  Future<List<ui.Image>> pages(Uint8List pdf) async {
+    rastered = pdf;
+    return images;
+  }
+
+  @override
+  Future<File> write(Uint8List pdf, String name) async => File(name);
+
+  @override
+  Future<void> share(File file, {ui.Rect? origin}) async {
+    shared = file.path;
+  }
+
+  @override
+  Future<void> discard() async => discarded++;
 }

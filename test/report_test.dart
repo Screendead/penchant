@@ -1,7 +1,3 @@
-import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -200,7 +196,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final FakeAccount account = FakeAccount()..data = sampleJournal();
-    final _FakeOutput output = _FakeOutput();
+    final FakeReportOutput output = FakeReportOutput();
     final List<Vice> vices = <Vice>[
       for (final StoredDocument doc in account.data.vices)
         Vice.fromJson(id: doc.id, json: doc.data),
@@ -268,27 +264,4 @@ void main() {
     expect(output.discarded, 1);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
-}
-
-class _FakeOutput implements ReportOutput {
-  Uint8List? rastered;
-  String? shared;
-  int discarded = 0;
-
-  @override
-  Future<List<ui.Image>> pages(Uint8List pdf) async {
-    rastered = pdf;
-    return <ui.Image>[];
-  }
-
-  @override
-  Future<File> write(Uint8List pdf, String name) async => File(name);
-
-  @override
-  Future<void> share(File file, {ui.Rect? origin}) async {
-    shared = file.path;
-  }
-
-  @override
-  Future<void> discard() async => discarded++;
 }

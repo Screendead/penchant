@@ -480,7 +480,9 @@ List<pw.Widget> _weeks(HabitReport habit, _Styles s) {
           pw.SizedBox(
             width: 34,
             child: pw.Text(
-              week.days < 7 ? '${week.days} days' : '',
+              week.days < 7
+                  ? '${week.days} ${pluralWord(week.days, one: 'day', other: 'days')}'
+                  : '',
               style: s.tinyMuted,
             ),
           ),
