@@ -17,30 +17,28 @@ class AskJournalEnabled extends Notifier<bool> {
   static const String key = 'askJournal';
 
   bool _chosen = false;
-  late final Completer<void> _read = ref.read(_askJournalReadProvider);
-
   @override
   bool build() {
-    _load();
+    _load(ref.read(_askJournalReadProvider));
     return false;
   }
 
   // A failed read leaves it off.
-  Future<void> _load() async {
+  Future<void> _load(Completer<void> read) async {
     final bool? saved;
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       saved = prefs.getBool(key);
     } catch (e, stack) {
       reportError(e, stack, context: 'while reading the ask journal choice');
-      _read.complete();
+      if (!read.isCompleted) read.complete();
       return;
     }
     // A choice made while the read was in flight is newer than what it read.
     if (saved != null && !_chosen) {
       state = saved;
     }
-    _read.complete();
+    if (!read.isCompleted) read.complete();
   }
 
   Future<void> choose(bool on) async {
