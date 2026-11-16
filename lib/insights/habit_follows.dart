@@ -128,7 +128,7 @@ List<HabitFollows> habitFollows({
 }) {
   final DateTime last = startOfDay(through);
   final Map<String, List<DateTime>> times = <String, List<DateTime>>{};
-  for (final HabitUse use in uses) {
+  for (final HabitUse use in timedUses(uses)) {
     if (use.amount <= 0) continue;
     times.putIfAbsent(use.habitId, () => <DateTime>[]).add(use.at);
   }

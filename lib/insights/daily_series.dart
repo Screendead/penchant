@@ -10,6 +10,7 @@ class HabitUse {
     required this.at,
     required this.amount,
     this.triggers = const <String>[],
+    this.caughtUp = false,
   });
 
   final String habitId;
@@ -19,6 +20,28 @@ class HabitUse {
   /// As stored on the entry (lib/data/activity_triggers.dart); empty when
   /// untagged or locked.
   final List<String> triggers;
+
+  /// Logged through Catch up: the day is what the person recalled, the time
+  /// of day a guess. False when locked.
+  final bool caughtUp;
+
+  /// The day it counts on: [lateDayOf] its time, or for a caught-up use its
+  /// calendar day, since only the hour that would move it is guessed.
+  DateTime get day => caughtUp ? startOfDay(at) : lateDayOf(at);
+}
+
+/// [uses] less every use of a habit on a day ([HabitUse.day]) holding a
+/// caught-up use of it, for comparisons of time of day: that day's first,
+/// last and in-between times are not known.
+List<HabitUse> timedUses(Iterable<HabitUse> uses) {
+  final Set<(String, DateTime)> untimed = <(String, DateTime)>{
+    for (final HabitUse u in uses)
+      if (u.caughtUp) (u.habitId, u.day),
+  };
+  return <HabitUse>[
+    for (final HabitUse u in uses)
+      if (!untimed.contains((u.habitId, u.day))) u,
+  ];
 }
 
 /// One value of an outcome (a night's sleep, a day's resting heart rate) for
@@ -62,6 +85,8 @@ class DailyHabitSeries {
   );
 
   factory DailyHabitSeries.fromUses(Iterable<HabitUse> uses) {
+    final List<HabitUse> all = uses.toList();
+    final Set<HabitUse> timed = timedUses(all).toSet();
     final Map<String, Map<DateTime, double>> totals =
         <String, Map<DateTime, double>>{};
     final Map<String, (DateTime, DateTime)> spans =
@@ -70,7 +95,7 @@ class DailyHabitSeries {
         <String, Map<DateTime, int>>{};
     final Map<String, Map<DateTime, double>> lateTotals =
         <String, Map<DateTime, double>>{};
-    for (final HabitUse use in uses) {
+    for (final HabitUse use in all) {
       final Map<DateTime, double> days = totals.putIfAbsent(
         use.habitId,
         () => <DateTime, double>{},
@@ -78,18 +103,20 @@ class DailyHabitSeries {
       if (use.amount <= 0) continue;
       final DateTime day = startOfDay(use.at);
       days[day] = (days[day] ?? 0) + use.amount;
-      final DateTime lateDay = lateDayOf(use.at);
-      // Clock time, so a DST change moves no use; past midnight it runs on
-      // from 24:00.
-      final int minutes =
-          use.at.hour * 60 +
-          use.at.minute +
-          (lateDay == day ? 0 : Duration.minutesPerDay);
-      final Map<DateTime, int> last = lastUse.putIfAbsent(
-        use.habitId,
-        () => <DateTime, int>{},
-      );
-      last[lateDay] = max(last[lateDay] ?? minutes, minutes);
+      final DateTime lateDay = use.day;
+      if (timed.contains(use)) {
+        // Clock time, so a DST change moves no use; past midnight it runs on
+        // from 24:00.
+        final int minutes =
+            use.at.hour * 60 +
+            use.at.minute +
+            (lateDay == day ? 0 : Duration.minutesPerDay);
+        final Map<DateTime, int> last = lastUse.putIfAbsent(
+          use.habitId,
+          () => <DateTime, int>{},
+        );
+        last[lateDay] = max(last[lateDay] ?? minutes, minutes);
+      }
       final Map<DateTime, double> late = lateTotals.putIfAbsent(
         use.habitId,
         () => <DateTime, double>{},
@@ -118,17 +145,18 @@ class DailyHabitSeries {
       _totals[habitId]?[startOfDay(day)] ?? 0;
 
   /// Minutes after [day]'s midnight of [habitId]'s last use that day, on the
-  /// day [lateDayOf] gives it; null on a day without one.
+  /// day [lateDayOf] gives it; null on a day without one, or holding a
+  /// caught-up one ([timedUses]).
   int? lastUseMinutes(String habitId, DateTime day) =>
       _lastUse[habitId]?[startOfDay(day)];
 
-  /// [habitId]'s total over the uses [lastUseMinutes] counts on [day].
+  /// [habitId]'s total over the uses counting on [day] ([HabitUse.day]).
   double lateDayTotal(String habitId, DateTime day) =>
       _lateTotals[habitId]?[startOfDay(day)] ?? 0;
 
-  /// The days [lastUseMinutes] has a value for, in no order.
+  /// The days [lateDayTotal] has a value for, in no order.
   Iterable<DateTime> lateDays(String habitId) =>
-      _lastUse[habitId]?.keys ?? const <DateTime>[];
+      _lateTotals[habitId]?.keys ?? const <DateTime>[];
 
   /// The first and last days [habitId] was used; null when it never was.
   DateTime? firstUse(String habitId) => _spans[habitId]?.$1;
