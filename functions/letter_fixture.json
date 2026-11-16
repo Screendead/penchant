@@ -1,0 +1,381 @@
+{
+  "_comment": "Shared by functions/letter.test.js and test/letter_checks_test.dart: both checks must give each case its expected reason, and both term lists must equal these.",
+  "terms": [
+    "should",
+    "shouldn't",
+    "need to",
+    "needs to",
+    "have to",
+    "must",
+    "try",
+    "consider",
+    "maybe you",
+    "might want",
+    "recommend",
+    "advice",
+    "help",
+    "support",
+    "encourage",
+    "good",
+    "bad",
+    "better",
+    "worse",
+    "wrong",
+    "okay",
+    "ok",
+    "alright",
+    "fine",
+    "normal",
+    "proud",
+    "well done",
+    "great",
+    "congratulations",
+    "guilt",
+    "guilty",
+    "shame",
+    "ashamed",
+    "regret",
+    "mistake",
+    "excuse",
+    "problem",
+    "problems",
+    "issue",
+    "addict",
+    "addicted",
+    "addiction",
+    "addictive",
+    "dependence",
+    "dependent",
+    "dependency",
+    "alcoholic",
+    "alcoholism",
+    "abuse",
+    "habit-forming",
+    "disorder",
+    "relapse",
+    "relapsed",
+    "recovery",
+    "sober",
+    "sobriety",
+    "clean",
+    "craving",
+    "cravings",
+    "healthy",
+    "unhealthy",
+    "health",
+    "risk",
+    "risky",
+    "harm",
+    "harmful",
+    "damage",
+    "danger",
+    "dangerous",
+    "worry",
+    "worried",
+    "worrying",
+    "concern",
+    "concerned",
+    "concerning",
+    "too much",
+    "too many",
+    "excessive",
+    "binge",
+    "therapy",
+    "therapist",
+    "doctor",
+    "treatment",
+    "will you",
+    "would you",
+    "going to",
+    "next time",
+    "tomorrow",
+    "future",
+    "from now on",
+    "plan to",
+    "stop",
+    "stopping",
+    "quit",
+    "quitting",
+    "cut down",
+    "cut back",
+    "cutting",
+    "reduce",
+    "avoid",
+    "goal",
+    "goals",
+    "ai",
+    "claude",
+    "assistant",
+    "chatbot",
+    "language model",
+    "as a model",
+    "anthropic",
+    "progress",
+    "success",
+    "successful",
+    "failure",
+    "fail",
+    "failed",
+    "failing",
+    "struggle",
+    "struggling",
+    "journey",
+    "willpower",
+    "discipline",
+    "weak",
+    "weakness",
+    "improve",
+    "improved",
+    "improvement",
+    "improving",
+    "reducing",
+    "moderation",
+    "diagnosis",
+    "depression",
+    "depressed",
+    "too little",
+    "ought",
+    "you can do"
+  ],
+  "numberWords": [
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten",
+    "eleven",
+    "twelve",
+    "thirteen",
+    "fourteen",
+    "fifteen",
+    "sixteen",
+    "seventeen",
+    "eighteen",
+    "nineteen",
+    "twenty",
+    "thirty",
+    "forty",
+    "fifty",
+    "sixty",
+    "seventy",
+    "eighty",
+    "ninety",
+    "hundred",
+    "hundreds",
+    "thousand",
+    "thousands",
+    "dozen",
+    "dozens",
+    "twice",
+    "thrice",
+    "couple"
+  ],
+  "payload": {
+    "period": {
+      "from": "2026-08-16",
+      "to": "2026-11-16",
+      "months": 3,
+      "shortened": false
+    },
+    "entries": [
+      {
+        "date": "2026-08-20",
+        "time": "21:30",
+        "habit": "Wine",
+        "amount": "2",
+        "unit": "glasses",
+        "tags": [
+          "Work › Long day"
+        ],
+        "urge": "a lot",
+        "note": "needed it after the meeting, 3 hours late",
+        "followUp": {
+          "question": "What made the meeting hard?",
+          "answer": "my boss should have listened"
+        }
+      },
+      {
+        "date": "2026-10-02",
+        "time": "18:05",
+        "habit": "Wine",
+        "amount": "1.5",
+        "unit": "glasses",
+        "tags": []
+      },
+      {
+        "date": "2026-11-01",
+        "time": "08:10",
+        "habit": "Cigarettes",
+        "amount": "1",
+        "unit": "cigarettes",
+        "tags": [
+          "Social › Offered"
+        ],
+        "note": "walk home with Sam"
+      }
+    ],
+    "dayNotes": [
+      {
+        "date": "2026-09-14",
+        "text": "A quiet Sunday.\nNo plans.",
+        "tags": [
+          "Rest"
+        ]
+      }
+    ],
+    "figures": {
+      "habits": [
+        {
+          "habit": "Wine",
+          "unit": "glasses",
+          "total": "3.5",
+          "entries": "2",
+          "days": "2"
+        },
+        {
+          "habit": "Cigarettes",
+          "unit": "cigarettes",
+          "total": "1",
+          "entries": "1",
+          "days": "1"
+        }
+      ],
+      "months": [
+        {
+          "month": "August 2026",
+          "habits": [
+            {
+              "habit": "Wine",
+              "total": "2",
+              "entries": "1",
+              "days": "1"
+            }
+          ]
+        },
+        {
+          "month": "October 2026",
+          "habits": [
+            {
+              "habit": "Wine",
+              "total": "1.5",
+              "entries": "1",
+              "days": "1"
+            }
+          ]
+        },
+        {
+          "month": "November 2026",
+          "habits": [
+            {
+              "habit": "Cigarettes",
+              "total": "1",
+              "entries": "1",
+              "days": "1"
+            }
+          ]
+        }
+      ],
+      "notes": {
+        "entryNotes": "2",
+        "dayNotes": "1",
+        "followUps": "1"
+      },
+      "tags": [
+        {
+          "tag": "Work › Long day",
+          "count": "1"
+        },
+        {
+          "tag": "Social › Offered",
+          "count": "1"
+        },
+        {
+          "tag": "Rest",
+          "count": "1"
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "text": "You logged Wine on 2 days, 3.5 glasses in all.",
+      "expect": "ok"
+    },
+    {
+      "text": "Wine came to 4 glasses.",
+      "expect": "number:4"
+    },
+    {
+      "text": "In August you wrote “needed it after the meeting, 3 hours late”.",
+      "expect": "ok"
+    },
+    {
+      "text": "You wrote \"needed it badly\".",
+      "expect": "quote"
+    },
+    {
+      "text": "You wrote “needed it.",
+      "expect": "quote"
+    },
+    {
+      "text": "Long day was tagged 1 time in November 2026.",
+      "expect": "ok"
+    },
+    {
+      "text": "You wrote about work eleven times.",
+      "expect": "number_word:eleven"
+    },
+    {
+      "text": "You logged twice in October.",
+      "expect": "number_word:twice"
+    },
+    {
+      "text": "You should look at evenings.",
+      "expect": "term:should"
+    },
+    {
+      "text": "You answered “my boss should have listened”.",
+      "expect": "ok"
+    },
+    {
+      "text": "This looks like a problem.",
+      "expect": "term:problem"
+    },
+    {
+      "text": "That shows real progress.",
+      "expect": "term:progress"
+    },
+    {
+      "text": "It’s not a concern.",
+      "expect": "term:concern"
+    },
+    {
+      "text": "Your notes suggest the walk home matters.",
+      "expect": "ok"
+    },
+    {
+      "text": "Your notes mention “walk home with Sam”, and Social › Offered came up.",
+      "expect": "ok"
+    },
+    {
+      "text": "The period ran from 2026-08-16 to 2026-11-16.",
+      "expect": "ok"
+    },
+    {
+      "text": "At 21:30 you logged Wine.",
+      "expect": "number:21:30"
+    },
+    {
+      "text": "You wrote ٣ notes.",
+      "expect": "number"
+    },
+    {
+      "text": "Day notes: 1; entry notes: 2.",
+      "expect": "ok"
+    }
+  ]
+}
