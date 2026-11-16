@@ -292,8 +292,8 @@ const double meaningFloor = 0.40;
 /// At most this many meaning-only results, below every word match.
 const int meaningShown = 10;
 
-/// Notes matching [query] in wording, best first: the query as written, then
-/// every word, then some (more of them first); recent first within each.
+/// Notes matching [query] in wording, best first: every word (or the query
+/// as written), then some (more of them first); recent first within each.
 /// With [similarities] (each note's cosine similarity with the query, by
 /// key), notes matching no word follow, closest first, from [meaningFloor].
 /// A word match is never placed below a meaning-only one.
@@ -350,8 +350,11 @@ List<NoteMatch> searchNotes(
       ),
     );
   }
+  // The query as written ranks with every word, so a day's matches stay
+  // together; it only widens the highlight.
+  int rank(MatchTier t) => t == MatchTier.someWords ? 1 : 0;
   byWords.sort((NoteMatch a, NoteMatch b) {
-    final int tier = a.tier.index.compareTo(b.tier.index);
+    final int tier = rank(a.tier).compareTo(rank(b.tier));
     if (tier != 0) return tier;
     final int share = b.share.compareTo(a.share);
     if (share != 0) return share;

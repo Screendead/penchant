@@ -155,7 +155,8 @@ let shown = 3
 struct Scored { let note: Int; let tier: Int; let score: Double }
 
 func ordered(_ a: Scored, _ b: Scored) -> Bool {
-  if a.tier != b.tier { return a.tier > b.tier }
+  let ta = min(a.tier, 2), tb = min(b.tier, 2)
+  if ta != tb { return ta > tb }
   if a.score != b.score { return a.score > b.score }
   return a.note > b.note
 }
