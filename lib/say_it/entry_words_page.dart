@@ -49,7 +49,7 @@ class EntryWordsPage extends ConsumerStatefulWidget {
   static const String sayHint =
       'Two pints at the pub with Sam, about an hour ago';
   static const String catchUpHint =
-      'Fri about 4 pints from 7. Sat a bottle of wine over dinner, two '
+      'Fri about 4 pints from 7. Sat two glasses of wine over dinner, two '
       'coffees. Sun nothing.';
   static const String sayIntro =
       'Say or type what you had. Claude suggests entries; you check them '
@@ -76,6 +76,9 @@ class EntryWordsPage extends ConsumerStatefulWidget {
   static const String noHabits = 'Add a habit first.';
   static const String noneFound =
       'No entries found in that. Name a habit and an amount.';
+  static const String unclearSkipped =
+      'Anything without a clear habit and amount in your units (“too many”, '
+      '“a bottle”) isn’t suggested. Log those yourself.';
   static const String startAgain = 'Start again';
   static const String save = 'Save';
   static const String saveAll = 'Save all';
@@ -494,6 +497,7 @@ class _EntryWordsPageState extends ConsumerState<EntryWordsPage> {
                   : 'Check each entry. They are marked as caught up, and '
                         'nothing is saved until you tap Save all.',
             ),
+            const CardFoot(EntryWordsPage.unclearSkipped),
             if (_dropped > 0) CardFoot(EntryWordsPage.leftOut(_dropped)),
             ...groups,
           ],
