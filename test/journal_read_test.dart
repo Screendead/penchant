@@ -38,6 +38,7 @@ class _Journal implements JournalSource {
   final Map<String, ViceActivity> cache = <String, ViceActivity>{};
   bool offline = false;
   bool indexBuilding = false;
+  bool writeThrough = true;
   @override
   bool persistentCache = true;
   final List<String> calls = <String>[];
@@ -96,8 +97,12 @@ class _Journal implements JournalSource {
       for (final (ViceActivity, DateTime?) e in server.values)
         if (e.$2 != null && !e.$2!.isBefore(since)) e,
     ];
+    // Latency compensation: a queued local write stays on top of the
+    // server's copy in the cache.
     for (final (ViceActivity, DateTime?) e in changed) {
-      cache[e.$1.id] = e.$1;
+      if (writeThrough && cache[e.$1.id]?.pending != true) {
+        cache[e.$1.id] = e.$1;
+      }
     }
     return (
       entries: <ViceActivity>[for (final e in changed) e.$1],
@@ -189,6 +194,7 @@ void main() {
   test('the delta wins over the cache even when the SDK did not write it '
       'through, unless the cached copy has a queued write', () async {
     await read();
+    journal.writeThrough = false;
     journal.cache['a'] = _entry('a', quantity: 9, pending: true);
     journal.cache.remove('c');
     journal.put('c', _t0.add(const Duration(hours: 1)), quantity: 4);

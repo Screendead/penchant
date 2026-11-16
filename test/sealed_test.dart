@@ -578,6 +578,7 @@ void main() {
         'ownerID',
         'quantity',
         'viceID',
+        updatedAtField,
       });
       expect(stored['quantity'], 2);
       expect(stored['amount'], 1.5);

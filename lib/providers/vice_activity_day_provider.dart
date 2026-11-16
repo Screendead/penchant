@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/vice_activity.dart';
-import 'package:tracker/data/updated_at.dart';
 import 'package:tracker/firebase_init.dart';
 import 'package:tracker/insights/insights_report.dart'
     show insightsJournalStart;
@@ -196,10 +195,8 @@ class _FirestoreJournal implements JournalSource {
     await FirebaseFirestore.instance
         .collection('activities')
         .where('ownerID', isEqualTo: uid)
-        .where(
-          updatedAtField,
-          isGreaterThanOrEqualTo: Timestamp.fromDate(since),
-        )
+        // A literal, so test/firestore_indexes_test.dart reads the field.
+        .where('updatedAt', isGreaterThanOrEqualTo: Timestamp.fromDate(since))
         .get(const GetOptions(source: Source.server)),
     inRange: true,
   );
