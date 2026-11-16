@@ -14,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/crypto/plaintext_migrator.dart';
+import 'package:tracker/data/updated_at.dart';
 import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/sealed.dart';
@@ -234,7 +235,10 @@ void main() {
         'ownerID',
         'day',
         'createdAt',
+        updatedAtField,
       });
+      expect(store.set![updatedAtField], FieldValue.serverTimestamp());
+      expect(write.fields, isEmpty);
       expect(store.set!['ownerID'], ownerID);
       expect(store.set!['day'], _day);
       expect(store.set!['createdAt'], FieldValue.serverTimestamp());
@@ -244,7 +248,7 @@ void main() {
       });
     });
 
-    test('replacing a note updates its envelope alone', () async {
+    test('replacing a note updates its envelope and stamp alone', () async {
       final _Store store = _Store();
       final SentWrite write = TrackerWrites(store.firestore, sealer: sealer)
           .setDayNote(
@@ -262,7 +266,11 @@ void main() {
       await write.done;
       expect(write.op, WriteOp.update);
       expect(store.set, isNull);
-      expect(store.updated!.keys.toList(), <Object>[sealedField]);
+      expect(store.updated!.keys.toList(), <Object>[
+        sealedField,
+        updatedAtField,
+      ]);
+      expect(store.updated![updatedAtField], FieldValue.serverTimestamp());
       expect(await openEnvelope(store.updated![sealedField]), <String, Object?>{
         'text': 'Better by evening',
         'triggers': <Object?>[],
