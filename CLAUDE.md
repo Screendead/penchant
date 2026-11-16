@@ -579,6 +579,25 @@ lists the day's urges (`UrgeRow`), each opening its sheet (strength, "What happe
 averages, Insights, Ask or the letter. Neutral words: no praise, streaks or counts of urges passed. The export adds
 `penchant-urges-<date>.csv` and an `urges` array.
 
+**Random check-ins** (round 24 "A few random check-ins a day"). Off by default, per device: Settings > Reminder >
+Random check-ins, with From and Until (default 9:00 to 21:00, at least 3 hours, same day); turning on asks
+notification permission. `CheckIns` (`lib/reminder/check_ins.dart`) draws `checkInsPerDay` (3) moments a day with
+`Random.secure()`, one uniform to the second in each third of the window (`drawCheckInTimes`), for
+`checkInDaysAhead` (5) days, and keeps them in shared_preferences with the last day drawn: launch (via
+`dailyNudgeStartupProvider`) and each answer only add days, never redraw a waiting prompt (redrawing on each open
+would tie prompt times to app use); a new window redraws all. Each prompt is a quiet notification "Any urge right
+now?" (`scheduleCheckIns`, ids 5000 to 5999 rolling, category `check-in`, payload `check-in:<answer id>:<prompt
+ms>`, never a habit) with foreground actions 0 to 5 (as urges', for the journal key); a tap on its body opens
+`CheckInSheet` (`lib/widgets/check_in_sheet.dart`, 0 to 5, one tap answers, Not now, Turn off check-ins). The press
+waits in `pendingCheckInProvider` (a repeated press of one prompt is ignored) until Today has sign-in and a key, then
+`answerCheckIn` (`lib/writes/answer_check_in.dart`) writes it with Undo (delete) and withdraws the notification.
+Collection `checkIns`, born sealed, naming no habit: plaintext `ownerID` and `createdAt` (device clock when the press
+came), `sealed` holding `CheckInContent` (`lib/data/check_in.dart`): `strength` 0 to 5, `promptedAt`, `zone`,
+`answeredVia`. Rules: owner only, that field set on create, no update (Undo deletes). Nothing queries it yet, so no
+index; nothing reads it but the export (`penchant-check-ins-<date>.csv`, a `checkIns` array), account deletion and
+the guest sweep. Turn-off cancels every prompt, shown or waiting; sign-out and deletion `forget()` the setting and
+the drawn prompts. Insights does not compare them with entries' urges yet.
+
 **A habit's strength** (round 24, "Strength and standard units"). Optional `strengthUnit` (`ukUnit`, `grams`,
 `standardDrink` or `mg`), `servingMl` (above 0, at most 5,000), `abv` (above 0, at most 100), `drinkGrams` (above 0, at
 most 100) and `caffeineMg` (above 0, at most 2,000), read together as `Vice.strength` (`HabitStrength`,
@@ -663,6 +682,27 @@ restarts them). The Swift-written
 legacy documents midway; legacy plaintext goes in past the rules (`createBypassingRules`). Files launching through
 `startApp` (`smoke_test.dart`) seal with the real key. `storedContent` and `storedViceID` open sealed
 documents with either key.
+
+**Backup** (round 24 "A sealed backup you hold", Jack, 2026-11-16). Settings > Account > Backup (`BackupPage`,
+`lib/backup/backup_page.dart`, route `/settings/backup`) saves one file through the system's save panel and restores
+one into an empty account; Today's `BackupOfferCard` offers it monthly (once the recovery key is saved and a month old,
+no backup or dismissal on this device in 30 days, dates per uid in shared_preferences), never a notification. Format:
+`docs/backup-format.md` (`lib/backup/backup_file.dart`): magic, version, a plaintext header (creation time, source
+uid, and `keys/{uid}`'s `keyID` and 61-byte `wrapped`), one `Sealer.sealFile` envelope under the journal key with
+everything before it as associated data, a SHA-256 trailer; the body holds every document of `Account.ownedCollections`
+as the server holds it, envelopes unopened. `makeBackup` (`lib/backup/backup_service.dart`) reads through
+`Account.fetchStored` (pending writes first, server only) and opens the file again with the device's recovery key
+before the save panel sees it. `backupKeyProvider` (from `keyServiceOverrides`) is null until a key is checked against
+its record. Restore (`lib/backup/restore.dart`) never stores or adopts the backup's key: `planRestore` opens each
+envelope with it at the original path and re-seals the fields whole under the signed-in account's key at the new path
+(deterministic ids, `viceID` remapped, `ownerID` rewritten, `createdAt` kept, `updatedAt` the server's), legacy
+plaintext sealed as the migrator would; `runRestore` refuses (`AccountNotEmpty`) unless every owned document is one this
+backup writes, then writes vices first and activities and urges 20 a batch (the rules' 20 access calls per batch),
+skipping what is there, so a cut-short run finishes on the next. A collection restore does not know refuses the file;
+`test/restore_test.dart` fails when `ownedCollections` gains one. Guests are refused. The native panels are
+`BackupFiles` in `ios/Runner/AppDelegate.swift` (export from a tmp folder removed on close; open in place) and
+`macos/Runner/MainFlutterWindow.swift` (`files.user-selected.read-write`). `integration_test/backup_test.dart` saves and
+restores on the emulators.
 
 **Days.** An entry counts on the local day, in the viewer's current zone, of its `createdAt` instant. Day windows and
 graph buckets are local midnights from `lib/data/day.dart` (never `Duration(days:)`, which drifts an hour across DST).
@@ -1034,6 +1074,25 @@ A habit's colour is its creation order, oldest first, archived included (equal `
 `habitMarks(vices)` (`lib/design/habit_mark.dart`) maps each vice id to a `HabitMark`: `slot` picks `data1`-`data5`;
 `style` is filled for habits 1-5, a ring for 6-10, a dotted ring for 11-15, then repeats. Pass `viceListProvider`'s
 full list, not the unarchived one, or archiving recolours later habits. Computed on device; stores nothing.
+
+**Report** (`lib/report/`, round 24 "A one-page report for a doctor or partner"). Settings > Make a report
+(`ReportOptionsPage`, `/settings/report`) picks habits (none by default), 1, 3, 6 or 12 calendar months ending today
+(`reportWindow`), and Include notes (off: no entry notes, day notes or free-text tags). Make report reads the journal
+through `Account.fetchData`, the export's server read, so offline it fails. `buildReport`
+(`report_data.dart`) is the only place options are applied: a document `fetchData` could not open still holds
+`sealed`, so its entries and habits are counted (`lockedEntries`, `lockedHabits`) and left out; the PDF builder sees
+only `ReportData`. Totals are Trends' arithmetic: `bucketTotals` per day over the window, `bucketTotals` and
+`bucketUnits` per week from the week holding its first day (the region's first weekday, short end weeks labelled),
+`hourProfile` (its last 90 days, which the page says). Nothing from Health is read. `report_pdf.dart` lays it out with
+the pure-Dart `pdf` package: A4, or Letter in `letterRegions`; black on white; a month grid per calendar month,
+three to a row; one `MultiPage` per habit, so one habit over three months is one page (`test/report_test.dart`);
+no author in the metadata. `pdf` reads only a variable font's default instance, so it embeds static cuts in
+`assets/fonts/pdf/`, made by `tools/pdf-fonts.py` (fontTools). `ReportPreviewPage` shows the pages through
+`printing`'s `Printing.raster` (system PDF rendering, a plugin with a `Package.swift`), says the shared file is
+outside the encryption for good, then writes the PDF to `penchant-report/` in the temporary directory and shares
+that path; leaving the page deletes the folder (macOS answers when a service is chosen, before it reads the file).
+`ReportOutput` (`reportOutputProvider`) holds raster, write, share and discard for tests to fake.
+`test/report_render_test.dart` writes sample PDFs, their pages through poppler's `pdftoppm`, and both screens.
 
 **App lock** (`lib/app_lock/`, off by default; built for a pitch, `r2-applock`). Settings > App lock turns on only
 after one successful Face ID, Touch ID or passcode check; the choice is per device in shared_preferences (`appLock`),

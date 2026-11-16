@@ -90,6 +90,15 @@ class FakeAccount implements Account {
     return data;
   }
 
+  Map<String, List<StoredDocument>> stored =
+      const <String, List<StoredDocument>>{};
+
+  @override
+  Future<Map<String, List<StoredDocument>>> fetchStored() async {
+    await _call('fetchStored');
+    return stored;
+  }
+
   @override
   Future<void> deleteAccount({String? password}) =>
       _call('deleteAccount', <String, Object?>{'password': password});

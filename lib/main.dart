@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/notes/note_search_page.dart';
+import 'package:tracker/backup/backup_page.dart';
 import 'package:tracker/ask/ask_page.dart';
 import 'package:tracker/letter/letter_page.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -33,6 +34,7 @@ import 'package:tracker/providers/places_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/reminder_settings.dart';
+import 'package:tracker/report/report_page.dart';
 import 'package:tracker/settings.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/design/font_licence.dart';
@@ -299,8 +301,12 @@ Widget routePage(String? name, {DateTime? now}) {
       return const ReduceMotionSettings();
     case ['settings', 'reminder']:
       return const ReminderSettings();
+    case ['settings', 'report']:
+      return const ReportOptionsPage();
     case ['settings', 'recovery-key']:
       return const RecoveryKeyPage();
+    case ['settings', 'backup']:
+      return const BackupPage();
     default:
       return const NotFound();
   }

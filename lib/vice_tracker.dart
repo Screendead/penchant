@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/backup/backup_page.dart';
 import 'package:tracker/providers/show_day_provider.dart';
 import 'package:tracker/formats.dart';
 import 'package:tracker/experiment_page.dart';
@@ -12,6 +13,7 @@ import 'package:tracker/providers/experiment_provider.dart';
 import 'package:tracker/widgets/experiment_widgets.dart';
 import 'package:tracker/account/guest_expiry.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
+import 'package:tracker/data/check_in.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/vice.dart';
@@ -27,6 +29,7 @@ import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/notes/day_note_route.dart';
+import 'package:tracker/reminder/check_ins.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/weekly_review_page.dart';
@@ -49,7 +52,9 @@ import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/urge.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/widgets/check_in_sheet.dart';
 import 'package:tracker/widgets/urge_sheet.dart';
+import 'package:tracker/writes/answer_check_in.dart';
 import 'package:tracker/writes/note_urge.dart';
 
 // Today: the day as a 24-hour dial, a tally for each habit with a + that logs
@@ -143,8 +148,16 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       (_, _) => _answerPendingUrge(),
       fireImmediately: true,
     );
+    ref.listenManual<PendingCheckIn?>(
+      pendingCheckInProvider,
+      (_, _) => _answerPendingCheckIn(),
+      fireImmediately: true,
+    );
     // The answer waits for the journal key, which may load after the tap.
-    ref.listenManual(sealerProvider, (_, _) => _answerPendingUrge());
+    ref.listenManual(sealerProvider, (_, _) {
+      _answerPendingUrge();
+      _answerPendingCheckIn();
+    });
     ref.listenManual<int?>(
       guestDaysLeftProvider,
       (int? _, int? days) => _warnGuest(days),
@@ -278,6 +291,51 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
       if (outcome == UrgeOutcome.hadOne) {
         _record(vice);
       }
+    });
+  }
+
+  // A random check-in's answer, or a tap on it. Waits, still pending, for
+  // sign-in and the journal key; the answer keeps the time the press came.
+  // After the frame, as it may fire from initState.
+  void _answerPendingCheckIn() {
+    if (ref.read(pendingCheckInProvider) == null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final PendingCheckIn? pending = ref.read(pendingCheckInProvider);
+      if (!mounted ||
+          pending == null ||
+          ref.read(userProvider).value == null ||
+          !ref.read(trackerWritesProvider).canCreate) {
+        return;
+      }
+      ref.read(pendingCheckInProvider.notifier).clear();
+      final int? strength = pending.strength;
+      if (strength == null) {
+        if (ref.read(pendingCheckInProvider.notifier).answered(pending.id)) {
+          return;
+        }
+        Navigator.of(context).popUntil((Route<dynamic> r) => r.isFirst);
+        unawaited(
+          CheckInSheet.show(
+            context,
+            checkInID: pending.id,
+            promptedAt: pending.promptedAt,
+          ),
+        );
+        return;
+      }
+      unawaited(
+        answerCheckIn(
+          ref,
+          ScaffoldMessenger.of(context),
+          checkInID: pending.id,
+          promptedAt: pending.promptedAt,
+          answeredAt: pending.heardAt,
+          strength: strength,
+          via: CheckInVia.notification,
+        ),
+      );
     });
   }
 
@@ -606,6 +664,7 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                       children: <Widget>[
                         ?guestBanner,
                         const RecoveryKeyCard(),
+                        const BackupOfferCard(),
                         // The arrows' 40 pt circles sit 20 from the edges, their
                         // 44 pt targets 18.
                         Padding(

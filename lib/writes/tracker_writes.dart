@@ -7,6 +7,7 @@ import 'package:tracker/data/updated_at.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/activity_triggers.dart';
 import 'package:tracker/data/category.dart';
+import 'package:tracker/data/check_in.dart';
 import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/habit_strength.dart';
@@ -135,7 +136,8 @@ class TrackerWrites {
     return write(Blob(envelope));
   }
 
-  /// Whether [addVice], [recordActivity], [setDayNote] and [recordUrge] can write: the journal key has
+  /// Whether [addVice], [recordActivity], [setDayNote], [recordUrge] and
+  /// [recordCheckIn] can write: the journal key has
   /// loaded. Callers check first and tell the user rather than lose input.
   bool get canCreate => _sealer != null;
 
@@ -594,6 +596,60 @@ class TrackerWrites {
     }
     final Urge urge = await Urge.open(snapshot, data, SealedOpener(sealer));
     return urge.locked ? null : urge;
+  }
+
+  CollectionReference<Map<String, dynamic>> get _checkIns =>
+      _firestore.collection(checkInsCollection);
+
+  // Born sealed and never changed: the rules allow create and delete only.
+  // [checkInID] is drawn when the prompt is scheduled, so a press heard
+  // twice names one document. `createdAt` is the device clock at answering,
+  // as an entry's is.
+  SentWrite recordCheckIn(
+    String checkInID, {
+    required String ownerID,
+    required DateTime createdAt,
+    required int strength,
+    required DateTime promptedAt,
+    required CheckInVia via,
+  }) {
+    final FieldSealer sealer = _createSealer();
+    final DocumentReference<Map<String, dynamic>> checkIn = _checkIns.doc(
+      checkInID,
+    );
+    return _issued(
+      SentWrite(
+        _sealing(
+          sealer,
+          checkIn,
+          CheckInContent(
+            strength: strength,
+            promptedAt: promptedAt,
+            zone: _zone?.call(),
+            via: via,
+          ).toMap(),
+          (Blob envelope) => checkIn.set({
+            sealedField: envelope,
+            'ownerID': ownerID,
+            'createdAt': createdAt,
+          }),
+        ),
+        collection: _checkIns.id,
+        id: checkInID,
+        op: WriteOp.create,
+      ),
+    );
+  }
+
+  SentWrite deleteCheckIn(String checkInID) {
+    return _issued(
+      SentWrite(
+        _checkIns.doc(checkInID).delete(),
+        collection: _checkIns.id,
+        id: checkInID,
+        op: WriteOp.delete,
+      ),
+    );
   }
 
   // [stamp] adds [updatedNow] to the write but not to [SentWrite.fields]: an

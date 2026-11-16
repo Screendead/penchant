@@ -40,6 +40,7 @@ class MainFlutterWindow: NSWindow {
     EntryPrompt.register(with: flutterViewController.registrar(forPlugin: "EntryPrompt"))
     CalendarChannel.register(with: flutterViewController.registrar(forPlugin: "CalendarChannel"))
     SentenceEmbeddingChannel.register(with: flutterViewController.registrar(forPlugin: "SentenceEmbeddingChannel"))
+    BackupFiles.register(with: flutterViewController.registrar(forPlugin: "BackupFiles").messenger)
     super.awakeFromNib()
   }
 }
@@ -127,6 +128,63 @@ enum DeviceAuth {
       return "unavailable"
     default:
       return "failed"
+    }
+  }
+}
+
+// The Dart side is lib/backup/backup_service.dart. The save panel writes the
+// file straight to the place chosen and the open panel reads the file chosen;
+// the sandbox lets the app touch only those
+// (com.apple.security.files.user-selected.read-write), and nothing is copied
+// anywhere else.
+enum BackupFiles {
+  static func register(with messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(
+      name: "com.screendead.penchant/backup_files", binaryMessenger: messenger)
+    channel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "save":
+        guard let args = call.arguments as? [String: Any],
+          let bytes = args["bytes"] as? FlutterStandardTypedData,
+          let name = args["name"] as? String
+        else {
+          result(FlutterError(code: "arguments", message: "save needs bytes and a name", details: nil))
+          return
+        }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = name
+        panel.canCreateDirectories = true
+        panel.begin { response in
+          guard response == .OK, let url = panel.url else {
+            result(false)
+            return
+          }
+          do {
+            try bytes.data.write(to: url)
+            result(true)
+          } catch {
+            result(FlutterError(code: "write", message: error.localizedDescription, details: nil))
+          }
+        }
+      case "pick":
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.begin { response in
+          guard response == .OK, let url = panel.url else {
+            result(nil)
+            return
+          }
+          do {
+            result(FlutterStandardTypedData(bytes: try Data(contentsOf: url)))
+          } catch {
+            result(FlutterError(code: "read", message: error.localizedDescription, details: nil))
+          }
+        }
+      default:
+        result(FlutterMethodNotImplemented)
+      }
     }
   }
 }
