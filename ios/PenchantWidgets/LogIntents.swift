@@ -80,6 +80,9 @@ struct LogOneIntent: AppIntent {
     guard let found = snapshot.habit(habit.id) else { throw LogError.unknownHabit }
     guard let log = LogQueue.log(uid: uid, viceID: found.id) else { throw LogError.notSaved }
     LastLog.save(LastLog(id: log.id, viceID: found.id, at: log.createdAt))
+    #if os(iOS)
+      await NightOut.noted(log)
+    #endif
     reloadEverything()
     return .result(dialog: "Logged 1 \(found.unitOne) of \(found.name).")
   }
@@ -106,6 +109,9 @@ struct UndoLogIntent: AppIntent {
     else { return .result() }
     if LogQueue.undo(last, uid: uid) {
       LastLog.save(nil)
+      #if os(iOS)
+        await NightOut.forget(last.id)
+      #endif
     }
     reloadEverything()
     return .result()
