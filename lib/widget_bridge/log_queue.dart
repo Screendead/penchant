@@ -110,7 +110,9 @@ Future<_Written> _write(
       viceID: log.viceID,
       quantity: defaultQuantity,
       createdAt: log.createdAt,
-      loggedVia: LoggedVia.widget,
+      loggedVia: log.via == QueuedLog.viaWatch
+          ? LoggedVia.watch
+          : LoggedVia.widget,
     ),
     QueuedLogOp.delete => writes.deleteActivity(log.id),
   };

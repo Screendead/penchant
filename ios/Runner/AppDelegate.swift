@@ -14,6 +14,9 @@ import UserNotifications
     // the app delegate, which FlutterAppDelegate forwards to plugins.
     UNUserNotificationCenter.current().delegate = self
     BackgroundFlush.register()
+    // After the flush is registered: the system launches the app in the
+    // background to hand over a log from the watch.
+    WatchLink.shared.start()
     HealthChannel.Sync.start()
     PlacesChannel.start()
     // A night the app did not end (its morning passed, the person removed it

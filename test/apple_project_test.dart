@@ -76,6 +76,36 @@ void main() {
     expect(_png('assets/icon.png'), (width: 1024, height: 1024, alpha: false));
   });
 
+  // Flutter's tool reads the companion's bundle id from the Info.plist in the
+  // folder named after the watch target (IosProject.containsWatchCompanion),
+  // and only then leaves `-sdk` and `ARCHS` off xcodebuild, which a watchOS
+  // target cannot be built under.
+  test('the watch app names the iPhone app as its companion', () {
+    final String pbxproj = File(
+      'ios/Runner.xcodeproj/project.pbxproj',
+    ).readAsStringSync();
+    expect(pbxproj, contains('/* PenchantWatch */ = {'));
+    expect(
+      File('ios/PenchantWatch/Info.plist').readAsStringSync(),
+      contains(
+        '<key>WKCompanionAppBundleIdentifier</key>\n'
+        '\t<string>com.screendead.penchant</string>',
+      ),
+    );
+    expect(
+      pbxproj,
+      contains(
+        'PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant.watchkitapp;',
+      ),
+    );
+    expect(
+      File(
+        'ios/PenchantWatch/Assets.xcassets/AppIcon.appiconset/AppIcon.png',
+      ).readAsBytesSync(),
+      File('assets/icon.png').readAsBytesSync(),
+    );
+  });
+
   test('the iOS launch screen is the theme background, light and dark', () {
     final Map<String, dynamic> tokens =
         _json('lib/design/tokens.json')['color'] as Map<String, dynamic>;
@@ -106,10 +136,10 @@ void main() {
     test('every $platform target signs automatically for team $_team', () {
       final String pbxproj = '$platform/Runner.xcodeproj/project.pbxproj';
       final List<String> configs = _targetBuildSettings(pbxproj);
-      // Runner and PenchantWidgets (and macOS's RunnerTests, Flutter
-      // Assemble, PenchantMenuBar and PenchantSync), three configurations
-      // each.
-      expect(configs, hasLength(platform == 'ios' ? 6 : 18));
+      // Runner, PenchantWidgets, PenchantWatch and PenchantWatchWidgets (on
+      // macOS Runner, PenchantWidgets, RunnerTests, Flutter Assemble,
+      // PenchantMenuBar and PenchantSync), three configurations each.
+      expect(configs, hasLength(platform == 'ios' ? 12 : 18));
       for (final String settings in configs) {
         expect(settings, contains('CODE_SIGN_STYLE = Automatic;'));
         expect(settings, contains('DEVELOPMENT_TEAM = $_team;'));

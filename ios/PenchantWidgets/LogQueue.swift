@@ -26,8 +26,13 @@ struct QueuedLog: Codable, Equatable {
   // Milliseconds since the epoch: the tap, not the flush, so a log the app
   // writes hours later still lands on the day it was made.
   let createdAt: Double
+  // "watch" for a log from the Apple Watch (ios/Runner/WatchLink.swift), which
+  // the app stores as loggedVia watch; absent, a widget's.
+  var via: String?
 
   var date: Date { Date(timeIntervalSince1970: createdAt / 1000) }
+  // Its place in a set of queue entries: a log and its delete share an id.
+  var key: String { "\(op.rawValue):\(id)" }
 }
 
 // The one log a widget offers to undo, and until when; and to say what was
@@ -229,9 +234,13 @@ enum LogQueue {
   static func log(uid: String, viceID: String, at date: Date = Date()) -> QueuedLog? {
     let log = QueuedLog(
       op: .log, id: newID(), uid: uid, viceID: viceID, createdAt: (date.timeIntervalSince1970 * 1000).rounded())
-    guard modify({ $0.append(log) }) else { return nil }
+    return add(log) ? log : nil
+  }
+
+  static func add(_ log: QueuedLog) -> Bool {
+    guard modify({ $0.append(log) }) else { return false }
     requestFlush()
-    return log
+    return true
   }
 
   // Drops a log the app has not written yet, or asks it to delete one it has.
