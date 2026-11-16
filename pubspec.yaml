@@ -61,6 +61,8 @@ dependencies:
   # Ask your journal binds the system SQLite (/usr/lib/libsqlite3.dylib) through
   # dart:ffi itself: no native package, no build hook, nothing downloaded.
   ffi: 2.2.0
+  pdf: ^3.13.1
+  printing: ^5.15.1
 
 dev_dependencies:
   flutter_test:
@@ -107,6 +109,7 @@ flutter:
 
   assets:
     - assets/fonts/OFL.txt
+    - assets/fonts/pdf/
 
   # Variable fonts from github.com/google/fonts at 24ddc1f3 (ofl/redhat*), under
   # the SIL Open Font License in assets/fonts/OFL.txt. Bundled so that text
