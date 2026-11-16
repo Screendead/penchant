@@ -401,9 +401,11 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
 handover to do next rather than starting them yourself"; none is started). Each feature's card in
 `docs/pitch/round-24/next-ideas/pitch.html` is its spec; round 24's state is under "Calls waiting on Jack".
 
-- **N1. Re-run the entry reader trial.** Jack's run after #338 reached nothing (every call `401 invalid x-api-key`).
-  He runs `~/development/tracker-tools/run-trials.sh entry-reader-trial` with a fresh key; then read
-  `trials/entry-reader-trial.log` against its `expect:` lines and fix the prompt if a case still misses.
+- **N1. The entry reader's last misses.** Jack re-ran its trial after #338 (2026-11-16, 19 cases): the three
+  earlier mistakes are gone (a range is one entry at the lower number, "too many" and "a lot" give nothing, a
+  bottle or pitcher gives nothing). Left: a bare habit name ("Coffee") gives no entry where one now is expected;
+  two tags were wrong ("after lunch" on the ten o'clock coffee, "tonight" as `place/home`). Fix in the prompt
+  (`functions/entry_reader.js`), then Jack runs `~/development/tracker-tools/run-trials.sh entry-reader-trial`.
 - **N2. Ask your journal from Siri.** Probe first whether Ask can run in the headless engine a Siri intent gets
   (key loaded, sealed entries opened, the callable reached) before building the intent.
 - **N3. Log from an Apple Watch.** Signing probe first: whether Jack's team can sign a watchOS target with the
