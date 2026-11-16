@@ -15,11 +15,13 @@ class AccountData {
     required this.vices,
     required this.activities,
     this.dayNotes = const <StoredDocument>[],
+    this.urges = const <StoredDocument>[],
   });
 
   final List<StoredDocument> vices;
   final List<StoredDocument> activities;
   final List<StoredDocument> dayNotes;
+  final List<StoredDocument> urges;
 }
 
 // Thrown by signOut and deleteAccount when entries recorded on this device
@@ -69,6 +71,7 @@ class Account {
     'activities',
     'vices',
     'dayNotes',
+    'urges',
   ];
 
   User _signedInUser() {
@@ -187,6 +190,7 @@ class Account {
       vices: await _readOwned('vices', uid),
       activities: await _readOwned('activities', uid),
       dayNotes: await _readOwned('dayNotes', uid),
+      urges: await _readOwned('urges', uid),
     );
   }
 

@@ -26,6 +26,15 @@ class _FakeScheduler implements NudgeScheduler {
   Future<void> cancelHeavyDay() async => cancels++;
 
   @override
+  Future<void> scheduleUrgeCheck(String urgeID, DateTime at) async {}
+
+  @override
+  Future<void> cancelUrgeCheck(String urgeID) async {}
+
+  @override
+  Future<void> cancelUrgeChecks() async {}
+
+  @override
   Future<bool> requestPermission() async => grant;
 
   @override

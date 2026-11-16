@@ -49,15 +49,25 @@ const List<String> dayNoteContentFields = <String>[
   'followUpAnswer',
 ];
 
+// An urge's strength, time zone and outcome (lib/data/urge.dart). Born
+// sealed, like a day note.
+const List<String> urgeContentFields = <String>[
+  'strength',
+  'zone',
+  'outcome',
+  'outcomeAt',
+];
+
 const Map<String, List<String>> contentFields = <String, List<String>>{
   'vices': viceContentFields,
   'activities': activityContentFields,
   'dayNotes': dayNoteContentFields,
+  'urges': urgeContentFields,
 };
 
 /// Collections whose documents were sealed from their first write, so the
 /// first-launch migrator has nothing to seal there and never reads them.
-const Set<String> bornSealedCollections = <String>{'dayNotes'};
+const Set<String> bornSealedCollections = <String>{'dayNotes', 'urges'};
 
 /// Shown for a vice whose sealed fields this device cannot open.
 const String lockedViceName = 'Locked habit';
