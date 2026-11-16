@@ -16,6 +16,8 @@ import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/errors/firestore_errors.dart';
+import 'package:tracker/label/label_sheet.dart';
+import 'package:tracker/label/label_source.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/unarchived_vice_list_provider.dart';
@@ -392,6 +394,65 @@ void main() {
           ),
         }),
       ]);
+    });
+
+    testWidgets("a label's reading fills the fields; Save writes it", (
+      WidgetTester tester,
+    ) async {
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWith((ref) => AsyncData([legacy])),
+        labelSourceProvider.overrideWithValue(
+          const FakeLabelSource(<String>['Session IPA', '440ml', '5.2% ABV']),
+        ),
+      ], const EditVice(viceID: 'coffee'));
+      final Finder read = find.byKey(ViceForm.readLabelKey);
+      await tester.ensureVisible(read);
+      await tester.tap(read);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(LabelSheet.takeLabel));
+      await tester.pumpAndSettle();
+      expect(find.text('5.2%'), findsOneWidget);
+      expect(find.text('440 ml'), findsOneWidget);
+      // Nothing is written until the form is saved.
+      expect(writes.writes, isEmpty);
+      await tester.tap(find.text(LabelSheet.fillLabel));
+      await tester.pumpAndSettle();
+      expect(writes.writes, isEmpty);
+      expect(find.widgetWithText(TextFormField, '440'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, '5.2'), findsOneWidget);
+      await save(tester);
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{
+          'strength': HabitStrength.alcohol(
+            unit: StrengthUnit.ukUnit,
+            servingMl: 440,
+            abv: 5.2,
+          ),
+        }),
+      ]);
+    });
+
+    testWidgets('a caffeine label switches the form to caffeine', (
+      WidgetTester tester,
+    ) async {
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWith((ref) => AsyncData([legacy])),
+        labelSourceProvider.overrideWithValue(
+          const FakeLabelSource(<String>['Caffeine 32mg/100ml', '250 ml']),
+        ),
+      ], const EditVice(viceID: 'coffee'));
+      final Finder read = find.byKey(ViceForm.readLabelKey);
+      await tester.ensureVisible(read);
+      await tester.tap(read);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(LabelSheet.chooseLabel));
+      await tester.pumpAndSettle();
+      // The size alone is no caffeine figure: picking the caffeine drops it.
+      expect(find.text('80 mg'), findsOneWidget);
+      await tester.tap(find.text(LabelSheet.fillLabel));
+      await tester.pumpAndSettle();
+      expect(find.byKey(ViceForm.caffeineKey), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, '80'), findsOneWidget);
     });
 
     testWidgets('an untouched strength writes nothing; None clears it', (

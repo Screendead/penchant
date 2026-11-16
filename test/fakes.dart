@@ -7,6 +7,7 @@ import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/urge.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/label/label_source.dart';
 import 'package:tracker/providers/urge_provider.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/providers/day_note_provider.dart';
@@ -93,3 +94,18 @@ List<Override> habitOverrides(
     ]),
   ),
 ];
+
+// A label reader that "reads" [lines] from whichever photo is asked for.
+class FakeLabelSource implements LabelSource {
+  const FakeLabelSource(
+    this.lines, {
+    this.status = LabelScanStatus.read,
+  });
+
+  final List<String> lines;
+  final LabelScanStatus status;
+
+  @override
+  Future<LabelScan> scan(LabelPhoto from) async =>
+      (status: status, lines: lines);
+}

@@ -48,6 +48,28 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  // Tests run as neither iOS nor macOS: like the Mac, no label reader.
+  testWidgets('no label reader, no Read a label button', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          userProvider.overrideWith((ref) => Stream.value(FakeUser('u'))),
+        ],
+        child: MaterialApp(
+          theme: appTheme(Brightness.light),
+          home: const ViceForm(),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.text(ViceForm.strengthLabel),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.byKey(ViceForm.readLabelKey), findsNothing);
+  });
+
   testWidgets('Save on a locked habit says why it cannot save', (tester) async {
     final Vice v = fakeVice('v');
     final Vice locked = Vice(
