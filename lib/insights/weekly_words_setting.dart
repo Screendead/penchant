@@ -70,7 +70,7 @@ class WeeklyWordsSetting extends ConsumerWidget {
       'Habit B, with their units, including any you named. Your habits’ '
       'names, entries, notes, tags in your own words (only how many) and Health '
       'values are not sent (a mood finding is said in words); the names are put back on this device. Anthropic does not use it '
-      'for training. Switch this off to stop sending.';
+      'for training and deletes it within 30 days. Switch this off to stop sending.';
   static const String turnOn = 'Turn on';
   static const String notNow = 'Not now';
 

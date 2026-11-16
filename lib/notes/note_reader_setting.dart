@@ -63,7 +63,8 @@ class NoteReaderSetting extends ConsumerWidget {
   static const String disclosure =
       'When you write a note, its text is sent to Penchant’s server and on to '
       'Anthropic’s Claude, which suggests tags for you to confirm. Anthropic '
-      'does not use it for training. The note you save stays encrypted. '
+      'does not use it for training and deletes it within 30 days. The note '
+      'you save stays encrypted. '
       'Switch this off to stop sending notes.';
   static const String turnOn = 'Turn on';
   static const String notNow = 'Not now';

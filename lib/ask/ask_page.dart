@@ -1,56 +1,55 @@
-import 'dart:math';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/ask/ask_answer.dart';
+import 'package:tracker/ask/ask_chart.dart';
 import 'package:tracker/ask/ask_journal.dart';
-import 'package:tracker/ask/ask_query.dart';
-import 'package:tracker/ask/ask_runner.dart';
-import 'package:tracker/ask/describe_query.dart';
+import 'package:tracker/ask/journal_db.dart';
+import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
 import 'package:tracker/insights/insights_report.dart';
+import 'package:tracker/providers/day_note_provider.dart';
+import 'package:tracker/providers/show_day_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/widgets/dial_page.dart';
 
-/// A question asked this session, with what the server made of it. [habits]
-/// and [today] are those sent, so the query's habit indexes resolve against
-/// the same list.
+/// A question asked this session, with the server's answer once it comes.
 class AskedQuestion {
   const AskedQuestion({
     required this.id,
     required this.question,
-    required this.habits,
-    required this.today,
-    this.parsed,
+    this.answer,
     this.failed = false,
   });
 
   final int id;
   final String question;
-  final List<Vice> habits;
-  final DateTime today;
-  final AskParsed? parsed;
+  final AskAnswer? answer;
   final bool failed;
 
-  bool get pending => parsed == null && !failed;
+  bool get pending => answer == null && !failed;
 }
 
-/// The last few questions, newest first, in memory for this session only and
-/// forgotten when the signed-in user changes.
-final askHistoryProvider = NotifierProvider<AskHistory, List<AskedQuestion>>(
-  AskHistory.new,
+/// This session's questions, oldest first, in memory only: forgotten on "New
+/// question", and when the signed-in user changes.
+final askSessionProvider = NotifierProvider<AskSession, List<AskedQuestion>>(
+  AskSession.new,
 );
 
-class AskHistory extends Notifier<List<AskedQuestion>> {
-  static const int kept = 5;
+/// The turns a follow-up sends: the answered ones of [asked], oldest first.
+List<AskTurn> askHistory(List<AskedQuestion> asked) => <AskTurn>[
+  for (final AskedQuestion q in asked)
+    if (q.answer != null) AskTurn(q.question, q.answer!),
+];
 
+class AskSession extends Notifier<List<AskedQuestion>> {
   int _next = 0;
 
   @override
@@ -59,30 +58,30 @@ class AskHistory extends Notifier<List<AskedQuestion>> {
     return const <AskedQuestion>[];
   }
 
-  int start(String question, List<Vice> habits, DateTime today) {
+  int start(String question) {
     final int id = _next++;
     state = <AskedQuestion>[
-      AskedQuestion(id: id, question: question, habits: habits, today: today),
       ...state,
-    ].take(kept).toList();
+      AskedQuestion(id: id, question: question),
+    ];
     return id;
   }
 
-  void settle(int id, {AskParsed? parsed}) {
+  void settle(int id, AskAnswer? answer) {
     state = <AskedQuestion>[
       for (final AskedQuestion q in state)
         q.id == id
             ? AskedQuestion(
                 id: q.id,
                 question: q.question,
-                habits: q.habits,
-                today: q.today,
-                parsed: parsed,
-                failed: parsed == null,
+                answer: answer,
+                failed: answer == null,
               )
             : q,
     ];
   }
+
+  void clear() => state = const <AskedQuestion>[];
 }
 
 class AskPage extends ConsumerStatefulWidget {
@@ -91,15 +90,21 @@ class AskPage extends ConsumerStatefulWidget {
   static const String route = '/ask';
   static const String title = 'Ask your journal';
   static const String hint = 'When was my last week without wine?';
+  static const String followUpHint = 'Ask a follow-up';
   static const String off =
       'Asking is off. Turn on “Ask your journal” in Settings to ask a '
       'question about your habits.';
   static const String ask = 'Ask';
+  static const String newQuestion = 'New question';
   static const String working = 'Reading the question…';
   static const String counting = 'Counting…';
   static const String failed =
       'Couldn’t read the question just now. Nothing was counted.';
   static const String readFailed = 'Couldn’t read your journal on this device.';
+  static const String couldNotRun = 'Penchant couldn’t run that.';
+  static const String showQuery = 'Show query';
+  static const String hideQuery = 'Hide query';
+  static const String firstRows = 'Showing the first 500 rows.';
   static const String onDevice = 'Counted on this device';
   static const String insights =
       'That is a “why”, which Insights answers by comparison, and only when '
@@ -107,11 +112,11 @@ class AskPage extends ConsumerStatefulWidget {
   static const String openInsights = 'Open it in Insights';
   static const String cannot = 'Penchant can’t answer that yet.';
 
-  static String cannotDetail(AskReason? reason) => switch (reason) {
+  static String cannotDetail(AskReason reason) => switch (reason) {
     AskReason.notAboutJournal => 'It answers questions about your habits.',
     AskReason.unknownHabit => 'That doesn’t match one of your habits.',
     AskReason.notSupported => 'That is outside what it can count so far.',
-    AskReason.unclear || null => 'Try asking another way.',
+    AskReason.unclear || AskReason.none => 'Try asking another way.',
   };
 
   @override
@@ -121,10 +126,63 @@ class AskPage extends ConsumerStatefulWidget {
 class _AskPageState extends ConsumerState<AskPage> {
   final TextEditingController _controller = TextEditingController();
 
+  JournalDb? _db;
+  Object? _builtFrom;
+  Object? _failedFrom;
+  final Map<(int, int), AskRun> _runs = <(int, int), AskRun>{};
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual<String?>(
+      userProvider.select((AsyncValue<User?> user) => user.value?.uid),
+      (String? before, String? after) {
+        if (before != after) _drop();
+      },
+    );
+  }
+
   @override
   void dispose() {
+    _drop();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _drop() {
+    _db?.close();
+    _db = null;
+    _builtFrom = null;
+    _failedFrom = null;
+    _runs.clear();
+  }
+
+  /// The database for this exact read of the journal, built once per read.
+  JournalDb? _database(
+    List<Vice> vices,
+    List<ViceActivity> entries,
+    List<DayNote> notes,
+    DateTime today,
+  ) {
+    final Object key = (vices, entries, notes, today);
+    if (_db != null && _builtFrom == key) return _db;
+    // A build that failed is not tried again for the same read.
+    if (_failedFrom == key) return null;
+    _drop();
+    try {
+      _db = JournalDb.build(
+        vices: vices,
+        entries: entries,
+        notes: notes,
+        today: today,
+      );
+    } catch (_) {
+      // Not reported: nothing about the journal goes into a report.
+      _failedFrom = key;
+      return null;
+    }
+    _builtFrom = key;
+    return _db;
   }
 
   Future<void> _ask() async {
@@ -132,58 +190,308 @@ class _AskPageState extends ConsumerState<AskPage> {
     final List<Vice>? vices = ref.read(viceListProvider).value;
     final String question = _controller.text.trim();
     if (service == null || vices == null || question.isEmpty) return;
-    final List<Vice> habits = askHabits(vices);
+    final List<({int id, Vice vice})> sent = numberedHabits(
+      vices,
+    ).take(askHabits(vices).length).toList();
     final DateTime today = ref.read(todayProvider);
-    final AskHistory history = ref.read(askHistoryProvider.notifier);
-    final int id = history.start(question, habits, today);
+    final AskSession session = ref.read(askSessionProvider.notifier);
+    final List<AskTurn> history = askHistory(ref.read(askSessionProvider));
+    final int id = session.start(question);
     _controller.clear();
-    AskParsed? parsed;
+    AskAnswer? answer;
     try {
-      parsed = await service.ask(question, habits: habits, today: today);
+      answer = await service.ask(
+        question,
+        habits: sent,
+        today: today,
+        history: history,
+      );
     } catch (_) {
       // Not reported: a report would carry the question.
-      parsed = null;
+      answer = null;
     }
-    history.settle(id, parsed: parsed);
+    if (!mounted) return;
+    session.settle(id, answer);
   }
+
+  void _newQuestion() {
+    ref.read(askSessionProvider.notifier).clear();
+    _runs.clear();
+  }
+
+  void _openDay(DateTime day) =>
+      ref.read(pendingShowDayProvider.notifier).request(day);
 
   @override
   Widget build(BuildContext context) {
     final bool on = ref.watch(askJournalProvider) != null;
-    final bool habitsLoaded = ref.watch(viceListProvider).value != null;
-    final List<AskedQuestion> asked = ref.watch(askHistoryProvider);
-    final bool running = asked.any((AskedQuestion q) => q.parsed is AskRun);
+    final List<Vice>? vices = ref.watch(viceListProvider).value;
+    final List<AskedQuestion> asked = ref.watch(askSessionProvider);
     final DateTime today = ref.watch(todayProvider);
-    // Read only once a query needs entries; the same one-time read as
-    // Insights, so the same query shape and index.
-    final AsyncValue<List<ViceActivity>>? entries = running
+    // One read of the journal while the page is open and asking is on: the
+    // same one-time read and index as Insights.
+    final AsyncValue<List<ViceActivity>>? entries = on
         ? ref.watch(viceActivityRangeProvider(insightsRange(today)))
         : null;
-    final Map<String, HabitMark> marks = habitMarks(
-      ref.watch(viceListProvider).value ?? const <Vice>[],
-    );
+    final AsyncValue<List<DayNote>>? notes = on
+        ? ref.watch(allDayNotesProvider)
+        : null;
+    JournalDb? db;
+    bool buildFailed = false;
+    if (vices != null && entries?.value != null && notes?.value != null) {
+      db = _database(vices, entries!.value!, notes!.value!, today);
+      buildFailed = db == null;
+    }
+    final bool readFailed =
+        buildFailed ||
+        (entries?.hasError ?? false) ||
+        (notes?.hasError ?? false);
+    final Map<String, HabitMark> marks = habitMarks(vices ?? const <Vice>[]);
+    final Map<String, HabitMark> marksByName = <String, HabitMark>{
+      for (final Vice v in vices ?? const <Vice>[])
+        if (!v.locked && marks[v.id] != null) v.name: marks[v.id]!,
+    };
 
     return DialPage(
       title: AskPage.title,
       children: <Widget>[
         const SizedBox(height: DialSpace.l),
         if (!on)
-          _Note(AskPage.off)
-        else
+          const _Note(AskPage.off)
+        else ...<Widget>[
           _QuestionField(
             controller: _controller,
-            enabled: habitsLoaded,
+            enabled: vices != null,
+            hint: asked.isEmpty ? AskPage.hint : AskPage.followUpHint,
             onAsk: _ask,
           ),
-        for (final AskedQuestion q in asked) ...<Widget>[
+          if (asked.isNotEmpty)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: _newQuestion,
+                child: const Text(AskPage.newQuestion),
+              ),
+            ),
+        ],
+        for (final AskedQuestion q in asked.reversed) ...<Widget>[
           const SizedBox(height: DialSpace.l),
           _QuestionPill(q.question),
           const SizedBox(height: 8),
-          _AnswerCard(asked: q, entries: entries, marks: marks),
+          ..._answer(context, q, db, readFailed, marksByName),
         ],
       ],
     );
   }
+
+  List<Widget> _answer(
+    BuildContext context,
+    AskedQuestion q,
+    JournalDb? db,
+    bool readFailed,
+    Map<String, HabitMark> marksByName,
+  ) {
+    final TextStyle body = DialTypeScale.body.copyWith(
+      color: Theme.of(context).colorScheme.onSurface,
+    );
+    final TextStyle headline = DialTypeScale.displayM.copyWith(
+      fontWeight: FontWeight.w800,
+      color: Theme.of(context).colorScheme.onSurface,
+    );
+    final AskAnswer? answer = q.answer;
+    if (q.pending) {
+      return <Widget>[
+        _Card(children: <Widget>[Text(AskPage.working, style: body)]),
+      ];
+    }
+    if (answer == null) {
+      return <Widget>[
+        _Card(children: <Widget>[Text(AskPage.failed, style: body)]),
+      ];
+    }
+    switch (answer.kind) {
+      case AskKind.needsInsights:
+        return <Widget>[
+          _Card(
+            children: <Widget>[
+              Text(AskPage.insights, style: body),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pushNamed('/insights'),
+                  child: const Text(AskPage.openInsights),
+                ),
+              ),
+            ],
+          ),
+        ];
+      case AskKind.cannotAnswer:
+        return <Widget>[
+          _Card(
+            children: <Widget>[
+              Text(AskPage.cannot, style: headline),
+              const SizedBox(height: 4),
+              Text(AskPage.cannotDetail(answer.reason), style: body),
+            ],
+          ),
+        ];
+      case AskKind.answer:
+        return <Widget>[
+          for (final (int i, AskCard card) in answer.cards.indexed) ...<Widget>[
+            if (i > 0) const SizedBox(height: 8),
+            AskCardView(
+              card: card,
+              run: db == null
+                  ? null
+                  : _runs.putIfAbsent((q.id, i), () => db.run(card.sql)),
+              readFailed: readFailed,
+              marksByName: marksByName,
+              onOpenDay: _openDay,
+            ),
+          ],
+        ];
+    }
+  }
+}
+
+/// One card of an answer: its title and sentence as plain text, what its SQL
+/// found on this device (or that it could not run), and the SQL on request.
+class AskCardView extends StatefulWidget {
+  const AskCardView({
+    super.key,
+    required this.card,
+    required this.run,
+    required this.readFailed,
+    required this.marksByName,
+    required this.onOpenDay,
+  });
+
+  final AskCard card;
+
+  /// Null while the journal is still being read.
+  final AskRun? run;
+  final bool readFailed;
+  final Map<String, HabitMark> marksByName;
+  final ValueChanged<DateTime> onOpenDay;
+
+  @override
+  State<AskCardView> createState() => _AskCardViewState();
+}
+
+class _AskCardViewState extends State<AskCardView> {
+  bool _showQuery = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final DialColors colors = DialColors.of(context);
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextStyle body = DialTypeScale.body.copyWith(color: scheme.onSurface);
+    final AskRun? run = widget.run;
+    return _Card(
+      children: <Widget>[
+        Text(
+          widget.card.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: DialTypeScale.body.copyWith(
+            fontWeight: FontWeight.w700,
+            color: scheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          widget.card.explain,
+          style: DialTypeScale.bodyS.copyWith(color: colors.muted),
+        ),
+        const SizedBox(height: 10),
+        switch (run) {
+          null => Text(
+            widget.readFailed ? AskPage.readFailed : AskPage.counting,
+            style: body,
+          ),
+          AskRefused() => Text(AskPage.couldNotRun, style: body),
+          AskRan(:final AskRows rows, :final bool truncated) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              AskChart(
+                spec: widget.card.chart,
+                rows: rows,
+                marksByName: widget.marksByName,
+                onOpenDay: widget.onOpenDay,
+              ),
+              if (truncated) ...<Widget>[
+                const SizedBox(height: 4),
+                Text(
+                  AskPage.firstRows,
+                  style: DialTypeScale.bodyS.copyWith(color: colors.muted),
+                ),
+              ],
+            ],
+          ),
+        },
+        const SizedBox(height: 6),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                AskPage.onDevice.toUpperCase(),
+                style: DialTypeScale.label.copyWith(
+                  fontSize: 11,
+                  letterSpacing: 0.9,
+                  color: colors.muted,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => setState(() => _showQuery = !_showQuery),
+              child: Text(_showQuery ? AskPage.hideQuery : AskPage.showQuery),
+            ),
+          ],
+        ),
+        if (_showQuery)
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.surface2,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: SelectableText(
+                widget.card.sql,
+                style: DialTypeScale.monoL.copyWith(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  color: scheme.onSurface,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _Card extends StatelessWidget {
+  const _Card({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      border: Border.all(color: DialColors.of(context).line),
+      borderRadius: BorderRadius.circular(18),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      ),
+    ),
+  );
 }
 
 class _Note extends StatelessWidget {
@@ -205,11 +513,13 @@ class _QuestionField extends StatelessWidget {
   const _QuestionField({
     required this.controller,
     required this.enabled,
+    required this.hint,
     required this.onAsk,
   });
 
   final TextEditingController controller;
   final bool enabled;
+  final String hint;
   final VoidCallback onAsk;
 
   @override
@@ -227,7 +537,7 @@ class _QuestionField extends StatelessWidget {
             onSubmitted: (_) => onAsk(),
             style: DialTypeScale.body,
             decoration: InputDecoration(
-              hintText: AskPage.hint,
+              hintText: hint,
               counterText: '',
               filled: true,
               fillColor: colors.surface2,
@@ -281,214 +591,5 @@ class _QuestionPill extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _AnswerCard extends StatelessWidget {
-  const _AnswerCard({
-    required this.asked,
-    required this.entries,
-    required this.marks,
-  });
-
-  final AskedQuestion asked;
-  final AsyncValue<List<ViceActivity>>? entries;
-  final Map<String, HabitMark> marks;
-
-  @override
-  Widget build(BuildContext context) {
-    final DialColors colors = DialColors.of(context);
-    final TextStyle body = DialTypeScale.body.copyWith(
-      color: Theme.of(context).colorScheme.onSurface,
-    );
-    final TextStyle headline = DialTypeScale.displayM.copyWith(
-      fontWeight: FontWeight.w800,
-      color: Theme.of(context).colorScheme.onSurface,
-    );
-    final List<Widget> children = switch (asked.parsed) {
-      _ when asked.pending => <Widget>[Text(AskPage.working, style: body)],
-      _ when asked.failed => <Widget>[Text(AskPage.failed, style: body)],
-      AskNeedsInsights() => <Widget>[
-        Text(AskPage.insights, style: body),
-        const SizedBox(height: 10),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: FilledButton(
-            onPressed: () => Navigator.of(context).pushNamed('/insights'),
-            child: const Text(AskPage.openInsights),
-          ),
-        ),
-      ],
-      AskCannotAnswer(:final AskReason? reason) => <Widget>[
-        Text(AskPage.cannot, style: headline),
-        const SizedBox(height: 4),
-        Text(AskPage.cannotDetail(reason), style: body),
-      ],
-      AskRun(:final AskQuery query) => _answer(context, query, body, headline),
-      null => const <Widget>[],
-    };
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        border: Border.all(color: colors.line),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: children,
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _answer(
-    BuildContext context,
-    AskQuery query,
-    TextStyle body,
-    TextStyle headline,
-  ) {
-    final DialColors colors = DialColors.of(context);
-    final List<ViceActivity>? all = entries?.value;
-    final Widget words = Text(
-      describeQuery(query, asked.habits),
-      style: DialTypeScale.bodyS.copyWith(color: colors.muted),
-    );
-    if (all == null) {
-      return <Widget>[
-        Text(
-          entries?.hasError ?? false ? AskPage.readFailed : AskPage.counting,
-          style: body,
-        ),
-        const SizedBox(height: 8),
-        words,
-      ];
-    }
-    final AskAnswer answer = runAskQuery(
-      query,
-      habits: asked.habits,
-      activities: all,
-      today: asked.today,
-    );
-    return <Widget>[
-      Semantics(
-        liveRegion: true,
-        child: Text(answer.headline, style: headline),
-      ),
-      if (answer.detail != null) ...<Widget>[
-        const SizedBox(height: 4),
-        Text(answer.detail!, style: body),
-      ],
-      if (answer.bars != null && answer.bars!.isNotEmpty) ...<Widget>[
-        const SizedBox(height: 12),
-        AskBars(bars: answer.bars!, marks: marks),
-      ],
-      const SizedBox(height: 10),
-      words,
-      const SizedBox(height: 8),
-      Text(
-        AskPage.onDevice.toUpperCase(),
-        style: DialTypeScale.label.copyWith(
-          fontSize: 11,
-          letterSpacing: 0.9,
-          color: colors.muted,
-        ),
-      ),
-    ];
-  }
-}
-
-/// The answer's small chart: a bar per bucket in the habit's colour (ink for
-/// all habits together), an empty one as a hairline stub, the marked one
-/// ringed, and the first and last bars named underneath.
-class AskBars extends StatelessWidget {
-  const AskBars({super.key, required this.bars, required this.marks});
-
-  static const double height = 44;
-
-  final List<AskBar> bars;
-  final Map<String, HabitMark> marks;
-
-  @override
-  Widget build(BuildContext context) {
-    final DialColors colors = DialColors.of(context);
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    final double top = bars.map((AskBar b) => b.value).fold(0, max);
-    final TextStyle axis = DialTypeScale.monoL.copyWith(
-      fontSize: 11,
-      fontWeight: FontWeight.w500,
-      color: colors.muted,
-    );
-    Color colour(AskBar bar) {
-      final HabitMark? mark = bar.viceID == null ? null : marks[bar.viceID];
-      return mark == null ? scheme.onSurface : colors.habit(mark);
-    }
-
-    return Semantics(
-      label: bars
-          .map((AskBar b) => '${b.label}: ${_number(b.value)}')
-          .join('; '),
-      excludeSemantics: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          SizedBox(
-            height: height,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: <Widget>[
-                for (int i = 0; i < bars.length; i++) ...<Widget>[
-                  if (i > 0) const SizedBox(width: 4),
-                  Expanded(
-                    child: bars[i].value <= 0 || top <= 0
-                        ? Container(
-                            height: 6,
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: bars[i].marked
-                                    ? scheme.onSurface
-                                    : colors.line,
-                                width: bars[i].marked ? 1.5 : 1,
-                              ),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          )
-                        : Container(
-                            height: max(3, height * bars[i].value / top),
-                            decoration: BoxDecoration(
-                              color: colour(bars[i]),
-                              border: bars[i].marked
-                                  ? Border.all(
-                                      color: scheme.onSurface,
-                                      width: 1.5,
-                                    )
-                                  : null,
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(3),
-                              ),
-                            ),
-                          ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: <Widget>[
-              Expanded(child: Text(bars.first.label, style: axis)),
-              if (bars.length > 1)
-                Text(bars.last.label, style: axis, textAlign: TextAlign.end),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  static String _number(double v) {
-    final double r = (v * 100).round() / 100;
-    return r == r.roundToDouble() ? r.toInt().toString() : r.toString();
   }
 }

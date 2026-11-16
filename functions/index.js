@@ -353,18 +353,19 @@ exports.writeWeekly = onCall(CALLABLE, async (request) => {
   return { text, reason };
 });
 
-// A question about the journal turned into a query the device runs. Logs the
-// reason code only: never the uid, the question, the habits or the query.
-exports.askJournal = onCall(CALLABLE, async (request) => {
+// A question about the journal turned into SQL the device runs. Logs the
+// reason code only: never the uid, the question, the habits or the answer.
+// Its own timeout, above askJournal's 40 s request timeout.
+exports.askJournal = onCall({ ...CALLABLE, timeoutSeconds: 60 }, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to ask your journal.');
   requireVerified('askJournal', request.auth);
   const input = validInput(request.data);
   if (input == null) throw new HttpsError('invalid-argument', 'The question is not in the expected form.');
   const client = configuredClient('askJournal');
   takeCap('askJournal', askCap, request.auth.uid);
-  const { query, reason } = await askJournal(client, input);
+  const { answer, reason } = await askJournal(client, input);
   logger.info('askJournal', { reason });
-  return { query, reason };
+  return { answer, reason };
 });
 
 // A review of a chosen period of the journal, as the device built and showed
