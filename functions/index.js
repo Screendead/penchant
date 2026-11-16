@@ -15,6 +15,7 @@ const { summarise } = require('./summary.js');
 const { DailyCap, readNote, validNote, wantsQuestion } = require('./note_reader.js');
 const { validFigures, writeWeekly } = require('./weekly_words.js');
 const { askJournal, validInput } = require('./ask_journal.js');
+const tagTidy = require('./tag_tidy.js');
 const { verifiedCaller } = require('./caller.js');
 const letter = require('./letter.js');
 const analyst = require('./analyst.js');
@@ -286,6 +287,7 @@ const noteCap = new DailyCap();
 const askCap = new DailyCap(60);
 const weeklyCap = new DailyCap(10);
 const letterCap = new DailyCap(3);
+const tidyCap = new DailyCap(tagTidy.DAILY_CAP);
 // An investigation counts once, at its first step; later steps carry the
 // transcript from the device, which proves nothing, so steps are capped too.
 const investigationCap = new DailyCap(5);
@@ -345,6 +347,22 @@ exports.readNote = onCall(CALLABLE, async (request) => {
   }
   logger.info('readNote', fields);
   return asked ? { tags, reason, question } : { tags, reason };
+});
+
+// Merges of own-words tag labels and mappings onto starter tags, for the
+// person to approve on the device. Logs counts and the reason code only: never
+// the uid, the labels or the model's output. Its own timeout, above the SDK's
+// 25 s.
+exports.tidyTags = onCall({ ...CALLABLE, timeoutSeconds: 30 }, async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to tidy your tags.');
+  requireVerified('tidyTags', request.auth);
+  const labels = tagTidy.validLabels(request.data);
+  if (labels == null) throw new HttpsError('invalid-argument', 'The tags are not in the expected form.');
+  const client = configuredClient('tidyTags', 25000);
+  takeCap('tidyTags', tidyCap, request.auth.uid);
+  const { suggestions, dropped, reason } = await tagTidy.tidyTags(client, labels);
+  logger.info('tidyTags', { reason, labels: labels.length, suggestions: suggestions.length, dropped });
+  return { suggestions, reason };
 });
 
 // One paragraph in words over a week's figures. Logs the reason code only:
