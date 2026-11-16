@@ -761,5 +761,35 @@ do {
   check("only flow days have rows", rows.count == 2, "\(got)")
 }
 
+// entryWrite: only well-formed writes of the two kinds get through.
+do {
+  let good: [String: Any] = [
+    "kind": "caffeine", "syncID": "penchant.entry.abc", "habit": "penchant.habit.def",
+    "version": NSNumber(value: 1_763_300_000_000 as Int64), "value": NSNumber(value: 190.0),
+    "at": NSNumber(value: 1_763_290_000_000 as Int64),
+  ]
+  let write = HealthDays.entryWrite(good)
+  check("a caffeine write parses", write?.kind == "caffeine" && write?.value == 190, "\(String(describing: write))")
+  check("its time is the entry's", write?.at == Date(timeIntervalSince1970: 1_763_290_000), "\(String(describing: write))")
+  check("its version is kept whole", write?.version == 1_763_300_000_000, "\(String(describing: write))")
+  func with(_ key: String, _ value: Any?) -> [String: Any] {
+    var args = good
+    args[key] = value
+    return args
+  }
+  check("an alcohol write parses", HealthDays.entryWrite(with("kind", "alcohol"))?.kind == "alcohol")
+  check("another kind is refused", HealthDays.entryWrite(with("kind", "sleep")) == nil)
+  check("a foreign sync id is refused", HealthDays.entryWrite(with("syncID", "abc")) == nil)
+  check("a bare prefix is refused", HealthDays.entryWrite(with("syncID", "penchant.entry.")) == nil)
+  check("a habit tag must be one", HealthDays.entryWrite(with("habit", "penchant.entry.x")) == nil)
+  check("zero is refused", HealthDays.entryWrite(with("value", NSNumber(value: 0.0))) == nil)
+  check("a negative value is refused", HealthDays.entryWrite(with("value", NSNumber(value: -1.0))) == nil)
+  check("infinity is refused", HealthDays.entryWrite(with("value", NSNumber(value: Double.infinity))) == nil)
+  check("a missing version is refused", HealthDays.entryWrite(with("version", nil)) == nil)
+  check("a version of 0 is refused", HealthDays.entryWrite(with("version", NSNumber(value: 0))) == nil)
+  check("a missing time is refused", HealthDays.entryWrite(with("at", nil)) == nil)
+  check("no arguments is refused", HealthDays.entryWrite(nil) == nil)
+}
+
 if failures > 0 { exit(1) }
 print("ok")
