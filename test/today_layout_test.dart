@@ -102,7 +102,7 @@ void main() {
     for (final Element e in find.byType(MenuItemButton).evaluate()) {
       expect(tester.getRect(find.byWidget(e.widget)).height, 44);
     }
-    expect(find.byType(MenuItemButton), findsNWidgets(3));
+    expect(find.byType(MenuItemButton), findsNWidgets(4));
     final Rect card = tester.getRect(
       find
           .ancestor(

@@ -1012,6 +1012,21 @@ them is unknown, and in simulation (#296) photos set off by a habit raised false
 counting only the hours they cover, with too few days to find a real difference. They only find and name places;
 `roughLocationOfPlaces` ignores them too.
 
+**Note search** (`lib/notes/note_search_page.dart`, `/search`, from the Penchant menu and the Mac's Edit > Find,
+Cmd-F, which `MyApp` hands `AppMenuBar` while someone is signed in and the app is not covered). It searches entry
+notes, day notes and saved follow-up answers on the device, from the whole-journal read and `allDayNotesProvider`;
+locked items are skipped and counted. Word search (`lib/notes/note_search.dart`, pure) folds case and diacritics
+(`FoldedText` keeps each folded unit's span of the original for highlights), drops English stop words unless the
+query is nothing else, lets a word of three letters or more match words it begins, and ranks every word (or the
+query as written) above some words (more of them first), recent first within each; results group by day and open
+the entry editor or day note sheet by their routes. Meaning search (`lib/notes/note_meaning.dart`) asks
+`ios/Runner/SentenceEmbeddingChannel.swift` (both Runners) for Apple's `NLEmbedding.sentenceEmbedding` in the
+device's first language, embeds notes lazily in batches of 64, keeps the vectors in memory for the signed-in uid,
+and adds notes matching no word from cosine 0.40, below every word match under "Close in meaning". It is off by
+default behind a per-device switch on the page (`noteSearchMeaning`), shown only where the embedding exists:
+on `tools/note-search-trial.swift`'s made-up notes it put an expected note in the top 3 for 8 of 15 queries against
+words' 10 and combined 11, and 1 of its 25 meaning-only results was expected. Keep that script's rules in step.
+
 **Daylight** (`lib/insights/daylight.dart`, no network, no permission of its own). A `RoughLocation`, whole degrees,
 held in memory only: the place with the most stay time (`roughLocationOfPlaces`), else the device time zone's city
 (`deviceTimeZoneProvider`, `flutter_timezone`, 2 s timeout; `lib/insights/zone_locations.dart`, generated from the
