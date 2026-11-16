@@ -1,82 +1,41 @@
 {
   "type": "object",
+  "additionalProperties": false,
   "properties": {
-    "kind": { "type": "string", "enum": ["query", "needs_insights", "cannot_answer"] },
+    "kind": { "type": "string", "enum": ["answer", "needs_insights", "cannot_answer"] },
     "reason": {
       "type": "string",
       "enum": ["none", "not_about_journal", "unknown_habit", "not_supported", "unclear"]
     },
-    "habit": { "anyOf": [{ "type": "integer" }, { "type": "null" }] },
-    "measure": { "type": "string", "enum": ["amount", "entries", "days_with", "days_without", "spend"] },
-    "period": { "$ref": "#/$defs/period" },
-    "filter": { "$ref": "#/$defs/filter" },
-    "shape": { "type": "string", "enum": ["total", "series", "last_time", "longest", "compare"] },
-    "bucket": { "anyOf": [{ "type": "string", "enum": ["day", "week", "month"] }, { "type": "null" }] },
-    "condition": { "anyOf": [{ "type": "string", "enum": ["none", "any", "above", "below"] }, { "type": "null" }] },
-    "threshold": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
-    "longest": { "anyOf": [{ "type": "string", "enum": ["gap", "run_with", "run_without"] }, { "type": "null" }] },
-    "versus": { "anyOf": [{ "$ref": "#/$defs/side" }, { "type": "null" }] }
+    "cards": { "type": "array", "items": { "$ref": "#/$defs/card" } }
   },
-  "required": [
-    "kind",
-    "reason",
-    "habit",
-    "measure",
-    "period",
-    "filter",
-    "shape",
-    "bucket",
-    "condition",
-    "threshold",
-    "longest",
-    "versus"
-  ],
-  "additionalProperties": false,
+  "required": ["kind", "reason", "cards"],
   "$defs": {
-    "period": {
+    "card": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
-        "type": {
+        "title": { "type": "string" },
+        "explain": { "type": "string" },
+        "sql": { "type": "string" },
+        "chart": { "$ref": "#/$defs/chart" }
+      },
+      "required": ["title", "explain", "sql", "chart"]
+    },
+    "chart": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["number", "bar", "line", "table"] },
+        "x": { "type": "string" },
+        "y": { "type": "array", "items": { "type": "string" } },
+        "series": { "type": "string" },
+        "x_kind": {
           "type": "string",
-          "enum": [
-            "last_days",
-            "last_weeks",
-            "last_months",
-            "this_week",
-            "last_week",
-            "this_month",
-            "last_month",
-            "between",
-            "all_time"
-          ]
-        },
-        "count": { "anyOf": [{ "type": "integer" }, { "type": "null" }] },
-        "from": { "anyOf": [{ "type": "string", "format": "date" }, { "type": "null" }] },
-        "to": { "anyOf": [{ "type": "string", "format": "date" }, { "type": "null" }] }
+          "enum": ["day", "week", "month", "year", "hour", "weekday", "category", "none"]
+        }
       },
-      "required": ["type", "count", "from", "to"],
-      "additionalProperties": false
-    },
-    "filter": {
-      "type": "object",
-      "properties": {
-        "weekdays": { "type": "array", "items": { "type": "integer" } },
-        "from_hour": { "anyOf": [{ "type": "integer" }, { "type": "null" }] },
-        "to_hour": { "anyOf": [{ "type": "integer" }, { "type": "null" }] },
-        "tag": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
-      },
-      "required": ["weekdays", "from_hour", "to_hour", "tag"],
-      "additionalProperties": false
-    },
-    "side": {
-      "type": "object",
-      "properties": {
-        "habit": { "anyOf": [{ "type": "integer" }, { "type": "null" }] },
-        "period": { "$ref": "#/$defs/period" },
-        "filter": { "$ref": "#/$defs/filter" }
-      },
-      "required": ["habit", "period", "filter"],
-      "additionalProperties": false
+      "required": ["type", "x", "y", "series", "x_kind"]
     }
   }
 }
