@@ -415,20 +415,26 @@ handover to do next rather than starting them yourself"; none is started). Each 
   `analyst-trial`, `tag-tidy-trial`). The key comes from the session's environment, which Jack sets up; never
   print, log or commit it. Run only the trial for the prompt that changed: the Haiku ones are a few dozen short
   calls; `letter-review` and `analyst-trial` use Opus and cost far more, so only when their code changed.
-- **N2. Ask your journal from Siri.** Probed 2026-11-16 (no code): an Ask intent would run in Penchant's process, in
-  the same kind of headless engine as the background flush, which signs in and loads the key; the journal key and the
-  Auth user are both after-first-unlock keychain items, so readable on a locked phone. Read from code and Apple's
-  docs, not proven on a device. Being built: the intent that takes a question and opens Ask with it asked
-  (`feat/ask-from-siri`), which either design needs. **Jack's call:** whether Siri also speaks the answer without
-  opening the app (about 4 days more: Ask moved out of its page into a headless entry point, the spoken sentence
-  built on the phone from a single-number card, since the model never sees results; a cold start plus Ask's call of
-  up to 40 s against Siri's patience is unmeasured, and a spoken answer skips the app lock unless the intent asks
-  for Face ID).
-- **N3. Log from an Apple Watch.** Signing probed 2026-11-16: a watchOS app `com.screendead.penchant.watchkitapp`
-  with App Group `group.com.screendead.penchant` signed on team `8N575942RT` with `-allowProvisioningUpdates` (local
-  branch `probe/watch-signing`, `tools/probe-watch-signing.rb`). The complication's extension is probed by the build.
-  Being built on `feat/watch-app`. The profile runs a year, as every profile of this team already did when Focus and
-  Journaling Suggestions were refused (2026-11-12), so it says nothing new about the team.
+- **N2. Ask your journal from Siri.** First half merged 2026-11-16 (#351): "Ask Penchant" makes Siri ask for the
+  question (a phrase cannot carry free text: Xcode refuses a String parameter in one), then opens Ask with it asked
+  as if typed; with Ask off, a guest or unverified email, or an emulator build, it opens the place that says why and
+  sends nothing. Nothing of it is proven on a device (Siri, the cold-launch hand-off, behind the app lock).
+  **Jack's call, pitched:** whether Siri also speaks the answer without opening the app (about 4 days more: Ask
+  moved out of its page into a headless entry point, the spoken sentence built on the phone from a single-number
+  card, since the model never sees results; a cold start plus Ask's call of up to 40 s against Siri's patience is
+  unmeasured, and a spoken answer skips the app lock unless the intent asks for Face ID). The probe (no code): an
+  intent runs in Penchant's process, in the same kind of headless engine as the background flush, and the journal
+  key and Auth user are after-first-unlock keychain items.
+- **N3. Log from an Apple Watch.** Built, PR #350 (`feat/watch-app`), green, **held for Jack**: nothing has run on
+  a watch or a watch simulator (no watchOS simulator runtime on this Mac; the views are rendered on macOS instead,
+  `docs/pitch/round-24/watch/`), installing `master` with it puts a watch app on his paired watch, and one call is
+  his: the watch holds the account's uid and sends it with each log (as built), or a random per-sign-in token
+  (about half a day). Signing: the watch app and its complication extension
+  (`com.screendead.penchant.watchkitapp`, `.watchkitapp.widgets`) sign on team `8N575942RT` with the App Group. The
+  team's profiles ran a year already when Focus and Journaling Suggestions were refused (2026-11-12), so that says
+  nothing new about the team. Logging from the watch face is two taps (Apple allows buttons in accessory widgets on
+  iPhone and iPad only). On a `project.pbxproj` conflict take `master`'s file and re-run
+  `tools/add-watch-target.rb`; `flutter build ios --simulator` needs `-d <udid>` once it is merged.
 - ~~**N4. Insights: urges at entries against urges at random check-ins.**~~ Done (#348): per habit, by day, over
   days holding both an answered check-in and an entry with an urge (14 at least); a check-in's 0 is read as 1; floor
   one point; in the page's family; check-ins read once per open by `ownerID` alone (no index); saved report format
