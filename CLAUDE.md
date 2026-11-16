@@ -266,7 +266,47 @@ exchanges; the rule, organization, service account and workspace ids are reposit
 writes to `functions/.env.screendead-vice-tracker` at deploy (unset, it answers `failed-precondition`). Abuse is
 bounded by `maxInstances: 2`, 60 reads a day per uid per instance in memory, and the workspace's spend and rate
 limits in the Claude Console. `functions/tools/note-reader-trial.js` runs 12 made-up notes through the same prompt
-with an API key from the environment.
+with an API key from the environment. Only an account with a verified email may use Claude (Jack, 2026-11-15:
+"Yes, refuse guests"), here and in the three features below: `claudeAllowedProvider`
+(`lib/account/claude_access.dart`: the profile's `emailVerified` by `select`, and `Account.isGuest`) makes every
+Claude provider null otherwise, and each Settings row is then off with "Add and verify an email address first.",
+opening Account Settings. Each callable refuses a guest or an unverified email with `permission-denied`
+(`verifiedCaller`, `functions/caller.js`) before its cap and any model call; since a token minted before verification
+still says unverified, `callClaude` refreshes the ID token once on that answer and calls again.
+
+**Follow-up question** (`lib/notes/follow_up*.dart`, off by default; Settings' "Ask one question about a note",
+`FollowUpSetting`, under the note reader's switch and without effect while it is off). With it on, the note reader's
+call sends `question: true` beside the same note, nothing more, and `readNote` returns `question: {question, quote}`
+or null; `checkQuestion` (`functions/note_reader.js`) drops any question over 140 UTF-16 units, with a line break, not
+ending in its one `?`, with a digit or a `DENIED_TERMS` word, or whose quote (at most 120) is not in the note, and the
+device checks again (`questionIn`). One call answers tags and question, so it counts once against the cap. The panels
+(`NotePanels`) add a panel after the tags, "One more, if you like", once a question has come; Skip clears the answer and saves
+nothing. An answer (at most 500) is stored with its question and quote as the sealed content fields
+`followUpQuestion`, `followUpQuote`, `followUpAnswer` of the entry or day note, only when typed; the entry editor and
+the day note sheet show it (`SavedFollowUp`). The function logs whether a question came and its drop code before any
+colon (`term:x` logs `term`). `functions/tools/follow-up-review.js` runs 40 made-up notes with an API key.
+
+**Weekly review in words** (`lib/insights/weekly_words.dart`, off by default; Settings' "Last week in words",
+`WeeklyWordsSetting`). `WeeklyFigures.of` sends the callable `writeWeekly` the week's computed figures alone: each
+habit under a placeholder ("Habit A") with its unit words, totals and counts as numerals, busiest hours, tag paths
+and counts, own-words counts and Insights finding lines; never a habit name, note or entry. `functions/weekly_words.js`
+(`validFigures`, then Claude Sonnet 5.5) asks for 3 to 5 sentences stating only the figures; `checkParagraph` refuses
+a reply with a numeral not sent, an unknown placeholder or a number word, and the device runs the same check
+(`checkParagraph` in Dart) before `restoreNames` puts the names back in by placeholder, on the device. The paragraph shows on
+`WeeklyReviewPage` above the lists; each week's answer is kept in memory for the provider's life, so reopening never
+calls again; nothing is stored. Cap 10 a day per uid per instance; logs the reason code only.
+`functions/tools/weekly-words-trial.js` runs made-up weeks with an API key.
+
+**Ask your journal** (`lib/ask/`, off by default; Settings' "Ask your journal", `AskJournalSetting`; `AskPage`, route
+`/ask`, in the Penchant menu while the switch is on). The callable `askJournal` gets the typed question (1 to 300),
+today's date and weekday, and each habit's name, unit and archived flag (oldest first, locked or blank names left
+out); never an entry, note or tag. `functions/ask_journal.js` (`validInput`, then Claude Haiku 5.5, structured output
+over `functions/ask_query_schema.json`) answers `{query, reason}`: a `query`, `needs_insights` (a why question) or
+`cannot_answer`. The model never sees the data: the device checks the query (`lib/ask/ask_query.dart`, against the
+same schema by test) and runs it over the entries it reads itself (`ask_runner.dart`, Insights' range), showing a
+sentence, the query in words (`describe_query.dart`) and a small chart. Questions live in memory for the session,
+cleared on user change; nothing is stored. Cap 60 a day per uid per instance; logs the reason code only.
+`functions/tools/ask-journal-trial.js` runs made-up questions with an API key.
 
 Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account` (`lib/account/account.dart`):
 sign-in, register (plus verification email), anonymous guest start, linking a guest to email and password (same uid,
@@ -336,7 +376,8 @@ offline log with its sync time); `loggedVia` `oneTap`, `sheet` or `widget` (onbo
 `sheet`). A missing or mistyped value parses as absent; `zone`, `writtenAt` and `loggedVia` are set on create and
 never edited. The amount sheet and editor (`AmountFields`) and the picker after a log (`askWhatWasGoingOn`) ask for
 urge and note (`lib/widgets/urge_note_fields.dart`); the sheet's own picker asks triggers only. `answersTooLong`
-refuses answers whose JSON beside the longest silent fields would pass the envelope's 4094 bytes. Insights does not
+refuses answers whose JSON beside the longest silent fields would pass the envelope's 4094 bytes. It also holds the
+optional `followUpQuestion`, `followUpQuote` and `followUpAnswer` (Follow-up question), sealed only. Insights does not
 yet read any of them (it still places an entry abroad on the viewer's hour); the export appends `urge`, `note`,
 `time_zone`, `written_at`, `logged_via` after `triggers`. An older build that edits an entry's triggers rebuilds the
 envelope from its triggers alone and drops the rest (accepted, Jack, 2026-11-13).
@@ -352,7 +393,8 @@ the 40 paths shipped first. The picker (`TriggerChoices`) has one field that sea
 and adds the typed text as own words when no label matches it exactly.
 
 **Day notes** (round 20). `dayNotes/{uid}_{yyyy-MM-dd}`: plaintext `ownerID`, `day` (the local day asked about),
-`createdAt`, and `sealed` holding `text` (1 to 2000 UTF-16 units) and `triggers`; born sealed, so the rules refuse any
+`createdAt`, and `sealed` holding `text` (1 to 2000 UTF-16 units), `triggers` and the optional `followUpQuestion`,
+`followUpQuote`, `followUpAnswer` (Follow-up question); born sealed, so the rules refuse any
 other field, require the id to be the writer's uid and the day, and let an update change `sealed` alone.
 `DayNote` (`lib/data/day_note.dart`), `TrackerWrites.setDayNote` (a create unless passed the note it replaces) and
 `deleteDayNote`, the provider chain in `lib/providers/day_note_provider.dart`. Account deletion, the guest sweep and
@@ -584,7 +626,10 @@ today; a slider to a screen reader, arrow and page keys) over an `EntryTimeContr
 so an untouched new entry is logged at the moment of saving, to the second. The day under the dial opens the
 `CalendarSheet` to move the entry to another day.
 
-**Server side.** Two scheduled functions in `functions/index.js`, and the callable `readNote` (Note reader). `monthlySummaries` (03:00 UTC on the 1st;
+**Server side.** Two scheduled functions in `functions/index.js`, and the callables `readNote` (Note reader,
+Follow-up question), `writeWeekly` (Weekly review in words) and `askJournal` (Ask your journal), each requiring
+sign-in and a verified, non-guest account (`permission-denied`), answering `failed-precondition` until the Anthropic federation is set, with its own `DailyCap`, and sharing
+`maxInstances: 2`, 15 s, 256 MiB and the `note-reader@` service account. `monthlySummaries` (03:00 UTC on the 1st;
 `r8-bead-size`) writes `summaries/{uid}` for every user owning a vice: `{computedAt, windowDays: 90, vices: {viceID:
 {typical, count}}}`, the median positive quantity of their last 90 days of activities and the entries it covers
 (`functions/summary.js`, same median as `typicalQuantity` in `lib/data/dial_layout.dart`). It reads only `viceID` and

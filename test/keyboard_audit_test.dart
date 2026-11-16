@@ -10,6 +10,9 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/account/account_copy.dart';
+import 'package:tracker/ask/ask_journal.dart';
+import 'package:tracker/ask/ask_page.dart';
+import 'package:tracker/ask/ask_query.dart';
 import 'package:tracker/account/password_prompt.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/authenticate.dart';
@@ -27,6 +30,8 @@ import 'package:tracker/insights/places_source.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/main.dart' show generateRoute;
 import 'package:tracker/notes/day_note_route.dart';
+import 'package:tracker/notes/follow_up.dart';
+import 'package:tracker/notes/note_reader.dart';
 import 'package:tracker/journal_key/recovery_key_state.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/offline_provider.dart';
@@ -484,6 +489,48 @@ void main() {
     );
   });
 
+  testWidgets('follow-up question panel', (WidgetTester tester) async {
+    const String text = 'Went straight to the pub with Sam';
+    _report(
+      await _audit(
+        tester,
+        surface: 'follow-up question panel',
+        open: (WidgetTester t) => _openRoute(
+          t,
+          <Override>[
+            ..._entryOverrides(),
+            noteReaderProvider.overrideWithValue(
+              _QuestionReader((
+                question: 'Was that already the plan this morning?',
+                quote: 'straight to the pub',
+              )),
+            ),
+          ],
+          (BuildContext c) => showWhatWasGoingOn(
+            c,
+            viceID: _coffee.id,
+            viceName: _coffee.name,
+            onUndoLog: () {},
+          ),
+        ),
+        fields: <_Field>[
+          _Field('answer', (WidgetTester t) async {
+            await t.enterText(find.byKey(NoteField.fieldKey), text);
+            await (_after(
+              find.byKey(NotePanels.nextKey),
+              find.byKey(NotePanels.answerKey),
+            ))(t);
+            return (_after(
+              find.byKey(NotePanels.nextKey),
+              find.byKey(NotePanels.answerKey),
+            ))(t);
+          }),
+        ],
+        action: find.byKey(NotePanels.nextKey),
+      ),
+    );
+  });
+
   testWidgets('day note sheet', (WidgetTester tester) async {
     Future<Finder> Function(WidgetTester) onTags(Finder tap, Finder field) =>
         (WidgetTester t) async {
@@ -581,6 +628,28 @@ void main() {
           ),
         ],
         action: find.widgetWithText(TextButton, 'Save'),
+      ),
+    );
+  });
+
+  testWidgets('ask your journal', (WidgetTester tester) async {
+    _report(
+      await _audit(
+        tester,
+        surface: 'ask your journal',
+        open: (WidgetTester t) async {
+          await t.pumpWidget(
+            _host(<Override>[
+              ...habitOverrides(<Vice>[_coffee]),
+              userProvider.overrideWith((ref) => Stream.value(FakeUser('u'))),
+              offlineProvider.overrideWith((ref) => Stream.value(false)),
+              askJournalProvider.overrideWithValue(_NeverAsk()),
+            ], home: const AskPage()),
+          );
+          await t.pump();
+        },
+        fields: <_Field>[_Field('question', _plain(find.byType(TextField)))],
+        action: find.widgetWithText(FilledButton, AskPage.ask),
       ),
     );
   });
@@ -891,4 +960,25 @@ class _NoActions implements RecoveryKeyActions {
 
   @override
   Future<void> startNewJournal() async {}
+}
+
+class _QuestionReader implements QuestioningNoteReader {
+  _QuestionReader(this.asked);
+
+  final NoteQuestion asked;
+
+  @override
+  Stream<ReadTag> read(String note) => const Stream<ReadTag>.empty();
+
+  @override
+  Future<NoteQuestion?> question(String note) async => asked;
+}
+
+class _NeverAsk implements AskJournal {
+  @override
+  Future<AskParsed> ask(
+    String question, {
+    required List<Vice> habits,
+    required DateTime today,
+  }) async => const AskCannotAnswer(null);
 }

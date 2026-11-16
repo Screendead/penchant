@@ -11,6 +11,7 @@ import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
+import 'package:tracker/notes/follow_up.dart';
 
 enum WriteOp { create, update, delete }
 
@@ -434,6 +435,7 @@ class TrackerWrites {
     required String day,
     required String text,
     List<String> triggers = const <String>[],
+    FollowUp? followUp,
     DayNote? replacing,
   }) {
     final FieldSealer sealer = _createSealer();
@@ -448,7 +450,7 @@ class TrackerWrites {
         _sealing(
           sealer,
           note,
-          dayNoteContent(text: text, triggers: triggers),
+          dayNoteContent(text: text, triggers: triggers, followUp: followUp),
           (Blob envelope) => replacing == null
               ? note.set({
                   sealedField: envelope,

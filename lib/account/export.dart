@@ -8,6 +8,7 @@ import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/activity_triggers.dart';
+import 'package:tracker/notes/follow_up.dart';
 
 @immutable
 class ExportFile {
@@ -60,6 +61,9 @@ const List<String> csvHeader = <String>[
   'time_zone',
   'written_at',
   'logged_via',
+  'follow_up_question',
+  'follow_up_quote',
+  'follow_up_answer',
 ];
 
 // One row per activity, oldest first. An activity whose vice is gone keeps
@@ -94,13 +98,24 @@ String exportCsv(AccountData data) {
         content.zone,
         _plain(content.writtenAt),
         content.loggedVia?.name,
+        content.followUp?.question,
+        content.followUp?.quote,
+        content.followUp?.answer,
       ]),
     );
   }
   return csv.toString();
 }
 
-const List<String> dayNotesCsvHeader = <String>['day', 'text', 'triggers'];
+const List<String> dayNotesCsvHeader = <String>[
+  'day',
+  'text',
+  'triggers',
+  // Added later, so they come last and older columns keep their places.
+  'follow_up_question',
+  'follow_up_quote',
+  'follow_up_answer',
+];
 
 // One row per day note, by day. A note that would not open keeps its day and
 // leaves the rest blank; the JSON keeps its envelope.
@@ -110,11 +125,15 @@ String exportDayNotesCsv(AccountData data) {
   final StringBuffer csv = StringBuffer()..write(_csvRow(dayNotesCsvHeader));
   for (final StoredDocument note in notes) {
     final Object? text = note.data['text'];
+    final FollowUp? followUp = FollowUp.read(note.data);
     csv.write(
       _csvRow(<Object?>[
         note.data['day'],
         text is String ? text : null,
         readTriggers(note.data[triggersField]).join('; '),
+        followUp?.question,
+        followUp?.quote,
+        followUp?.answer,
       ]),
     );
   }

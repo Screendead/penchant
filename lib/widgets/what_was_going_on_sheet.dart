@@ -3,15 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/design/tokens.dart';
+import 'package:tracker/notes/follow_up.dart';
 import 'package:tracker/widgets/note_panels.dart';
 import 'package:tracker/widgets/trigger_picker.dart';
 import 'package:tracker/widgets/urge_note_fields.dart';
 
 /// What the panels close with on Done.
-typedef WhatWasGoingOnPick = ({List<String> triggers, int? urge, String? note});
+typedef WhatWasGoingOnPick = ({
+  List<String> triggers,
+  int? urge,
+  String? note,
+  FollowUp? followUp,
+});
 
 /// Opens the panels after a log of [viceID]: a note, the tags (read from the
-/// note when a [NoteReader] is there, else picked by hand) and the urge.
+/// note when a [NoteReader] is there, else picked by hand), the follow-up
+/// question when the reader asked one, and the urge.
 /// Returns null when dismissed without Done. With [onUndoLog] every panel
 /// offers Undo log, which closes it with null and calls that. With [at], the
 /// entry's time, the tags panel offers what the calendar suggests.
@@ -45,7 +52,8 @@ Future<WhatWasGoingOnPick?> showWhatWasGoingOn(
   ),
 );
 
-/// Three panels moved only by Back and Next, each with Done.
+/// Three panels moved only by Back and Next, each with Done, and a fourth
+/// after the tags when the reader asks a follow-up question.
 class WhatWasGoingOnSheet extends ConsumerStatefulWidget {
   const WhatWasGoingOnSheet({
     super.key,
@@ -80,6 +88,9 @@ class WhatWasGoingOnSheet extends ConsumerStatefulWidget {
   static const String noneReadLine = NotePanels.noneReadLine;
   static const String failedLine = NotePanels.failedLine;
   static const Duration readTimeout = NotePanels.readTimeout;
+  static const Key answerKey = NotePanels.answerKey;
+  static const Key skipKey = NotePanels.skipKey;
+  static const String followUpTitle = NotePanels.followUpTitle;
 
   @override
   ConsumerState<WhatWasGoingOnSheet> createState() =>
@@ -93,7 +104,7 @@ class _WhatWasGoingOnSheetState extends NotePanelsState<WhatWasGoingOnSheet> {
   String get title => 'What was going on?';
 
   @override
-  int get panelCount => WhatWasGoingOnSheet.panels;
+  int get basePanelCount => WhatWasGoingOnSheet.panels;
 
   @override
   List<String> get initial => widget.initial;
@@ -113,9 +124,15 @@ class _WhatWasGoingOnSheetState extends NotePanelsState<WhatWasGoingOnSheet> {
   @override
   void done() {
     final String? text = storedNote(note.text);
+    final FollowUp? answered = followUp;
     final String? tooLong =
         noteError(text) ??
-        answersTooLong(triggers: selected, urge: urge, note: text);
+        answersTooLong(
+          triggers: selected,
+          urge: urge,
+          note: text,
+          followUp: answered,
+        );
     if (tooLong != null) {
       setState(() => error = tooLong);
       return;
@@ -125,6 +142,7 @@ class _WhatWasGoingOnSheetState extends NotePanelsState<WhatWasGoingOnSheet> {
       triggers: List<String>.of(selected),
       urge: urge,
       note: text,
+      followUp: answered,
     ));
   }
 
@@ -132,7 +150,7 @@ class _WhatWasGoingOnSheetState extends NotePanelsState<WhatWasGoingOnSheet> {
   Widget build(BuildContext context) => buildPanels(context);
 
   @override
-  Widget panel(BuildContext context, int index) => switch (index) {
+  Widget sheetPanel(BuildContext context, int index) => switch (index) {
     0 => notePanel(
       context,
       NoteField(controller: note, label: WhatWasGoingOnSheet.noteTitle),

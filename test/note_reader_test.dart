@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tracker/account/claude_access.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/notes/note_reader.dart';
 import 'package:tracker/notes/note_reader_setting.dart';
@@ -116,7 +117,10 @@ void main() {
         NoteReaderEnabled.key: enabled,
       });
       final ProviderContainer container = ProviderContainer(
-        overrides: [userProvider.overrideWith((ref) => Stream.value(user))],
+        overrides: [
+          userProvider.overrideWith((ref) => Stream.value(user)),
+          claudeAllowedProvider.overrideWithValue(true),
+        ],
       );
       addTearDown(container.dispose);
       container.listen(noteReaderProvider, (_, _) {});
@@ -150,6 +154,7 @@ void main() {
 
   group('NoteReaderSetting', () {
     Widget app() => ProviderScope(
+      overrides: [claudeAllowedProvider.overrideWithValue(true)],
       child: MaterialApp(
         theme: appTheme(Brightness.light),
         home: const Scaffold(body: NoteReaderSetting()),

@@ -9,6 +9,8 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/errors/firestore_errors.dart';
 import 'package:tracker/errors/report_error.dart';
 import 'package:tracker/formats.dart';
+import 'package:tracker/notes/follow_up.dart';
+import 'package:tracker/notes/saved_follow_up.dart';
 import 'package:tracker/providers/day_note_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
@@ -20,7 +22,8 @@ import 'package:tracker/writes/rejected_writes.dart';
 import 'package:tracker/writes/settle_write.dart';
 import 'package:tracker/writes/tracker_writes.dart';
 
-/// The note about one local day: its text, then the tags read from it.
+/// The note about one local day: its text, then the tags read from it, then
+/// the follow-up question when the reader asked one.
 class DayNoteSheet extends ConsumerStatefulWidget {
   const DayNoteSheet({super.key, required this.day});
 
@@ -30,6 +33,7 @@ class DayNoteSheet extends ConsumerStatefulWidget {
   static const Key fieldKey = ValueKey<String>('day-note-text');
   static const Key deleteKey = ValueKey<String>('day-note-delete');
   static const Key confirmDeleteKey = ValueKey<String>('day-note-confirm');
+  static const Key savedFollowUpKey = ValueKey<String>('day-note-follow-up');
   static const String fieldHint = 'What made the day different';
   static const String savedMessage = 'Day note saved';
   static const String deletedMessage = 'Day note deleted';
@@ -69,7 +73,7 @@ class _DayNoteSheetState extends NotePanelsState<DayNoteSheet> {
   String get title => DayNoteSheet.title(widget.day, ref.watch(todayProvider));
 
   @override
-  int get panelCount => DayNoteSheet.panels;
+  int get basePanelCount => DayNoteSheet.panels;
 
   @override
   List<String> get initial => stored;
@@ -147,16 +151,30 @@ class _DayNoteSheetState extends NotePanelsState<DayNoteSheet> {
   }
 
   @override
-  Widget panel(BuildContext context, int index) => switch (index) {
+  Widget sheetPanel(BuildContext context, int index) => switch (index) {
     0 => notePanel(
       context,
-      NoteField(
-        controller: note,
-        label: NotePanels.noteTitle,
-        hint: DayNoteSheet.fieldHint,
-        inputKey: DayNoteSheet.fieldKey,
-        multiline: true,
-        validator: (String? text) => dayNoteError(text ?? '', const <String>[]),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          NoteField(
+            controller: note,
+            label: NotePanels.noteTitle,
+            hint: DayNoteSheet.fieldHint,
+            inputKey: DayNoteSheet.fieldKey,
+            multiline: true,
+            validator: (String? text) =>
+                dayNoteError(text ?? '', const <String>[]),
+          ),
+          if (current?.followUp case final FollowUp saved)
+            Padding(
+              padding: const EdgeInsets.only(top: DialSpace.s),
+              child: SavedFollowUp(
+                key: DayNoteSheet.savedFollowUpKey,
+                followUp: saved,
+              ),
+            ),
+        ],
       ),
     ),
     _ => tagsPanel(context),
@@ -226,7 +244,10 @@ class _DayNoteSheetState extends NotePanelsState<DayNoteSheet> {
 
   Future<void> _save() async {
     final String text = note.text.trim();
-    if (dayNoteError(text, selected) case final String invalid) {
+    // A new answer replaces the saved one; with none, the saved one stays.
+    final FollowUp? followUp = this.followUp ?? current?.followUp;
+    if (dayNoteError(text, selected, followUp: followUp)
+        case final String invalid) {
       setState(() => error = invalid);
       return;
     }
@@ -257,6 +278,7 @@ class _DayNoteSheetState extends NotePanelsState<DayNoteSheet> {
           day: dayKey(widget.day),
           text: text,
           triggers: triggers,
+          followUp: followUp,
           replacing: replacing,
         ),
         DayNoteSheet.notSaved(widget.day),

@@ -5,6 +5,7 @@ import 'package:tracker/data/activity_triggers.dart';
 import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/sealed.dart';
+import 'package:tracker/notes/follow_up.dart';
 
 // A note about one local day: the person's own words and the triggers they
 // confirmed. Born sealed: `text` and `triggers` exist only inside the
@@ -38,18 +39,21 @@ DateTime? parseDayKey(String key) {
 String dayNoteID(String uid, String day) => '${uid}_$day';
 
 /// What the envelope holds. The triggers are always present, so the stored
-/// shape does not say whether the note has any.
+/// shape does not say whether the note has any; the follow-up only when
+/// answered.
 Map<String, Object?> dayNoteContent({
   required String text,
   required List<String> triggers,
+  FollowUp? followUp,
 }) => <String, Object?>{
   dayNoteTextField: text.trim(),
   triggersField: writeTriggers(triggers),
+  ...?followUp?.toMap(),
 };
 
-/// Why [text] and [triggers] cannot be saved as a day note, or null. Sealed,
-/// so this is their only guard.
-String? dayNoteError(String text, List<String> triggers) {
+/// Why [text], [triggers] and [followUp] cannot be saved as a day note, or
+/// null. Sealed, so this is their only guard.
+String? dayNoteError(String text, List<String> triggers, {FollowUp? followUp}) {
   final String trimmed = text.trim();
   if (trimmed.isEmpty) {
     return 'Please write something about the day';
@@ -58,10 +62,17 @@ String? dayNoteError(String text, List<String> triggers) {
     return 'Use $maxDayNoteLength characters or fewer';
   }
   return triggersError(triggers) ??
+      followUp?.error ??
       sealedLengthError(
         utf8
             .encode(
-              jsonEncode(dayNoteContent(text: trimmed, triggers: triggers)),
+              jsonEncode(
+                dayNoteContent(
+                  text: trimmed,
+                  triggers: triggers,
+                  followUp: followUp,
+                ),
+              ),
             )
             .length,
         tooLong: dayNoteTooLong,
@@ -76,6 +87,7 @@ class DayNote {
     required this.createdAt,
     this.text = '',
     this.triggers = const <String>[],
+    this.followUp,
     this.pending = false,
     this.locked = false,
   });
@@ -89,6 +101,9 @@ class DayNote {
   final Timestamp createdAt;
   final String text;
   final List<String> triggers;
+
+  /// The follow-up question about the note and the answer typed to it.
+  final FollowUp? followUp;
 
   /// A local write the server has not acknowledged yet.
   final bool pending;
@@ -115,6 +130,7 @@ class DayNote {
       createdAt: readTimestamp(json['createdAt'], pending: pending),
       text: text is String ? text : '',
       triggers: readTriggers(content[triggersField]),
+      followUp: FollowUp.read(content),
       pending: pending,
       locked: opened == null,
     );

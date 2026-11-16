@@ -6,6 +6,7 @@ import 'package:tracker/data/habit_line.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/writes/tracker_writes.dart';
+import 'package:tracker/notes/follow_up.dart';
 
 export 'package:tracker/writes/queued_write_journal.dart'
     show MemoryJournalStore, memoryJournal;
@@ -241,6 +242,7 @@ class FakeTrackerWrites implements TrackerWrites {
     required String day,
     required String text,
     List<String> triggers = const <String>[],
+    FollowUp? followUp,
     DayNote? replacing,
   }) {
     _requireKey();
@@ -249,6 +251,7 @@ class FakeTrackerWrites implements TrackerWrites {
         'day': day,
         'text': text.trim(),
         'triggers': triggers,
+        'followUp': ?followUp?.toMap(),
         'replacing': replacing != null,
       }),
       collection: dayNotesCollection,

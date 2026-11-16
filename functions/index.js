@@ -12,7 +12,10 @@ const { oidcFederationProvider } = require('@anthropic-ai/sdk/lib/credentials/oi
 
 const { OWNED_COLLECTIONS, runCleanup } = require('./cleanup.js');
 const { summarise } = require('./summary.js');
-const { DailyCap, readNote, validNote } = require('./note_reader.js');
+const { DailyCap, readNote, validNote, wantsQuestion } = require('./note_reader.js');
+const { validFigures, writeWeekly } = require('./weekly_words.js');
+const { askJournal, validInput } = require('./ask_journal.js');
+const { verifiedCaller } = require('./caller.js');
 
 initializeApp();
 
@@ -268,32 +271,89 @@ function anthropicClient() {
   return anthropic;
 }
 
-const noteCap = new DailyCap();
+const CALLABLE = {
+  serviceAccount: 'note-reader@screendead-vice-tracker.iam.gserviceaccount.com',
+  maxInstances: 2,
+  timeoutSeconds: 15,
+  memory: '256MiB',
+};
 
-// Suggests starter-tree tags for one journal note. Logs counts and reason
-// codes only: never the uid, the note, a quote or the model's output.
-exports.readNote = onCall(
-  {
-    serviceAccount: 'note-reader@screendead-vice-tracker.iam.gserviceaccount.com',
-    maxInstances: 2,
-    timeoutSeconds: 15,
-    memory: '256MiB',
-  },
-  async (request) => {
-    if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to read a note.');
-    const note = validNote(request.data);
-    if (note == null) throw new HttpsError('invalid-argument', 'A note is 1 to 2000 characters.');
-    const client = anthropicClient();
-    if (client == null) {
-      logger.warn('readNote', { reason: 'not_configured' });
-      throw new HttpsError('failed-precondition', 'Reading notes is not set up yet.');
-    }
-    if (!noteCap.take(request.auth.uid)) {
-      logger.warn('readNote', { reason: 'daily_cap' });
-      throw new HttpsError('resource-exhausted', 'Enough notes read today.');
-    }
-    const { tags, dropped, reason } = await readNote(client, note);
-    logger.info('readNote', { reason, tags: tags.length, dropped });
-    return { tags, reason };
-  },
-);
+const noteCap = new DailyCap();
+const askCap = new DailyCap(60);
+const weeklyCap = new DailyCap(10);
+
+// The client, or failed-precondition while the federation is not set up.
+function configuredClient(name) {
+  const client = anthropicClient();
+  if (client == null) {
+    logger.warn(name, { reason: 'not_configured' });
+    throw new HttpsError('failed-precondition', 'This is not set up yet.');
+  }
+  return client;
+}
+
+// Guests and unverified emails may not use Claude; checked before the cap and
+// any model call.
+function requireVerified(name, auth) {
+  if (!verifiedCaller(auth)) {
+    logger.warn(name, { reason: 'unverified' });
+    throw new HttpsError('permission-denied', 'Verify an email address to use this.');
+  }
+}
+
+function takeCap(name, cap, uid) {
+  if (!cap.take(uid)) {
+    logger.warn(name, { reason: 'daily_cap' });
+    throw new HttpsError('resource-exhausted', 'Enough for today.');
+  }
+}
+
+// Suggests starter-tree tags for one journal note, and with `question: true` a
+// follow-up question. Logs counts and reason codes only: never the uid, the
+// note, a quote or the model's output. A question's drop reason can carry a
+// matched term after a colon, so only the part before it is logged.
+exports.readNote = onCall(CALLABLE, async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to read a note.');
+  requireVerified('readNote', request.auth);
+  const note = validNote(request.data);
+  if (note == null) throw new HttpsError('invalid-argument', 'A note is 1 to 2000 characters.');
+  const client = configuredClient('readNote');
+  takeCap('readNote', noteCap, request.auth.uid);
+  const asked = wantsQuestion(request.data);
+  const { tags, dropped, reason, question, questionDrop } = await readNote(client, note, { question: asked });
+  const fields = { reason, tags: tags.length, dropped };
+  if (asked) {
+    fields.question = question != null;
+    if (typeof questionDrop === 'string') fields.questionDrop = questionDrop.split(':')[0];
+  }
+  logger.info('readNote', fields);
+  return asked ? { tags, reason, question } : { tags, reason };
+});
+
+// One paragraph in words over a week's figures. Logs the reason code only:
+// never the uid, the figures or the paragraph.
+exports.writeWeekly = onCall(CALLABLE, async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to write a weekly review.');
+  requireVerified('writeWeekly', request.auth);
+  const figures = validFigures(request.data);
+  if (figures == null) throw new HttpsError('invalid-argument', 'The figures are not in the expected form.');
+  const client = configuredClient('writeWeekly');
+  takeCap('writeWeekly', weeklyCap, request.auth.uid);
+  const { text, reason } = await writeWeekly(client, figures);
+  logger.info('writeWeekly', { reason });
+  return { text, reason };
+});
+
+// A question about the journal turned into a query the device runs. Logs the
+// reason code only: never the uid, the question, the habits or the query.
+exports.askJournal = onCall(CALLABLE, async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to ask your journal.');
+  requireVerified('askJournal', request.auth);
+  const input = validInput(request.data);
+  if (input == null) throw new HttpsError('invalid-argument', 'The question is not in the expected form.');
+  const client = configuredClient('askJournal');
+  takeCap('askJournal', askCap, request.auth.uid);
+  const { query, reason } = await askJournal(client, input);
+  logger.info('askJournal', { reason });
+  return { query, reason };
+});
