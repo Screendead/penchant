@@ -143,8 +143,11 @@ class HealthWriteChoices extends Notifier<Set<String>> {
 
   Future<void> choose(String viceID, {required bool on}) async {
     _chosen = true;
-    state = on ? <String>{...state, viceID} : <String>{...state}
-      ..remove(viceID);
+    state = <String>{
+      for (final String id in state)
+        if (id != viceID) id,
+      if (on) viceID,
+    };
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(keyOf(uid), state.toList()..sort());

@@ -63,8 +63,8 @@ class ViceForm extends ConsumerStatefulWidget {
   static const String healthWriteCaffeine =
       'Each entry’s caffeine in mg. An entry with no mg writes nothing.';
   static const String healthWriteFootnote =
-      'New entries and those of the last 30 days, from this iPhone; edits '
-      'and deletes follow. Penchant never reads them back. They are your '
+      'New entries and those of the last 30 days, written by this iPhone; '
+      'edits and deletes follow. Penchant never reads them back. They are your '
       'Health data: signing out or deleting your account leaves them there.';
   static const String healthWriteRefused =
       'Health did not allow it. To change that, open Settings › Health › '
@@ -353,11 +353,6 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     } else {
       write = null;
     }
-    final String? viceID = vice?.id ?? write?.id;
-    if (viceID != null) {
-      await _applyHealthWrite(user.uid, viceID, strength, messenger);
-      if (!mounted) return;
-    }
 
     setState(() {
       saving = true;
@@ -374,6 +369,10 @@ class _ViceFormState extends ConsumerState<ViceForm> {
                     : 'Change not saved: the habit ${vice.name}',
               )) {
         messenger.showSnackBar(const SnackBar(content: Text(queuedMessage)));
+      }
+      final String? viceID = vice?.id ?? write?.id;
+      if (viceID != null) {
+        await _applyHealthWrite(user.uid, viceID, strength, messenger);
       }
       if (mounted) {
         Navigator.of(context).pop();
