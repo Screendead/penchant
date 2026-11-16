@@ -392,6 +392,24 @@ runs. Investigations live in memory (`investigationSessionProvider`), cleared on
 whose page closed mid-run stops before its next call and shows as stopped.
 `functions/tools/analyst-trial.js` runs five made-up investigations over the Ask trial's journal with an API key.
 
+**Ask from Siri** (iPhone, iOS 17+; round 24, first half). `AskJournalIntent` (`ios/Runner/AppShortcuts.swift`, app
+target only, `#if os(iOS)` since the Mac Runner compiles that file) is an App Shortcut ("Ask Penchant", "Ask my journal
+in Penchant", "Ask Penchant a question"): a phrase may carry only an entity or enum parameter and must name the app, so
+Siri asks for the `question` (String, `requestValueDialog`) after the phrase. It opens the app (`openAppWhenRun` in a
+deprecated extension before iOS 26, `supportedModes` `.foreground(.immediate)` from 26), refuses an empty question or
+one over 300 UTF-16 units, and hands it to `AskQuestion`, which holds it in memory only until Dart's `take` on
+`com.screendead.penchant/ask_question` (as `EntryPrompt`: a cold launch's question waits for the engine; `changed`
+when warm). `askQuestionListenerProvider` (`lib/ask/ask_from_siri.dart`, kept by `MyApp`, iOS only) puts it in
+`pendingSiriQuestionProvider`, dropped on sign-out and a change of account (not on the session's first restore), and
+refused while known signed out. `siriQuestionReadyProvider` waits for a user, the app lock uncovered, the journal key
+and the habits, then says where it goes: Ask while `askJournalProvider` is set; else an emulator build says it has no
+service; else, once the profile is read, a guest or unverified email goes to Account Settings; else, once the saved
+switch is read, Settings. Today (`openSiriQuestion`) brings an open Ask page to the top or pushes one; anything else
+drops the question, opens the place and says nothing was sent. `AskPage` itself takes it after a frame, fills the field
+and runs `_ask` as typed (same session, Claude-working screen and checks), waiting while one it sent is unanswered so
+the follow-up carries it. The question is never logged or reported. Siri speaking the answer without opening the app
+is not built.
+
 **Letter** (`lib/letter/`, off by default; Settings' "Letter", `LetterSetting`; `LetterPage`, route `/letter`, in the
 Penchant menu while the switch is on; Jack, 2026-11-16, "Yes, build both", knowing Anthropic keeps what is sent for up
 to 30 days). On request only: the person picks the last 1, 3 or 6 months, `LetterJournal` reads the period once (the
