@@ -4,6 +4,8 @@ import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:tracker/data/habit_strength.dart';
+import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/data/activity_content.dart';
@@ -71,6 +73,10 @@ const List<String> csvHeader = <String>[
   'follow_up_question',
   'follow_up_quote',
   'follow_up_answer',
+  'own_abv',
+  'own_caffeine_mg',
+  'strength_total',
+  'strength_unit',
 ];
 
 // One row per activity, oldest first. An activity whose vice is gone keeps
@@ -90,6 +96,17 @@ String exportCsv(AccountData data) {
     final Object? viceID = activity.data['viceID'];
     final Map<String, dynamic>? vice = vices[viceID];
     final ActivityContent content = ActivityContent.read(activity.data);
+    final HabitStrength? strength = vice == null
+        ? null
+        : HabitStrength.read(vice);
+    // What the entry comes to in its habit's chosen unit, as Trends counts it.
+    final double? total = strength?.of(
+      ViceActivity.fromJson(
+        id: activity.id,
+        json: activity.data,
+        opened: activity.data,
+      ),
+    );
     csv.write(
       _csvRow(<Object?>[
         _plain(activity.data['createdAt']),
@@ -108,6 +125,10 @@ String exportCsv(AccountData data) {
         content.followUp?.question,
         content.followUp?.quote,
         content.followUp?.answer,
+        content.abv,
+        content.caffeineMg,
+        total,
+        total == null ? null : strength?.unit.name,
       ]),
     );
   }

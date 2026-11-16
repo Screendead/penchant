@@ -9,6 +9,7 @@ import 'package:tracker/data/activity_triggers.dart';
 import 'package:tracker/data/category.dart';
 import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/habit_line.dart';
+import 'package:tracker/data/habit_strength.dart';
 import 'package:tracker/data/sealed.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/urge.dart';
@@ -52,6 +53,9 @@ Map<String, Object?> _unitAndPriceContent(UnitAndPrice value) =>
 // A change to a habit's line: `(line: null)` removes it. Sealed content only,
 // like [UnitAndPrice].
 typedef LineChange = ({HabitLine? line});
+
+// Likewise a habit's strength: `(strength: null)` removes it.
+typedef StrengthChange = ({HabitStrength? strength});
 
 // A write handed to the SDK: its future, and the document it leaves behind.
 // [fields] holds what an update sets, through [comparableValue], so that the
@@ -166,6 +170,7 @@ class TrackerWrites {
     ViceCategory category = ViceCategory.fallback,
     UnitAndPrice unitAndPrice = noUnitAndPrice,
     HabitLine? line,
+    HabitStrength? strength,
   }) {
     // doc().set() rather than add(), which the backend treats the same, so
     // the id is known before the server answers.
@@ -182,6 +187,7 @@ class TrackerWrites {
             'category': category.name,
             ..._unitAndPriceContent(unitAndPrice),
             ...?line?.content,
+            ...?strength?.content,
           },
           (Blob envelope) => vice.set({
             sealedField: envelope,
@@ -200,7 +206,8 @@ class TrackerWrites {
   // Sealed, the whole content is written again, so [vice] supplies what is
   // unchanged, and a legacy vice's plaintext fields are removed. A null
   // [unitAndPrice] keeps the vice's; a given one replaces all three, so a
-  // null inside it clears that value. [line] likewise: null keeps the vice's.
+  // null inside it clears that value. [line] and [strength] likewise: null
+  // keeps the vice's.
   SentWrite updateVice(
     Vice vice, {
     String? name,
@@ -208,6 +215,7 @@ class TrackerWrites {
     ViceCategory? category,
     UnitAndPrice? unitAndPrice,
     LineChange? line,
+    StrengthChange? strength,
   }) {
     final FieldSealer? sealer = _sealer;
     if (sealer == null) {
@@ -216,6 +224,9 @@ class TrackerWrites {
       }
       if (line != null && line.line != vice.line) {
         throw StateError('no journal key to seal a line with');
+      }
+      if (strength != null && strength.strength != vice.strength) {
+        throw StateError('no journal key to seal a strength with');
       }
       return _update(_vices, vice.id, {
         'name': ?name,
@@ -232,6 +243,7 @@ class TrackerWrites {
       'category': (category ?? vice.category).name,
       ..._unitAndPriceContent(unitAndPrice ?? unitAndPriceOf(vice)),
       ...?(line == null ? vice.line : line.line)?.content,
+      ...?(strength == null ? vice.strength : strength.strength)?.content,
     });
   }
 
@@ -276,6 +288,8 @@ class TrackerWrites {
     int? urge,
     String? note,
     LoggedVia? loggedVia,
+    double? abv,
+    double? caffeineMg,
     ActivityContent? restoring,
   }) {
     final FieldSealer sealer = _createSealer();
@@ -291,6 +305,8 @@ class TrackerWrites {
           zone: _zone?.call(),
           writtenAt: clock.now(),
           loggedVia: loggedVia,
+          abv: abv,
+          caffeineMg: caffeineMg,
         );
     return _issued(
       SentWrite(

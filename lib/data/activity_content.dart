@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:tracker/data/activity_triggers.dart';
+import 'package:tracker/data/habit_strength.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/notes/follow_up.dart';
 
@@ -14,6 +15,8 @@ const String noteField = 'note';
 const String zoneField = 'zone';
 const String writtenAtField = 'writtenAt';
 const String loggedViaField = 'loggedVia';
+const String abvField = 'abv';
+const String caffeineMgField = 'caffeineMg';
 
 /// How an entry was logged: a one-tap log (a tally's `+`, a Log-fan wedge),
 /// the amount sheet, or the home-screen widget. Stored by name.
@@ -28,6 +31,8 @@ class ActivityContent {
     this.writtenAt,
     this.loggedVia,
     this.followUp,
+    this.abv,
+    this.caffeineMg,
   });
 
   /// Reads opened (or legacy plaintext) content; never throws.
@@ -39,6 +44,8 @@ class ActivityContent {
     writtenAt: readWrittenAt(content[writtenAtField]),
     loggedVia: readLoggedVia(content[loggedViaField]),
     followUp: FollowUp.read(content),
+    abv: readAbv(content[abvField]),
+    caffeineMg: readCaffeineMg(content[caffeineMgField]),
   );
 
   final List<String> triggers;
@@ -62,6 +69,11 @@ class ActivityContent {
   /// The follow-up question about the note and the answer typed to it.
   final FollowUp? followUp;
 
+  /// This entry's own strength, which wins over its habit's: percent alcohol
+  /// by volume, or caffeine in mg per serving.
+  final double? abv;
+  final double? caffeineMg;
+
   /// The map sealed in the envelope. The triggers are always present, so the
   /// stored shape does not say whether the entry has any; the rest only when
   /// known.
@@ -73,6 +85,8 @@ class ActivityContent {
     writtenAtField: ?writtenAt?.toUtc().millisecondsSinceEpoch,
     loggedViaField: ?loggedVia?.name,
     ...?followUp?.toMap(),
+    abvField: ?abv,
+    caffeineMgField: ?caffeineMg,
   };
 
   /// The bytes of JSON the envelope pads, which Sealer.bucketFor bounds.
@@ -91,6 +105,24 @@ class ActivityContent {
     writtenAt: writtenAt,
     loggedVia: loggedVia,
     followUp: followUp,
+    abv: abv,
+    caffeineMg: caffeineMg,
+  );
+
+  /// The entry's own strength changed; null for either clears it.
+  ActivityContent withStrength({
+    required double? abv,
+    required double? caffeineMg,
+  }) => ActivityContent(
+    triggers: triggers,
+    urge: urge,
+    note: note,
+    zone: zone,
+    writtenAt: writtenAt,
+    loggedVia: loggedVia,
+    followUp: followUp,
+    abv: abv,
+    caffeineMg: caffeineMg,
   );
 
   ActivityContent withFollowUp(FollowUp? followUp) => ActivityContent(
@@ -101,6 +133,8 @@ class ActivityContent {
     writtenAt: writtenAt,
     loggedVia: loggedVia,
     followUp: followUp,
+    abv: abv,
+    caffeineMg: caffeineMg,
   );
 
   /// Whether only triggers are set, as on an entry from before the rest
@@ -111,13 +145,17 @@ class ActivityContent {
       zone == null &&
       writtenAt == null &&
       loggedVia == null &&
-      followUp == null;
+      followUp == null &&
+      abv == null &&
+      caffeineMg == null;
 
   /// Whether the answers the user can change differ from [other]'s.
   bool answersDiffer(ActivityContent other) =>
       urge != other.urge ||
       note != other.note ||
       followUp != other.followUp ||
+      abv != other.abv ||
+      caffeineMg != other.caffeineMg ||
       triggers.length != other.triggers.length ||
       Iterable<int>.generate(
         triggers.length,
@@ -141,7 +179,8 @@ LoggedVia? readLoggedVia(Object? value) =>
     LoggedVia.values.where((LoggedVia v) => v.name == value).firstOrNull;
 
 /// Why [triggers], [urge], [note] and [followUp] would not fit one envelope beside the
-/// longest zone, write time and source an entry can carry, or null.
+/// longest zone, write time, source and own strength an entry can carry, or
+/// null.
 String? answersTooLong({
   required List<String> triggers,
   required int? urge,
@@ -158,8 +197,14 @@ String? answersTooLong({
         zone: _longestZone,
         writtenAt: DateTime.utc(9999),
         loggedVia: LoggedVia.widget,
+        abv: _longestStrength,
+        caffeineMg: _longestStrength,
       ).sealedLength,
     );
+
+// A strength is kept to two decimal places (roundStrength) under its bound,
+// so none is written longer than this.
+const double _longestStrength = 1999.99;
 
 // Longer than any IANA zone name (the longest is 32 characters).
 final String _longestZone = 'x' * 64;

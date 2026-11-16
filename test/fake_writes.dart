@@ -4,6 +4,7 @@ import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/category.dart';
 import 'package:tracker/data/day_note.dart';
 import 'package:tracker/data/habit_line.dart';
+import 'package:tracker/data/habit_strength.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/urge.dart';
 import 'package:tracker/data/vice.dart';
@@ -86,6 +87,7 @@ class FakeTrackerWrites implements TrackerWrites {
     ViceCategory category = ViceCategory.fallback,
     UnitAndPrice unitAndPrice = noUnitAndPrice,
     HabitLine? line,
+    HabitStrength? strength,
   }) {
     _requireKey();
     return _write(
@@ -96,6 +98,7 @@ class FakeTrackerWrites implements TrackerWrites {
         'category': category,
         if (unitAndPrice != noUnitAndPrice) 'unitAndPrice': unitAndPrice,
         'line': ?line,
+        'strength': ?strength,
       }),
       collection: 'vices',
       op: WriteOp.create,
@@ -110,6 +113,7 @@ class FakeTrackerWrites implements TrackerWrites {
     ViceCategory? category,
     UnitAndPrice? unitAndPrice,
     LineChange? line,
+    StrengthChange? strength,
   }) => _write(
     Write('updateVice', vice.id, <String, Object?>{
       'name': ?name,
@@ -117,6 +121,7 @@ class FakeTrackerWrites implements TrackerWrites {
       'category': ?category,
       'unitAndPrice': ?unitAndPrice,
       if (line != null) 'line': line.line,
+      if (strength != null) 'strength': strength.strength,
     }),
     collection: 'vices',
     op: WriteOp.update,
@@ -167,6 +172,8 @@ class FakeTrackerWrites implements TrackerWrites {
     int? urge,
     String? note,
     LoggedVia? loggedVia,
+    double? abv,
+    double? caffeineMg,
     ActivityContent? restoring,
   }) {
     _requireKey();
@@ -183,6 +190,8 @@ class FakeTrackerWrites implements TrackerWrites {
         'urge': ?(restoring?.urge ?? urge),
         'note': ?(restoring?.note ?? note),
         'loggedVia': ?(restoring?.loggedVia ?? loggedVia),
+        'abv': ?(restoring?.abv ?? abv),
+        'caffeineMg': ?(restoring?.caffeineMg ?? caffeineMg),
       }),
       collection: 'activities',
       op: WriteOp.create,
