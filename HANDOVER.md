@@ -407,8 +407,14 @@ handover to do next rather than starting them yourself"; none is started). Each 
   word, then the bare name), and the tag rule asks for a quote that nearly restates the tag. Entries and amounts
   matched every expect line on the last four runs. Still there: about one guessed tag a run, a different one each
   time (`place/home` from "after the kids were in bed", `routine/coffee` on a coffee entry); Haiku with thinking off
-  does not hold a tag rule that tightly, and the person reviews each draft. Claude runs trials itself now
-  (`CLAUDE_API_KEY` in the environment), only the one whose prompt changed.
+  does not hold a tag rule that tightly, and the person reviews each draft.
+- **Claude runs the real-API trials itself** (Jack, 2026-11-16: asking him to run them "just keeps stalling
+  development"). Each trial is a script in the repo: `npm --prefix functions ci`, then
+  `node functions/tools/entry-reader-trial.js` with the API key in `ANTHROPIC_API_KEY` (the others beside it:
+  `note-reader-trial`, `follow-up-review`, `weekly-words-trial`, `ask-journal-trial`, `letter-review`,
+  `analyst-trial`, `tag-tidy-trial`). The key comes from the session's environment, which Jack sets up; never
+  print, log or commit it. Run only the trial for the prompt that changed: the Haiku ones are a few dozen short
+  calls; `letter-review` and `analyst-trial` use Opus and cost far more, so only when their code changed.
 - **N2. Ask your journal from Siri.** Probe first whether Ask can run in the headless engine a Siri intent gets
   (key loaded, sealed entries opened, the callable reached) before building the intent.
 - **N3. Log from an Apple Watch.** Signing probe first: whether Jack's team can sign a watchOS target with the
@@ -1101,7 +1107,8 @@ entries differently; a widget test of the restore page's steps. Two adjacent PRs
 Real-API trials Jack ran on 2026-11-16 (`~/development/tracker-tools/run-trials.sh`, logs beside it in `trials/`):
 note reader, follow-up, weekly words, Ask and the letter passed first time; the analyst passes 5 of 5 after three
 fixes to its checks (#324, #331, #336); tidy tags passed; the entry reader made three kinds of mistake (a range as
-two entries, an invented amount, a bottle as one glass), fixed in the prompt (#338) and not yet re-run. Jack has yet
+two entries, an invented amount, a bottle as one glass), fixed in the prompt (#338; later rounds under N1 in the
+queue). Jack has yet
 to read the letter and follow-up logs before turning those on. Unproven on a device: the night-out Live Activity,
 urge and check-in notification buttons, the Lens screen on a real call, the report's preview and share, backup save
 and restore against the real server, the Health write, on-device speech, the label read on real labels.
