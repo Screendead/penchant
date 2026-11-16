@@ -1059,17 +1059,25 @@ picked by Jack on 2026-11-16 as recommended ("yes to both recommendations"; afte
 "Yes, build both"):
 
 - `analyst`: Opus runs queries on the device and reads their results (counts, dates, tags; never note text, which
-  the database refuses in that mode), asked before each investigation. Waits on the Ask rebuild.
+  the database refuses in that mode), asked before each investigation. Built (#317, CLAUDE.md), off by default. Limits Claude chose, stricter than the
+  page's: 6 steps and 50 rows a result (the page said about a dozen and 200). Known weak point: its numbers check
+  accepts any numeral in a result sent, and dates and a literal in the model's own SQL put many there.
 - `letter`: Opus writes a review of a chosen period from notes and entries, on request, after a preview of what is
-  sent. Being built.
+  sent. Built (#315, CLAUDE.md), off by default.
+
+Neither has met the real API: the workspace allows Opus 0 requests a minute until Jack raises it. Before switching
+either on he runs `functions/tools/letter-review.js` and `functions/tools/analyst-trial.js` with `ANTHROPIC_API_KEY`
+in his own terminal and reads what they write.
 
 Retention, checked 2026-11-16 (https://privacy.claude.com/en/articles/7996866 and the API data-retention page): API
 inputs and outputs are deleted within 30 days for every model unless a zero-retention agreement exists; flagged
 content up to 2 years; never used for training without permission; only Fable and Mythos are Covered Models. Rounds
-20, 22 and 23's pages wrongly said "not retained by default". Owed: each in-app disclosure gains the 30-day line.
+20, 22 and 23's pages wrongly said "not retained by default". Every in-app disclosure now says
+it (#316).
 
-Ask your journal is being rebuilt (Jack, 2026-11-16: "yeah do it... just has to be maximally secure"): the model
-writes read-only SQL, run on the device against an in-memory database behind a sandbox; results never leave it.
+Ask your journal was rebuilt in #316 (Jack, 2026-11-16: "yeah do it... just has to be maximally secure"): the model
+writes read-only SQL, run on the device against an in-memory database behind a sandbox; results never leave it. It asks Sonnet 5.5 by default (Haiku allowed). Unproven: its trial script
+against the API, query time on Jack's full journal (queries run on the UI thread, 250 ms each at most).
 Cutting Firestore reads per open of Insights and Ask (about 4,900 each) by an `updatedAt` field and a delta read:
 Jack, 2026-11-16, "Yes, cut reads"; built in #313. Its fast path has not run against a real device's disk cache.
 
