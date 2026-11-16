@@ -66,11 +66,10 @@ class AskJournalSetting extends ConsumerWidget {
       'and units are sent to Penchant’s server and on to Anthropic’s Claude, '
       'which writes a database query for it; a follow-up also sends this '
       'session’s earlier questions and the queries written for them. Habit '
-      'names are encrypted everywhere else; this is the one place they leave '
-      'this device. The query runs on this device, over a copy of your '
+      'names are encrypted everywhere else; here they leave this device. The query runs on this device, over a copy of your '
       'journal kept in memory while the page is open: your entries, amounts, '
       'times, tags, notes and every answer stay here. Anthropic does not use '
-      'it for training. Switch this off to stop sending questions.';
+      'it for training and deletes it within 30 days. Switch this off to stop sending questions.';
   static const String turnOn = 'Turn on';
   static const String notNow = 'Not now';
 
