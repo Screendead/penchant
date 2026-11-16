@@ -41,7 +41,7 @@ class ReminderSettings extends ConsumerStatefulWidget {
   static const String checkInUntilLabel = 'Until';
   static const String checkInFoot =
       'Three times a day, at moments drawn at random between these times, a '
-      'quiet notification asks “Any urge right now?”. Press and hold it to '
+      'quiet notification asks “Any urge right now?” Press and hold it to '
       'answer 0 to 5. It never names a habit. Your answers are sealed in your '
       'journal, so Penchant can later compare urges at your entries with '
       'urges at ordinary moments. Turn it off here or from any check-in.';
