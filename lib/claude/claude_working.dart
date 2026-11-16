@@ -33,7 +33,7 @@ enum ClaudeWorkingLook {
 
 /// The look every call site uses.
 final claudeWorkingLookProvider = Provider<ClaudeWorkingLook>(
-  (Ref ref) => ClaudeWorkingLook.dial,
+  (Ref ref) => ClaudeWorkingLook.lens,
 );
 
 enum ClaudeWorkEnd { answered, failed, stopped }

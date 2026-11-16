@@ -467,7 +467,7 @@ class LensPainter extends CustomPainter {
       );
     }
 
-    const double zoom = 2.4;
+    final double zoom = small ? 1.6 : 2.4;
     canvas.save();
     canvas.clipPath(
       Path()..addOval(Rect.fromCircle(center: lens, radius: lensR)),
@@ -476,7 +476,7 @@ class LensPainter extends CustomPainter {
     canvas.translate(lens.dx, lens.dy);
     canvas.scale(zoom);
     canvas.translate(-lens.dx, -lens.dy);
-    for (int h = 0; h <= cols; h += 1) {
+    for (int h = 0; h <= cols && !small; h += 1) {
       final double x = pad + h * cw;
       canvas.drawLine(
         Offset(x, top),
@@ -499,9 +499,10 @@ class LensPainter extends CustomPainter {
     }
     for (final JournalMark m in scene.marks) {
       final Offset at = cell(m.daysAgo, m.minute / 60 - 0.5);
-      final double bead = 1.1 + m.weight * 0.7;
+      final double bead = small ? 0.6 + m.weight * 0.3 : 1.1 + m.weight * 0.7;
       final Color col = k.data[m.slot % k.data.length];
       canvas.drawCircle(at, bead, _fill..color = _alpha(col, fade));
+      if (small) continue;
       canvas.drawCircle(
         at,
         bead + 0.9,

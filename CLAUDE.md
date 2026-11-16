@@ -401,7 +401,7 @@ answer on the page and for weekly review in words (it starts on open, so nothing
 keeps its in-place read (an ink underline sweeping the note, chips arcing out of their quotes). Three looks share
 everything else (`ClaudeWorkingLook`, `claudeWorkingLookProvider`, `lib/claude/claude_working_painters.dart`): `dial`
 (the last 28 days as rings of a 24-hour face, a hand ringing each entry as it passes), `ink` (lines tracing out from
-the person's words across their entries) and `lens` (a loupe over a 28-day field of hours). They draw the device's own
+the person's words across their entries) and `lens` (a loupe over a 28-day field of hours), the default (Jack, 2026-11-16: "lens is coolest, use that"). They draw the device's own
 entries (`claudeWorkingMarksProvider`, a bounded 28-day range query; nothing of it is sent). Painters repaint from a
 `WorkingClock` ticker inside a `RepaintBoundary`, with no widget rebuilds per frame; under reduce motion the clock
 stands still, the route fades in 150 ms and nothing schedules frames, so tests can `pumpAndSettle`. With motion on, a
