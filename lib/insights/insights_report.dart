@@ -11,6 +11,7 @@ import 'package:tracker/insights/calendar_days.dart';
 import 'package:tracker/insights/cycle_phase.dart';
 import 'package:tracker/insights/daylight.dart';
 import 'package:tracker/insights/daily_series.dart';
+import 'package:tracker/insights/day_tags.dart';
 import 'package:tracker/insights/from_journal.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart' as hs;
@@ -96,6 +97,7 @@ class InsightsInput {
     this.events = const <CalendarEvent>[],
     this.stays = const <PlaceStay>[],
     this.conditions = const <DayCondition>[],
+    this.dayTags = const <DayTags>[],
   });
 
   factory InsightsInput.from({
@@ -109,6 +111,7 @@ class InsightsInput {
     Iterable<hs.DailyOutcome> reminders = const <hs.DailyOutcome>[],
     List<PlaceStay> stays = const <PlaceStay>[],
     RoughLocation? location,
+    List<DayTags> dayTags = const <DayTags>[],
   }) {
     final ({DateTime start, DateTime end}) range = insightsRange(today);
     final DateTime unfinished = startOfDay(today);
@@ -141,6 +144,7 @@ class InsightsInput {
       archived: archived,
       events: events,
       stays: stays,
+      dayTags: dayTags,
       conditions: <DayCondition>[
         cyclePhases(<DateTime>[
           for (final hs.DailyOutcome o in health)
@@ -177,6 +181,9 @@ class InsightsInput {
   /// the cycle's phase ([cyclePhases]) and the day's length ([dayLengths]),
   /// never outcomes of their own.
   final List<DayCondition> conditions;
+
+  /// Each day note's day and tags; a locked note has none.
+  final List<DayTags> dayTags;
 }
 
 /// The fewest days with a session a [hs.sessionMetricIds] outcome needs to be
@@ -317,6 +324,7 @@ class InsightsReport {
     this.atPlace = const <AtPlace>[],
     this.recovery = const <Recovery>[],
     this.triggers = const <HabitTriggers>[],
+    this.dayTags = const <HabitDayTags>[],
   });
 
   /// Whether each habit is used on more of the days with more of each
@@ -327,6 +335,11 @@ class InsightsReport {
   /// Each habit's tagged triggers against its other tagged entries, findings
   /// and refusals, judged in the same family as [findings].
   final List<HabitTriggers> triggers;
+
+  /// Each habit's day total on days whose note holds each tag against its
+  /// other tagged days, findings and refusals, judged in the same family as
+  /// [findings].
+  final List<HabitDayTags> dayTags;
 
   /// Each habit's measures over the nights after its heavy days, findings
   /// and refusals, judged in the same family as [findings].
@@ -428,8 +441,8 @@ InsightsReport computeInsights(InsightsInput input) {
       <String, List<HabitRefusal>>{};
   // The family for false-discovery control is the whole page: every habit it
   // shows against every outcome, by use, amount and time and a line in each,
-  // what came before each use, each night after a heavy day and each tagged
-  // trigger, not one at a time.
+  // what came before each use, each night after a heavy day, each tagged
+  // trigger and each day tag, not one at a time.
   // An archived habit's comparisons are never shown, so they are not counted.
   final List<HabitInsight> after = <HabitInsight>[
     for (final String metricId in outcomes.metricIds)
@@ -523,6 +536,13 @@ InsightsReport computeInsights(InsightsInput input) {
     for (final HabitInsight i in after) ?insightPValue(i),
   ];
   final List<double> triggerPs = triggerPValues(triggered);
+  final List<HabitDayTags> dayTagged = dayTagAmounts(
+    uses: input.uses,
+    tags: input.dayTags,
+    through: addDays(input.through, -1),
+    skip: input.archived,
+  );
+  final List<double> dayTagPs = dayTagPValues(dayTagged);
   final List<double> beforePs = <double>[
     for (final BeforeUse b in before) ?b.pValue,
   ];
@@ -561,6 +581,7 @@ InsightsReport computeInsights(InsightsInput input) {
     alongside: <double>[
       ...beforePs,
       ...triggerPs,
+      ...dayTagPs,
       ...followsPs,
       ...calendarPs,
       ...calendarDayPs,
@@ -597,6 +618,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...afterPs,
         ...beforePs,
         ...triggerPs,
+        ...dayTagPs,
         ...calendarPs,
         ...calendarDayPs,
         ...placePs,
@@ -611,6 +633,7 @@ InsightsReport computeInsights(InsightsInput input) {
       alongside: <double>[
         ...afterPs,
         ...triggerPs,
+        ...dayTagPs,
         ...followsPs,
         ...calendarPs,
         ...calendarDayPs,
@@ -628,6 +651,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...afterPs,
         ...beforePs,
         ...triggerPs,
+        ...dayTagPs,
         ...followsPs,
         ...calendarPs,
         ...calendarDayPs,
@@ -643,6 +667,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...afterPs,
         ...beforePs,
         ...triggerPs,
+        ...dayTagPs,
         ...followsPs,
         ...calendarPs,
         ...calendarDayPs,
@@ -659,6 +684,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...afterPs,
         ...beforePs,
         ...triggerPs,
+        ...dayTagPs,
         ...followsPs,
         ...calendarPs,
         ...calendarDayPs,
@@ -676,6 +702,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...placePs,
         ...beforePs,
         ...triggerPs,
+        ...dayTagPs,
         ...followsPs,
         ...shiftPs,
         ...payoffPs,
@@ -689,6 +716,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...afterPs,
         ...beforePs,
         ...triggerPs,
+        ...dayTagPs,
         ...placePs,
         ...followsPs,
         ...calendarPs,
@@ -704,6 +732,7 @@ InsightsReport computeInsights(InsightsInput input) {
         ...afterPs,
         ...beforePs,
         ...triggerPs,
+        ...dayTagPs,
         ...calendarDayPs,
         ...followsPs,
         ...calendarPs,
@@ -721,6 +750,7 @@ InsightsReport computeInsights(InsightsInput input) {
               ...afterPs,
               ...beforePs,
               ...triggerPs,
+              ...dayTagPs,
               ...followsPs,
               ...calendarPs,
               ...calendarDayPs,
@@ -736,6 +766,23 @@ InsightsReport computeInsights(InsightsInput input) {
     triggers: judgeTriggerAmounts(
       triggered,
       alongside: <double>[
+        ...dayTagPs,
+        ...afterPs,
+        ...beforePs,
+        ...followsPs,
+        ...calendarPs,
+        ...calendarDayPs,
+        ...placePs,
+        ...shiftPs,
+        ...payoffPs,
+        ...replacementPs,
+        ...recoveryPs,
+      ],
+    ),
+    dayTags: judgeDayTags(
+      dayTagged,
+      alongside: <double>[
+        ...triggerPs,
         ...afterPs,
         ...beforePs,
         ...followsPs,

@@ -40,6 +40,8 @@ import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/replacement_copy.dart';
 import 'package:tracker/insights/sets_off_refusal.dart';
 import 'package:tracker/insights/trigger_amounts.dart';
+import 'package:tracker/insights/day_tags.dart';
+import 'package:tracker/insights/day_tags_copy.dart';
 import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/experiment_page.dart';
 import 'package:tracker/providers/calendar_provider.dart';
@@ -62,6 +64,7 @@ import 'package:tracker/widgets/before_use_card.dart';
 import 'package:tracker/widgets/experiment_widgets.dart';
 import 'package:tracker/widgets/habit_follows_card.dart';
 import 'package:tracker/widgets/trigger_amounts_card.dart';
+import 'package:tracker/widgets/day_tags_card.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/measure_shift_card.dart';
 import 'package:tracker/widgets/not_yet_box.dart';
@@ -766,6 +769,7 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           costs.calendar.isEmpty &&
           costs.calendarDays.isEmpty &&
           costs.places.isEmpty &&
+          costs.dayTags.isEmpty &&
           costs.triggers.isEmpty)
         const NotYetBox(
           InsightsPage.setsOffTitle,
@@ -827,6 +831,23 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
               ? 0
               : DialSpace.xs,
         ),
+      for (final (int i, DayTagCard card) in costs.dayTags.indexed)
+        DayTagsCard(
+          card: card,
+          habit: costs.nameOf(card.habitId),
+          unit: costs.unitOf(card.habitId),
+          mark: costs.marks[card.habitId] ?? const HabitMark(0),
+          locale: formatLocale,
+          top:
+              i == 0 &&
+                  costs.before.isEmpty &&
+                  costs.follows.isEmpty &&
+                  costs.calendar.isEmpty &&
+                  costs.calendarDays.isEmpty &&
+                  costs.places.isEmpty
+              ? 0
+              : DialSpace.xs,
+        ),
       for (final (int i, TriggerCard card) in costs.triggers.indexed)
         TriggerAmountsCard(
           card: card,
@@ -838,7 +859,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                   costs.follows.isEmpty &&
                   costs.calendar.isEmpty &&
                   costs.calendarDays.isEmpty &&
-                  costs.places.isEmpty
+                  costs.places.isEmpty &&
+                  costs.dayTags.isEmpty
               ? 0
               : DialSpace.xs,
         ),
@@ -1101,10 +1123,19 @@ class _Costs {
       for (final AtPlace a in report.atPlace)
         if (_names.containsKey(a.habitId)) a,
     ]);
-    triggers = triggerCards(<HabitTriggers>[
-      for (final HabitTriggers h in report.triggers)
-        if (_names.containsKey(h.habitId)) h,
-    ]);
+    final ({List<DayTagCard> days, List<TriggerCard> entries}) tagged =
+        dayTagCards(
+          <HabitDayTags>[
+            for (final HabitDayTags h in report.dayTags)
+              if (_names.containsKey(h.habitId)) h,
+          ],
+          triggerCards(<HabitTriggers>[
+            for (final HabitTriggers h in report.triggers)
+              if (_names.containsKey(h.habitId)) h,
+          ]),
+        );
+    dayTags = tagged.days;
+    triggers = tagged.entries;
     shifts = <MeasureShift>[
       for (final MeasureShift s in report.shifts)
         MeasureShift(
@@ -1136,6 +1167,7 @@ class _Costs {
         for (final AfterEvent a in calendar) a.habitId,
         for (final CalendarDayCard c in calendarDays) c.habitId,
         for (final AtPlace a in this.places) a.habitId,
+        for (final DayTagCard c in dayTags) c.habitId,
         for (final TriggerCard c in triggers) c.habitId,
       },
       logged: computed.firstDays.keys.toSet(),
@@ -1171,6 +1203,9 @@ class _Costs {
   late final List<AtPlace> places;
   final PlaceStore _places;
   late final List<FollowsCard> follows;
+  late final List<DayTagCard> dayTags;
+
+  /// Entry trigger cards, less each finding said on a [dayTags] card.
   late final List<TriggerCard> triggers;
   late final List<MeasureShift> shifts;
   late final DateTime? firstDay;
@@ -1289,6 +1324,13 @@ class _Costs {
           calendarDayText(c, nameOf(c.habitId), formatLocale),
         for (final AtPlace a in places)
           atPlaceText(a, nameOf(a.habitId), placeOf(a.placeId), formatLocale),
+        for (final DayTagCard card in dayTags)
+          dayTagText(
+            card,
+            nameOf(card.habitId),
+            formatLocale,
+            unit: unitOf(card.habitId),
+          ),
         for (final TriggerCard card in triggers)
           triggerText(card, nameOf(card.habitId)),
       ],

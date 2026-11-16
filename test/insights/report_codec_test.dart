@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/insights/after_event.dart';
 import 'package:tracker/insights/before_use.dart';
 import 'package:tracker/insights/calendar_days.dart';
+import 'package:tracker/insights/day_tags.dart';
 import 'package:tracker/insights/habit_follows.dart';
 import 'package:tracker/insights/health_source.dart';
 import 'package:tracker/insights/insights_report.dart';
@@ -390,6 +391,32 @@ InsightsReport everySection() => InsightsReport(
       ],
     ),
   ],
+  dayTags: const <HabitDayTags>[
+    HabitDayTags(
+      habitId: 'wine',
+      days: 130,
+      tagged: 48,
+      tags: <DayTagAmount>[
+        DayTagAmount(
+          tag: 'Bad day',
+          withDays: 15,
+          withoutDays: 33,
+          withMean: 3.1,
+          withoutMean: 1.8,
+          effect: 1.2,
+          pValue: 0.0004,
+        ),
+        DayTagAmount(
+          tag: 'feeling',
+          withDays: 4,
+          withoutDays: 44,
+          withMean: 2,
+          withoutMean: 2.2,
+          refusal: RefusalReason.tooFewDays,
+        ),
+      ],
+    ),
+  ],
 );
 
 InsightsView _view(InsightsReport report, {bool hoursPending = false}) => (
@@ -437,6 +464,38 @@ void main() {
     expect(report.atPlace.last.refusal, RefusalReason.tooFewDays);
     expect(report.triggers.single.triggers[1].trigger, 'Bored at the bus stop');
     expect(report.triggers.single.triggers.first.verdict, TriggerVerdict.found);
+    expect(report.dayTags.single.tagged, 48);
+    expect(report.dayTags.single.tags.first.found, isTrue);
+    expect(report.dayTags.single.tags.first.effect, 1.2);
+    expect(report.dayTags.single.tags.last.effect, isNull);
+    expect(report.dayTags.single.tags.last.refusal, RefusalReason.tooFewDays);
+  });
+
+  test('a file of the format before day tags reads as absent', () {
+    final Map<String, Object?> good = _json(
+      encodeInsightsView(_view(everySection()))!,
+    );
+    final Map<String, Object?> report = <String, Object?>{
+      ...good['report']! as Map<String, Object?>,
+    }..remove('dayTags');
+    expect(
+      decodeInsightsView(
+        utf8.encode(
+          jsonEncode(<String, Object?>{
+            ...good,
+            'version': 5,
+            'report': report,
+          }),
+        ),
+      ),
+      isNull,
+    );
+    expect(
+      decodeInsightsView(
+        utf8.encode(jsonEncode(<String, Object?>{...good, 'report': report})),
+      ),
+      isNull,
+    );
   });
 
   test('a computed report round trips', () {

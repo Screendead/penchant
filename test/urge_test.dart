@@ -277,7 +277,7 @@ void main() {
                     day: DateTime(2026, 11, 16),
                     onLog: (_) {},
                     actions: <TileAction>[
-                      (
+                      TileAction(
                         label: TallyRow.urgeAction,
                         onSelected: () => UrgeSheet.show(context, _wine),
                       ),

@@ -42,6 +42,7 @@ import 'package:tracker/vice_form.dart';
 import 'package:tracker/widget_bridge/background_flush.dart';
 import 'package:tracker/widget_bridge/entry_prompt.dart';
 import 'package:tracker/widget_bridge/log_queue.dart';
+import 'package:tracker/night_out/night_out.dart';
 import 'package:tracker/widget_bridge/widget_bridge.dart';
 import 'package:tracker/widgets/keyboard_inset_clamp.dart';
 import 'package:tracker/design/motion_binding.dart';
@@ -154,6 +155,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     // Kept alive here so sealing runs whichever screen is open.
     ref.listen(plaintextMigrationProvider, (_, _) {});
     ref.listen(widgetSyncProvider, (_, _) {});
+    ref.listen(nightOutSyncProvider, (_, _) {});
     ref.listen(widgetLogFlushProvider, (_, _) {});
     ref.listen(entryPromptListenerProvider, (_, _) {});
     ref.listen(dailyNudgeStartupProvider, (_, _) {});

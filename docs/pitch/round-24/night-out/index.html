@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Night out on the Lock Screen</title>
+<style>
+  :root { --bg: #F6F4EF; --text: #1D1C1A; --muted: #635E56; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #151412; --text: #F3F0EA; --muted: #ACA79D; } }
+  body { background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, "Red Hat Text", sans-serif; margin: 0; padding: 24px 16px; }
+  main { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 28px 0 8px; }
+  p, li { color: var(--text); }
+  .note { color: var(--muted); font-size: 13px; }
+  svg { width: 100%; height: auto; display: block; margin: 12px 0; }
+</style>
+</head>
+<body>
+<main>
+<h1>A night out on the Lock Screen</h1>
+<p class="note">What the Live Activity looks like on an iPhone 13 Pro Max (no Dynamic Island). Drawn from
+<code>ios/PenchantWidgets/NightWidget.swift</code>; the real thing can only be seen on a device.</p>
+
+<h2>Default: the habit is not named</h2>
+<svg viewBox="0 0 428 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Lock Screen with a Penchant card reading Tonight, since 19:20, count 3, and a +1 button">
+  <rect width="428" height="300" rx="28" fill="#2b2f3a"/>
+  <text x="214" y="70" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="64" font-weight="600" fill="#fff">21:42</text>
+  <text x="214" y="100" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="17" fill="#fff" opacity=".85">Saturday 14 November</text>
+  <!-- the activity: 16 pt inset from the screen edges, system corner radius -->
+  <rect x="16" y="170" width="396" height="84" rx="22" fill="#151412"/>
+  <circle cx="44" cy="198" r="5" fill="none" stroke="#F3F0EA" stroke-width="2"/>
+  <text x="58" y="204" font-family="'Red Hat Display', sans-serif" font-weight="900" font-size="18" fill="#F3F0EA">Tonight</text>
+  <text x="58" y="226" font-family="'Red Hat Text', sans-serif" font-size="13" fill="#ACA79D">since 19:20</text>
+  <text x="318" y="225" text-anchor="end" font-family="'Red Hat Mono', monospace" font-weight="600" font-size="36" fill="#F3F0EA">3</text>
+  <circle cx="360" cy="212" r="26" fill="#2A2825" stroke="#F3F0EA" stroke-opacity=".12"/>
+  <text x="360" y="218" text-anchor="middle" font-family="'Red Hat Mono', monospace" font-weight="600" font-size="18" fill="#F3F0EA">+1</text>
+</svg>
+
+<h2>Name and colour shown (chosen when starting)</h2>
+<svg viewBox="0 0 428 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The card reading Wine in its colour, since 19:20, count 3">
+  <rect x="16" y="18" width="396" height="84" rx="22" fill="#151412"/>
+  <circle cx="44" cy="46" r="6" fill="#FF7A59"/>
+  <text x="58" y="52" font-family="'Red Hat Display', sans-serif" font-weight="900" font-size="18" fill="#F3F0EA">Wine</text>
+  <text x="58" y="74" font-family="'Red Hat Text', sans-serif" font-size="13" fill="#ACA79D">since 19:20</text>
+  <text x="318" y="73" text-anchor="end" font-family="'Red Hat Mono', monospace" font-weight="600" font-size="36" fill="#FF7A59">3</text>
+  <circle cx="360" cy="60" r="26" fill="#2A2825" stroke="#F3F0EA" stroke-opacity=".12"/>
+  <text x="360" y="66" text-anchor="middle" font-family="'Red Hat Mono', monospace" font-weight="600" font-size="18" fill="#F3F0EA">+1</text>
+</svg>
+
+<h2>After it ends (stale date passed)</h2>
+<svg viewBox="0 0 428 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The card reading Tonight, Ended, from 19:20, count 7, with no button">
+  <rect x="16" y="18" width="396" height="84" rx="22" fill="#151412"/>
+  <circle cx="44" cy="46" r="5" fill="none" stroke="#F3F0EA" stroke-width="2"/>
+  <text x="58" y="52" font-family="'Red Hat Display', sans-serif" font-weight="900" font-size="18" fill="#F3F0EA">Tonight</text>
+  <text x="58" y="74" font-family="'Red Hat Text', sans-serif" font-size="13" fill="#ACA79D">Ended · from 19:20</text>
+  <text x="390" y="73" text-anchor="end" font-family="'Red Hat Mono', monospace" font-weight="600" font-size="36" fill="#F3F0EA">7</text>
+</svg>
+
+<h2>Layout, exactly</h2>
+<ul>
+  <li>One row, 18 pt side padding, 14 pt top and bottom, on the app's paper colour (light) or ink (dark), following the phone's appearance.</li>
+  <li>Left: a 12 pt mark (an ink ring by default; the habit's colour if chosen), then the label in Red Hat Display Black 18 ("Tonight" or the habit's name) over "since 19:20" in Red Hat Text 13, muted. The time follows the phone's 12/24-hour setting.</li>
+  <li>Right: the count in Red Hat Mono SemiBold 36 (ink, or the habit's text colour if chosen), rolling to the new number, then a 52 pt round "+1" button (surface colour, hairline border).</li>
+  <li>Once the end time passes the button goes and the line reads "Ended · from 19:20". iOS keeps it on the Lock Screen up to 4 hours more unless swiped away.</li>
+  <li>Dynamic Island (other phones): the mark and the count compact; label, count and +1 expanded.</li>
+</ul>
+</main>
+</body>
+</html>
