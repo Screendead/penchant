@@ -205,6 +205,17 @@ func rankCombined(_ q: String) -> [Int] {
 
 func hits(_ ranked: [Int], _ expected: [Int]) -> Int { ranked.prefix(shown).filter(expected.contains).count }
 
+// Meaning-only results above the floor, anywhere in the list: how many were
+// expected notes.
+var meaningShown = 0, meaningRight = 0
+for (q, expected) in queries {
+  let sims = similarities(q)
+  for i in notes.indices where wordTier(q, notes[i]).0 == 0 && sims[i] >= meaningFloor {
+    meaningShown += 1
+    if expected.contains(i) { meaningRight += 1 }
+  }
+}
+
 var totals: [String: (any: Int, found: Int, possible: Int)] = [:]
 for (q, expected) in queries {
   var line = "\(q):"
@@ -224,3 +235,4 @@ for name in ["words", "meaning", "combined"] {
   print(String(format: "%-9@ an expected note in the top %d for %2d of %d queries; %2d of %d top-%d places filled by expected notes",
                name as NSString, shown, t.any, queries.count, t.found, t.possible, shown))
 }
+print("meaning-only results above the floor \(meaningFloor): \(meaningRight) of \(meaningShown) were expected notes")
