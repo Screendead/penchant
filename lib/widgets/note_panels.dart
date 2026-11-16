@@ -89,7 +89,9 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
     vsync: this,
     duration: _lit + _flight + _settle,
   );
-  // The ink line passing under the note's words while Claude reads it.
+  // The ink line passing once under the note's words as it is sent to be
+  // read. One pass, not a loop: a sheet waiting on the reader must still
+  // settle.
   late final AnimationController sweep = AnimationController(vsync: this);
   final GlobalKey stackKey = GlobalKey();
   final GlobalKey echoKey = GlobalKey();
@@ -224,7 +226,7 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
       sweep.duration = Duration(
         milliseconds: math.max(1200, 160 * _words(text).length),
       );
-      sweep.repeat();
+      sweep.forward(from: 0);
     }
     if (reader is QuestioningNoteReader) {
       final int asking = ++_asking;
@@ -834,7 +836,7 @@ class _SweepPainter extends CustomPainter {
     final RenderObject? p = paragraph.currentContext?.findRenderObject();
     if (p is! RenderParagraph || !p.hasSize || words.isEmpty) return;
     final List<Rect> rects = _rects ??= _measure(p);
-    if (rects.isEmpty) return;
+    if (rects.isEmpty || sweep.isCompleted) return;
     final double at = sweep.value * rects.length;
     final int current = at.floor().clamp(0, rects.length - 1);
     final double drawn = Curves.easeOut.transform(at - current);
