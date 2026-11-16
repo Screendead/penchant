@@ -112,10 +112,16 @@ function statements(input) {
 
 // What a finding may use besides its own words: the numerals of every cell
 // sent, and as phrases the habit names, unit words and the cells that are tag
-// labels, longest first; the same as findingContext in lib/analyst/investigation.dart.
+// labels, longest first; hours, each cell that is wholly an integer 0 to 23,
+// which a clock time H:00 may name; and counts, each untruncated result's
+// number of rows and of distinct values in each column, which a count word
+// two to twelve may name. The same as findingContext in
+// lib/analyst/investigation.dart.
 function contextOf(input) {
   const numerals = new Set();
   const phrases = new Set();
+  const hours = new Set();
+  const counts = new Set();
   for (const h of input.habits) [h.name, h.unit, h.unit_one].forEach((p) => phrases.add(p));
   for (const { result } of statements(input)) {
     if (!result.rows) continue;
@@ -124,13 +130,21 @@ function contextOf(input) {
         if (cell == null) continue;
         for (const n of cell.match(NUMERAL) || []) numerals.add(n);
         if (KNOWN_LABELS.has(cell) || OWN_WORDS.test(cell)) phrases.add(cell);
+        if (/^\d{1,2}$/.test(cell) && Number(cell) <= 23) hours.add(Number(cell));
       }
     }
+    if (result.truncated) continue;
+    counts.add(result.rows.length);
+    result.columns.forEach((_, i) => {
+      counts.add(new Set(result.rows.map((row) => row[i]).filter((cell) => cell != null)).size);
+    });
   }
   return {
     numerals,
     notes: [],
     phrases: [...phrases].filter((p) => p.trim() !== '').sort((a, b) => b.length - a.length),
+    hours,
+    counts,
   };
 }
 
@@ -172,8 +186,8 @@ const EMPTY_FINDING = { headline: '', body: '', rests_on: [] };
 
 // The model's step and 'ok', or null and a fixed code saying which rule
 // failed. It must fit SCHEMA and the bounds structured outputs cannot carry:
-// 'queries' with 1 or more cards (past LIMITS.queries dropped; any finding
-// dropped), 'finding' with a headline, a body and 1 or more numbers (any
+// 'queries' with 1 or more cards valid as Ask's (any other card dropped, then
+// past LIMITS.queries; any finding dropped), 'finding' with a headline, a body and 1 or more numbers (any
 // cards dropped).
 function checkStep(step) {
   if (!hasExactly(step, ['kind', 'queries', 'finding'])) return { step: null, why: 'shape' };
@@ -184,7 +198,8 @@ function checkStep(step) {
   }
   if (!finding.rests_on.every(Number.isInteger)) return { step: null, why: 'shape' };
   if (kind === 'queries') {
-    const kept = queries.slice(0, LIMITS.queries);
+    const kept = queries.filter((card) => askJournal.validAnswer({ kind: 'answer', reason: 'none', cards: [card] }));
+    kept.splice(LIMITS.queries);
     if (!askJournal.validAnswer({ kind: 'answer', reason: 'none', cards: kept })) return { step: null, why: 'cards' };
     return { step: { kind, queries: kept, finding: { ...EMPTY_FINDING, rests_on: [] } }, why: 'ok' };
   }
@@ -243,11 +258,11 @@ const SYSTEM = [
   `Each result reaches you cut to ${LIMITS.rows} rows: aggregate, sort and LIMIT. For absences and runs, start from days and LEFT JOIN entries.`,
   '',
   `Steps. You have at most ${LIMITS.steps} steps in all. In each step either write 1 to ${LIMITS.queries} new queries (kind "queries", finding with empty strings and no numbers), or conclude (kind "finding", queries empty). When last_step is true you must conclude.`,
-  'Each query is a card: title (short, no numbers), explain (one plain sentence on what it counts, no numbers), sql, and chart as in the schema (type number, bar, line or table; x and series result columns or ""; y numeric columns; x_kind what x holds).',
+  `Each query is a card: title (short, no numbers), explain (one plain sentence on what it counts, no numbers), sql, and chart as in the schema (type number, bar, line or table; x and series result columns or ""; y at most ${askJournal.MAX_Y} numeric columns, even for a table; x_kind what x holds). A card breaking these rules is dropped and never runs.`,
   'Start broad (totals by month or week), then follow what stands out (hours, weekdays, tags, other habits).',
   '',
   `The finding: a headline (one sentence, at most ${LIMITS.headline} characters) and a body (2 to 5 plain sentences, at most ${LIMITS.body} characters in all) saying what the figures show, and rests_on, the n of each query whose result it uses; the phone shows those queries under it.`,
-  'Every number you write must appear exactly, as digits, in a cell of a result you were sent. So compute every figure you will state in SQL (differences, shares, percentages, averages), rounded there with round(x, 0) or round(x, 1), and clock times as text with printf. Never count, add or compare numbers yourself, and never write numbers as words ("two", "twice", "a couple"). Refer to months by name.',
+  'Every number you write must appear exactly, as digits, in a cell of a result you were sent: write each figure as digits exactly as a cell shows it. So compute every figure you will state in SQL (differences, shares, percentages, averages), rounded there with round(x, 0) or round(x, 1). A clock time is either a cell\'s text exactly (make it with printf) or HH:00 for an hour a cell holds as a whole number; select any hour you use as a threshold (such as hour >= 18) as a column if you will name it. Never count, add or compare numbers yourself, and never state a count no result has shown you; never write numbers as words ("twice", "a couple") except two to twelve for the number of rows of a result or of different values in one of its columns. Refer to months by name.',
   'Describe only what the figures show. Never say or suggest that one thing causes, leads to, drives, triggers or explains another; whether it does is for the app\'s Insights, which the phone offers below your finding. Use no words such as because, due to, caused, effect or as a result.',
   'Never give advice, encouragement, praise, judgement or a diagnosis, and use no labels. Do not use words such as problem, addiction, should, need to, must, cut down, too much, healthy, risk, concerning, progress or success. Say nothing about the future.',
   'Use double quotes only around a tag label exactly as a result gives it. Plain text, no markdown.',
