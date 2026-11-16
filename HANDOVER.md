@@ -401,11 +401,22 @@ files: the scratchpad is shared, and a generic `pr-body.md` once put one PR's de
 handover to do next rather than starting them yourself"; none is started). Each feature's card in
 `docs/pitch/round-24/next-ideas/pitch.html` is its spec; round 24's state is under "Calls waiting on Jack".
 
-- **N1. The entry reader's last misses.** Jack re-ran its trial after #338 (2026-11-16, 19 cases): the three
-  earlier mistakes are gone (a range is one entry at the lower number, "too many" and "a lot" give nothing, a
-  bottle or pitcher gives nothing). Left: a bare habit name ("Coffee") gives no entry where one now is expected;
-  two tags were wrong ("after lunch" on the ten o'clock coffee, "tonight" as `place/home`). Fix in the prompt
-  (`functions/entry_reader.js`), then Jack runs `~/development/tracker-tools/run-trials.sh entry-reader-trial`.
+- **N1. Run the entry reader trial and finish its prompt.** State on 2026-11-16: three rounds of prompt fixes are
+  merged and deployed (#338, #342, #343). The run after #342 (21 cases) passed its targets (a bare habit name is 1;
+  "some wine" is nothing; tags stay on their own entry) and showed two new misses, which #343 addresses and nothing
+  has yet tested: "Sat a bottle of wine over dinner" became one glass (the bare-name exception read as covering a
+  container), and "weekend was quiet, just a coffee each morning" gave Friday an entry too. Minor and left alone: a
+  "kids in bed" tag on the dinner wine as well, "a pint at lunch" tagged after-lunch (every entry is reviewed before
+  it is saved). Run the trial, read each case against its `expect:` line, and fix in `functions/entry_reader.js`
+  until a run is clean or the misses left are of that minor kind; Haiku varies between runs, so a rule that fixes
+  one case can loosen another: re-read the whole log each time.
+- **Claude runs the real-API trials itself** (Jack, 2026-11-16: asking him to run them "just keeps stalling
+  development"). Each trial is a script in the repo: `npm --prefix functions ci`, then
+  `node functions/tools/entry-reader-trial.js` with the API key in `ANTHROPIC_API_KEY` (the others beside it:
+  `note-reader-trial`, `follow-up-review`, `weekly-words-trial`, `ask-journal-trial`, `letter-review`,
+  `analyst-trial`, `tag-tidy-trial`). The key comes from the session's environment, which Jack sets up; never
+  print, log or commit it. Run only the trial for the prompt that changed: the Haiku ones are a few dozen short
+  calls; `letter-review` and `analyst-trial` use Opus and cost far more, so only when their code changed.
 - **N2. Ask your journal from Siri.** Probe first whether Ask can run in the headless engine a Siri intent gets
   (key loaded, sealed entries opened, the callable reached) before building the intent.
 - **N3. Log from an Apple Watch.** Signing probe first: whether Jack's team can sign a watchOS target with the
@@ -1098,7 +1109,8 @@ entries differently; a widget test of the restore page's steps. Two adjacent PRs
 Real-API trials Jack ran on 2026-11-16 (`~/development/tracker-tools/run-trials.sh`, logs beside it in `trials/`):
 note reader, follow-up, weekly words, Ask and the letter passed first time; the analyst passes 5 of 5 after three
 fixes to its checks (#324, #331, #336); tidy tags passed; the entry reader made three kinds of mistake (a range as
-two entries, an invented amount, a bottle as one glass), fixed in the prompt (#338) and not yet re-run. Jack has yet
+two entries, an invented amount, a bottle as one glass), fixed in the prompt (#338; later rounds under N1 in the
+queue). Jack has yet
 to read the letter and follow-up logs before turning those on. Unproven on a device: the night-out Live Activity,
 urge and check-in notification buttons, the Lens screen on a real call, the report's preview and share, backup save
 and restore against the real server, the Health write, on-device speech, the label read on real labels.
