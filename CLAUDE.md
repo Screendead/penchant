@@ -286,6 +286,33 @@ nothing. An answer (at most 500) is stored with its question and quote as the se
 the day note sheet show it (`SavedFollowUp`). The function logs whether a question came and its drop code before any
 colon (`term:x` logs `term`). `functions/tools/follow-up-review.js` runs 40 made-up notes with an API key.
 
+**Tag older notes** (`lib/notes/older_notes*.dart`; round 24). Settings' "Tag older notes" row, usable while the note
+reader's switch is on, opens `OlderNotesPage` (`/settings/older-notes`). It reads the journal once (Insights' range
+read) and offers unlocked entries with a note, newest first, leaving out (and counting) locked entries and entries
+already holding 10 tags. "Read the next 20 notes" sends each note alone through `olderNoteReaderProvider` (the same
+`readNote` call, no follow-up question) one at a time, at most `olderNotesDailyCap` (40) a local day on the device, under
+the function's 60, so new notes can still be read. `OlderNotesRunner` (`olderNotesProvider`) runs the batch outside the
+page; Stop drops the note in flight, which stays unread. Progress is the sealed kept file `older-notes`
+(`keptSealedFilesProvider`): ids read or decided, tags awaiting review with their quotes, and the day's count. Each
+read note is reviewed with its quotes marked and a row per tag (`shownTags`: quoted in the note as it is now, not
+already on it, no more than the entry has room for); Keep ticked or Drop all per note, or every ticked tag shown after
+a confirmation with the count. Saving goes through `setTriggers` (`cachedContent` or the read content,
+`withAnswers`, `updateActivity`, `settle`), so the whole envelope is resealed; a save that fails at once keeps its
+note for review. More notes are read only once the review list is empty.
+
+**Tidy my tags** (`lib/notes/tag_tidy*.dart`; round 24). `TagTidyPage` (`/settings/tidy-tags`, a Settings row for a
+verified account, no switch: the page shows every label before sending and sends only on the tap) gathers own-words
+triggers (`ownWords`: anything not a tree path) from unlocked entries and day notes, read once (the range read and
+`allDayNotesProvider`), and sends the labels alone, most used first, at most 200, each 1 to 60 units with no line break
+(`sendableLabel`), to the callable `tidyTags` (`functions/tag_tidy.js`: Claude Haiku 5.5, thinking off, effort low,
+structured output; 10 a day per uid per instance; 25 s request, 30 s handler, 35 s on the device; logs the reason and
+counts only). It answers merges (labels into one of them) and mappings (labels onto a leaf of the tree), each label
+in one suggestion at most; `CallableTagTidier.suggestionsIn` checks them again. The person accepts each; Apply says
+how many entries and day notes change and that it cannot be undone in one step, then rewrites their triggers
+(`tidied`: order kept, each once) through `setTriggers` and `setDayNote`, moves the picker's own-words counts
+(`FreeTextTriggers.rename`), and reads the journal again. New entries typed with an old label are not mapped.
+`functions/tools/tag-tidy-trial.js` runs made-up label lists with an API key.
+
 **Weekly review in words** (`lib/insights/weekly_words.dart`, off by default; Settings' "Last week in words",
 `WeeklyWordsSetting`). `WeeklyFigures.of` sends the callable `writeWeekly` the week's computed figures alone: each
 habit under a placeholder ("Habit A") with its unit words, totals and counts as numerals, busiest hours, tag paths
@@ -830,8 +857,8 @@ so an untouched new entry is logged at the moment of saving, to the second. The 
 `CalendarSheet` to move the entry to another day.
 
 **Server side.** Two scheduled functions in `functions/index.js`, and the callables `readNote` (Note reader,
-Follow-up question), `writeWeekly` (Weekly review in words), `askJournal` (Ask your journal), `investigate` (Analyst) and
-`writeLetter` (Letter), each requiring
+Follow-up question), `writeWeekly` (Weekly review in words), `askJournal` (Ask your journal), `investigate` (Analyst),
+`writeLetter` (Letter) and `tidyTags` (Tidy my tags), each requiring
 sign-in and a verified, non-guest account (`permission-denied`), answering `failed-precondition` until the Anthropic federation is set, with its own `DailyCap`, and sharing
 `maxInstances: 2`, 15 s, 256 MiB and the `note-reader@` service account (`writeLetter`: 220 s and 512 MiB, its client a
 200 s timeout, inside the app's 240 s). `monthlySummaries` (03:00 UTC on the 1st;
