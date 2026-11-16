@@ -234,9 +234,6 @@ class OlderNotesRunner extends Notifier<OlderNotesState> {
   ClaudeWork? _work;
   Future<void> _saving = Future<void>.value();
 
-  /// Tests set the clock.
-  DateTime Function() now = DateTime.now;
-
   @override
   OlderNotesState build() {
     ref.watch(userProvider.select((AsyncValue<User?> u) => u.value?.uid));
@@ -299,12 +296,12 @@ class OlderNotesRunner extends Notifier<OlderNotesState> {
     int sent = 0;
     for (final ViceActivity entry in batch) {
       final OlderNotesProgress p = state.progress!;
-      if (p.leftToday(now()) == 0) {
+      if (p.leftToday(DateTime.now()) == 0) {
         problem = OlderNotesProblem.enoughToday;
         break;
       }
       final String note = entry.note ?? '';
-      await _save(p.counted(now()));
+      await _save(p.counted(DateTime.now()));
       sent++;
       work?.say(OlderNotesCopy.reading, detail: OlderNotesCopy.sentSoFar(sent));
       List<ReadTag> tags;

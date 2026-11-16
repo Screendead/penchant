@@ -24,7 +24,6 @@ import 'package:tracker/notes/older_notes_page.dart';
 import 'package:tracker/notes/tag_tidy.dart';
 import 'package:tracker/notes/tag_tidy_page.dart';
 import 'package:tracker/providers/day_note_provider.dart';
-import 'package:tracker/providers/device_files_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
