@@ -28,29 +28,56 @@ class NudgeCopy {
   // Names no habit and no amount (Jack, round 20).
   static const String heavyToday = 'Anything different about today?';
   static const String heavyYesterday = 'Anything different about yesterday?';
+  // An urge's check-in: names no habit and no strength.
+  static const String urgeBody = 'Still there?';
+  static const String urgePassed = 'Passed';
+  static const String urgeStillThere = 'Still there';
+  static const String urgeHadOne = 'Had one';
 }
 
 /// What a press on the notification asks of the app.
-enum NudgeAction { log, clean, review, experiment, dayNote }
+enum NudgeAction {
+  log,
+  clean,
+  review,
+  experiment,
+  dayNote,
+  urgePassed,
+  urgeStillThere,
+  urgeHadOne,
+  // The check-in itself tapped: the urge's sheet, to answer there.
+  urge,
+}
 
-/// A press on a notification, with the day a day-note one is about.
+/// A press on a notification, with the day a day-note one is about or the
+/// urge a check-in asks about.
 @immutable
 class NudgeTap {
-  const NudgeTap(this.action, {this.day});
+  const NudgeTap(this.action, {this.day, this.urgeID});
 
   final NudgeAction action;
   final DateTime? day;
+  final String? urgeID;
 
   @override
   bool operator ==(Object other) =>
-      other is NudgeTap && other.action == action && other.day == day;
+      other is NudgeTap &&
+      other.action == action &&
+      other.day == day &&
+      other.urgeID == urgeID;
 
   @override
-  int get hashCode => Object.hash(action, day);
+  int get hashCode => Object.hash(action, day, urgeID);
 }
 
 NudgeAction? nudgeActionFor(String? actionId, {String? payload}) =>
     switch (actionId) {
+      _ when urgeOfPayload(payload) != null => switch (actionId) {
+        _urgePassedId => NudgeAction.urgePassed,
+        _urgeStillThereId => NudgeAction.urgeStillThere,
+        _urgeHadOneId => NudgeAction.urgeHadOne,
+        _ => NudgeAction.urge,
+      },
       _logActionId => NudgeAction.log,
       _cleanActionId => NudgeAction.clean,
       _ when payload == _reviewPayload => NudgeAction.review,
@@ -65,7 +92,37 @@ NudgeTap? nudgeTapFor(String? actionId, {String? payload}) {
   return NudgeTap(
     action,
     day: action == NudgeAction.dayNote ? heavyDayOfPayload(payload) : null,
+    urgeID: urgeOfPayload(payload),
   );
+}
+
+const String _urgePrefix = 'urge:';
+
+// The urge's document id alone: a payload names nothing personal.
+String urgePayload(String urgeID) => '$_urgePrefix$urgeID';
+
+String? urgeOfPayload(String? payload) {
+  if (payload == null || !payload.startsWith(_urgePrefix)) return null;
+  final String id = payload.substring(_urgePrefix.length);
+  return id.isEmpty ? null : id;
+}
+
+/// How long after an urge is noted its check-in asks.
+const Duration urgeCheckDelay = Duration(minutes: 15);
+
+// Several urges' check-ins can wait at once, each under its own id in
+// [urgeNoticeBase, urgeNoticeBase + urgeNoticeCount): clear of the nudge's
+// 1 to 3 and the experiment's 1000 to 1999.
+const int urgeNoticeBase = 3000;
+const int urgeNoticeCount = 1000;
+
+/// The lowest id in the urge range that [taken] leaves free, or null.
+int? freeUrgeNoticeId(Iterable<int> taken) {
+  final Set<int> used = taken.toSet();
+  for (int id = urgeNoticeBase; id < urgeNoticeBase + urgeNoticeCount; id++) {
+    if (!used.contains(id)) return id;
+  }
+  return null;
 }
 
 const String _heavyDayPrefix = 'heavy-day:';
@@ -84,6 +141,10 @@ DateTime? heavyDayOfPayload(String? payload) {
 const String _category = 'daily-nudge';
 const String _logActionId = 'log';
 const String _cleanActionId = 'clean';
+const String _urgeCategory = 'urge-check';
+const String _urgePassedId = 'urge-passed';
+const String _urgeStillThereId = 'urge-still-there';
+const String _urgeHadOneId = 'urge-had-one';
 // One notification, so a reschedule replaces it rather than adding another.
 const int _notificationId = 1;
 const int _reviewNotificationId = 2;
@@ -130,6 +191,15 @@ abstract class NudgeScheduler {
   Future<void> scheduleHeavyDay(HeavyPrompt prompt);
 
   Future<void> cancelHeavyDay();
+
+  /// Asks about [urgeID] at [at], with Passed, Still there and Had one.
+  Future<void> scheduleUrgeCheck(String urgeID, DateTime at);
+
+  /// Withdraws [urgeID]'s check-in, waiting or shown.
+  Future<void> cancelUrgeCheck(String urgeID);
+
+  /// Withdraws every urge's check-in, as on sign-out.
+  Future<void> cancelUrgeChecks();
 }
 
 class LocalNudgeScheduler implements NudgeScheduler {
@@ -155,6 +225,26 @@ class LocalNudgeScheduler implements NudgeScheduler {
               _cleanActionId,
               NudgeCopy.cleanAction,
             ),
+          ],
+        ),
+        // Every answer brings the app forward: iOS hands a background action
+        // to a separate engine, where no journal key or sign-in exists to
+        // seal the answer with.
+        DarwinNotificationCategory(
+          _urgeCategory,
+          actions: <DarwinNotificationAction>[
+            for (final (String id, String title) in <(String, String)>[
+              (_urgePassedId, NudgeCopy.urgePassed),
+              (_urgeStillThereId, NudgeCopy.urgeStillThere),
+              (_urgeHadOneId, NudgeCopy.urgeHadOne),
+            ])
+              DarwinNotificationAction.plain(
+                id,
+                title,
+                options: <DarwinNotificationActionOption>{
+                  DarwinNotificationActionOption.foreground,
+                },
+              ),
           ],
         ),
       ];
@@ -335,6 +425,66 @@ class LocalNudgeScheduler implements NudgeScheduler {
 
   @override
   Future<void> cancelHeavyDay() => _plugin.cancel(id: _heavyDayNotificationId);
+
+  // Quiet: no sound, no badge.
+  @override
+  Future<void> scheduleUrgeCheck(String urgeID, DateTime at) async {
+    await _setLocalZone();
+    final int? id = freeUrgeNoticeId(<int>[
+      for (final PendingNotificationRequest p
+          in await _plugin.pendingNotificationRequests())
+        p.id,
+      for (final ActiveNotification a in await _activeNotifications()) ?a.id,
+    ]);
+    if (id == null) return;
+    const DarwinNotificationDetails darwin = DarwinNotificationDetails(
+      categoryIdentifier: _urgeCategory,
+      presentBadge: false,
+      presentSound: false,
+    );
+    await _plugin.zonedSchedule(
+      id: id,
+      body: NudgeCopy.urgeBody,
+      payload: urgePayload(urgeID),
+      scheduledDate: tz.TZDateTime.from(at, tz.local),
+      notificationDetails: const NotificationDetails(
+        iOS: darwin,
+        macOS: darwin,
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    );
+  }
+
+  @override
+  Future<void> cancelUrgeCheck(String urgeID) =>
+      _cancelUrgeChecks((String? payload) => payload == urgePayload(urgeID));
+
+  @override
+  Future<void> cancelUrgeChecks() =>
+      _cancelUrgeChecks((String? payload) => urgeOfPayload(payload) != null);
+
+  Future<void> _cancelUrgeChecks(bool Function(String? payload) matches) async {
+    final Set<int> ids = <int>{
+      for (final PendingNotificationRequest p
+          in await _plugin.pendingNotificationRequests())
+        if (matches(p.payload)) p.id,
+      for (final ActiveNotification a in await _activeNotifications())
+        if (a.id case final int id when matches(a.payload)) id,
+    };
+    for (final int id in ids) {
+      await _plugin.cancel(id: id);
+    }
+  }
+
+  // Delivered and still in Notification Centre; on a system the plugin
+  // cannot ask, none.
+  Future<List<ActiveNotification>> _activeNotifications() async {
+    try {
+      return await _plugin.getActiveNotifications();
+    } on UnimplementedError {
+      return const <ActiveNotification>[];
+    }
+  }
 
   Future<void> _setLocalZone() async {
     tz_data.initializeTimeZones();
@@ -642,6 +792,24 @@ class PendingHeavyDayNote extends Notifier<DateTime?> {
   void clear() => state = null;
 }
 
+/// A check-in's answer, or a tap on it, waiting for Today: it needs sign-in
+/// and the journal key to seal the answer.
+final pendingUrgeAnswerProvider =
+    NotifierProvider<PendingUrgeAnswer, ({NudgeAction action, String urgeID})?>(
+      PendingUrgeAnswer.new,
+    );
+
+class PendingUrgeAnswer
+    extends Notifier<({NudgeAction action, String urgeID})?> {
+  @override
+  ({NudgeAction action, String urgeID})? build() => null;
+
+  void request(NudgeAction action, String urgeID) =>
+      state = (action: action, urgeID: urgeID);
+
+  void clear() => state = null;
+}
+
 /// Hears the notification's actions for the life of the app; MyApp keeps it
 /// alive. "Clean day" writes nothing: the press itself is the point.
 final dailyNudgeStartupProvider = FutureProvider<void>((Ref ref) async {
@@ -661,6 +829,13 @@ final dailyNudgeStartupProvider = FutureProvider<void>((Ref ref) async {
       case NudgeAction.dayNote:
         final DateTime? day = tap.day;
         if (day != null) ref.read(pendingDayNoteProvider.notifier).request(day);
+      case NudgeAction.urgePassed ||
+          NudgeAction.urgeStillThere ||
+          NudgeAction.urgeHadOne ||
+          NudgeAction.urge:
+        if (tap.urgeID case final String id) {
+          ref.read(pendingUrgeAnswerProvider.notifier).request(tap.action, id);
+        }
       case NudgeAction.clean:
         break;
     }

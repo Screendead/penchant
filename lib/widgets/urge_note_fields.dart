@@ -51,12 +51,15 @@ class _OptionalLabel extends StatelessWidget {
 }
 
 /// Urge from [minUrge] to [maxUrge]; tapping the chosen value clears it.
+/// The urge sheet asks it as a required question of its own.
 class UrgeField extends StatelessWidget {
   const UrgeField({
     super.key,
     required this.value,
     required this.onChanged,
     this.enabled = true,
+    this.label = urgeLabel,
+    this.optional = true,
   });
 
   static Key keyFor(int urge) => ValueKey<String>('urge-$urge');
@@ -64,6 +67,8 @@ class UrgeField extends StatelessWidget {
   final int? value;
   final ValueChanged<int?> onChanged;
   final bool enabled;
+  final String label;
+  final bool optional;
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +84,7 @@ class UrgeField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        const _OptionalLabel(urgeLabel),
+        _OptionalLabel(label, optional: optional),
         Row(
           children: <Widget>[
             for (int urge = minUrge; urge <= maxUrge; urge++) ...<Widget>[
