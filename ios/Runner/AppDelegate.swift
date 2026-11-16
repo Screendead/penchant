@@ -53,6 +53,9 @@ import UserNotifications
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "PhotosChannel") {
       PhotosChannel.register(with: registrar)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "LabelChannel") {
+      LabelChannel.register(with: registrar)
+    }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "NightChannel") {
       NightChannel.register(with: registrar)
     }

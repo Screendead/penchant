@@ -61,6 +61,8 @@
 	<string>Penchant listens only while you have the microphone on in Say it to log, to turn what you say into words on this device. The recording is never kept or sent anywhere.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Penchant turns what you say in Say it to log into words on this device only. The recording never leaves it; you see the words before you choose to send them to be read into entries.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Penchant reads the strength and volume printed on a drink's label, on this device, to fill in a habit's strength. The photo is not kept and is sent nowhere.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Penchant uses Face ID to open your journal when App lock is on.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
