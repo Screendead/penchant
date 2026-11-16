@@ -242,11 +242,9 @@ class LetterRunner extends Notifier<LetterRun> {
     return const LetterIdle();
   }
 
-  bool get sending => state is LetterSending;
-
   /// Sends [payload] unless a letter is already being written.
   Future<void> send(LetterPayload payload) async {
-    if (sending) return;
+    if (state is LetterSending) return;
     final LetterWriter? writer = ref.read(letterWriterProvider);
     final String? uid = ref.read(userProvider).value?.uid;
     if (writer == null || uid == null) return;
@@ -282,6 +280,6 @@ class LetterRunner extends Notifier<LetterRun> {
 
   /// Back to idle once the page has shown the outcome.
   void clear() {
-    if (!sending) state = const LetterIdle();
+    if (state is! LetterSending) state = const LetterIdle();
   }
 }

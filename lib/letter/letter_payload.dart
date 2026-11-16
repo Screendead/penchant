@@ -379,9 +379,7 @@ LetterPayload _build({
       continue;
     }
     final List<String> tags = _tags(note.triggers);
-    final ({String question, String answer})? follow = _followUp(
-      note.followUp,
-    );
+    final ({String question, String answer})? follow = _followUp(note.followUp);
     sentDayNotes.add(<String, Object?>{
       'date': dayKey(day),
       'text': text,
@@ -425,8 +423,7 @@ LetterPayload _build({
           <String, Object?>{
             'month': month,
             'habits': <Object?>[
-              for (final MapEntry<String, _Tally> h
-                  in monthly[month]!.entries)
+              for (final MapEntry<String, _Tally> h in monthly[month]!.entries)
                 h.value.row(h.key),
             ],
           },

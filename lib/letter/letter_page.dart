@@ -303,8 +303,7 @@ class _LetterPageState extends ConsumerState<LetterPage> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () =>
-                      ref.read(letterRunProvider.notifier).clear(),
+                  onPressed: () => ref.read(letterRunProvider.notifier).clear(),
                   child: const Text(LetterPage.ok),
                 ),
               ),
@@ -353,11 +352,7 @@ class _LetterPageState extends ConsumerState<LetterPage> {
       ],
     ),
     const SizedBox(height: DialSpace.l),
-    _Buttons(
-      primary: LetterPage.next,
-      onPrimary: _preview,
-      onCancel: _toList,
-    ),
+    _Buttons(primary: LetterPage.next, onPrimary: _preview, onCancel: _toList),
   ];
 
   List<Widget> _previewChildren(BuildContext context) {
@@ -535,8 +530,7 @@ class _LetterView extends StatelessWidget {
           ),
         ],
         if (letter.withheld > 0) CardFoot(LetterPage.withheld(letter.withheld)),
-        if (letter.shortened)
-          CardFoot(LetterPage.shortened(letter.from)),
+        if (letter.shortened) CardFoot(LetterPage.shortened(letter.from)),
         Padding(
           padding: const EdgeInsets.fromLTRB(6, 10, 6, 0),
           child: Text(

@@ -74,9 +74,7 @@ class LetterSetting extends ConsumerWidget {
   static const String notNow = 'Not now';
 
   Future<void> _set(BuildContext context, WidgetRef ref, bool on) async {
-    final LetterEnabled notifier = ref.read(
-      letterEnabledProvider.notifier,
-    );
+    final LetterEnabled notifier = ref.read(letterEnabledProvider.notifier);
     if (!on) {
       await notifier.choose(false);
       return;
