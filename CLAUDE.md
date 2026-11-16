@@ -664,6 +664,27 @@ legacy documents midway; legacy plaintext goes in past the rules (`createBypassi
 `startApp` (`smoke_test.dart`) seal with the real key. `storedContent` and `storedViceID` open sealed
 documents with either key.
 
+**Backup** (round 24 "A sealed backup you hold", Jack, 2026-11-16). Settings > Account > Backup (`BackupPage`,
+`lib/backup/backup_page.dart`, route `/settings/backup`) saves one file through the system's save panel and restores
+one into an empty account; Today's `BackupOfferCard` offers it monthly (once the recovery key is saved and a month old,
+no backup or dismissal on this device in 30 days, dates per uid in shared_preferences), never a notification. Format:
+`docs/backup-format.md` (`lib/backup/backup_file.dart`): magic, version, a plaintext header (creation time, source
+uid, and `keys/{uid}`'s `keyID` and 61-byte `wrapped`), one `Sealer.sealFile` envelope under the journal key with
+everything before it as associated data, a SHA-256 trailer; the body holds every document of `Account.ownedCollections`
+as the server holds it, envelopes unopened. `makeBackup` (`lib/backup/backup_service.dart`) reads through
+`Account.fetchStored` (pending writes first, server only) and opens the file again with the device's recovery key
+before the save panel sees it. `backupKeyProvider` (from `keyServiceOverrides`) is null until a key is checked against
+its record. Restore (`lib/backup/restore.dart`) never stores or adopts the backup's key: `planRestore` opens each
+envelope with it at the original path and re-seals the fields whole under the signed-in account's key at the new path
+(deterministic ids, `viceID` remapped, `ownerID` rewritten, `createdAt` kept, `updatedAt` the server's), legacy
+plaintext sealed as the migrator would; `runRestore` refuses (`AccountNotEmpty`) unless every owned document is one this
+backup writes, then writes vices first and activities and urges 20 a batch (the rules' 20 access calls per batch),
+skipping what is there, so a cut-short run finishes on the next. A collection restore does not know refuses the file;
+`test/restore_test.dart` fails when `ownedCollections` gains one. Guests are refused. The native panels are
+`BackupFiles` in `ios/Runner/AppDelegate.swift` (export from a tmp folder removed on close; open in place) and
+`macos/Runner/MainFlutterWindow.swift` (`files.user-selected.read-write`). `integration_test/backup_test.dart` saves and
+restores on the emulators.
+
 **Days.** An entry counts on the local day, in the viewer's current zone, of its `createdAt` instant. Day windows and
 graph buckets are local midnights from `lib/data/day.dart` (never `Duration(days:)`, which drifts an hour across DST).
 The logging zone is not stored, so an entry near midnight can move a day in another zone; storing it would be a new
