@@ -133,7 +133,10 @@ void main() {
     expect(entries.first, containsPair('time', '21:30'));
     expect(entries.first, containsPair('date', '2026-10-02'));
     expect(entries.first, containsPair('urge', 'a lot'));
-    expect(entries.first, containsPair('tags', <String>['Work or study › Meeting']));
+    expect(
+      entries.first,
+      containsPair('tags', <String>['Work or study › Meeting']),
+    );
     final List<Object?> dayNotes = json['dayNotes']! as List<Object?>;
     expect(keys(dayNotes.single), <String>{'date', 'text', 'tags'});
     final Map<String, Object?> figures =
