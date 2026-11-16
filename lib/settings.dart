@@ -23,6 +23,7 @@ import 'package:tracker/notes/note_reader_setting.dart';
 import 'package:tracker/notes/follow_up_setting.dart';
 import 'package:tracker/insights/weekly_words_setting.dart';
 import 'package:tracker/ask/ask_journal_setting.dart';
+import 'package:tracker/letter/letter_setting.dart';
 import 'package:tracker/reduce_motion_settings.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
@@ -375,6 +376,7 @@ class _SettingsState extends ConsumerState<Settings> {
             FollowUpSetting(),
             WeeklyWordsSetting(),
             AskJournalSetting(),
+            LetterSetting(),
           ],
         ),
         DialCard(

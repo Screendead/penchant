@@ -9,6 +9,8 @@ import 'package:tracker/account/claude_access.dart';
 import 'package:tracker/ask/ask_journal_setting.dart';
 import 'package:tracker/ask/ask_page.dart';
 import 'package:tracker/insights_page.dart';
+import 'package:tracker/letter/letter_page.dart';
+import 'package:tracker/letter/letter_setting.dart';
 import 'package:tracker/onboarding/onboarding.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/sync_status_provider.dart';
@@ -27,6 +29,7 @@ class Homepage extends ConsumerStatefulWidget {
   static const String habitsItem = 'Habits';
   static const String insightsItem = 'Insights';
   static const String askItem = 'Ask your journal';
+  static const String letterItem = 'Letter';
   static const String settingsItem = 'Settings';
 
   @override
@@ -143,6 +146,8 @@ class _AppMenu extends ConsumerWidget {
     final bool ask =
         ref.watch(askJournalEnabledProvider) &&
         ref.watch(claudeAllowedProvider);
+    final bool letter =
+        ref.watch(letterEnabledProvider) && ref.watch(claudeAllowedProvider);
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
     final DialColors colors = DialColors.of(context);
@@ -210,6 +215,14 @@ class _AppMenu extends ConsumerWidget {
                   onPressed: () =>
                       Navigator.of(context).pushNamed(AskPage.route),
                   child: const Text(Homepage.askItem),
+                ),
+              if (letter)
+                MenuItemButton(
+                  style: itemStyle,
+                  leadingIcon: const StrokeIcon(DialGlyph.mail, size: 20),
+                  onPressed: () =>
+                      Navigator.of(context).pushNamed(LetterPage.route),
+                  child: const Text(Homepage.letterItem),
                 ),
               MenuItemButton(
                 style: itemStyle,

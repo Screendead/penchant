@@ -16,6 +16,7 @@ const { DailyCap, readNote, validNote, wantsQuestion } = require('./note_reader.
 const { validFigures, writeWeekly } = require('./weekly_words.js');
 const { askJournal, validInput } = require('./ask_journal.js');
 const { verifiedCaller } = require('./caller.js');
+const letter = require('./letter.js');
 
 initializeApp();
 
@@ -252,22 +253,24 @@ async function googleIdentityToken() {
   return response.text();
 }
 
-let anthropic = null;
-function anthropicClient() {
-  if (anthropic) return anthropic;
+const clients = new Map();
+// [timeout] in milliseconds; one client per timeout.
+function anthropicClient(timeout = 8000) {
+  if (clients.has(timeout)) return clients.get(timeout);
   const ids = Object.fromEntries(Object.entries(federation).map(([key, param]) => [key, param.value()]));
   if (Object.values(ids).some((value) => value === '')) return null;
-  anthropic = new Anthropic({
+  const anthropic = new Anthropic({
     credentials: oidcFederationProvider({
       identityTokenProvider: googleIdentityToken,
       ...ids,
       baseURL: 'https://api.anthropic.com',
       fetch,
     }),
-    // Inside the app's 10 s wait, with no retry.
-    timeout: 8000,
+    // Inside the app's wait (10 s, or the letter's 240 s), with no retry.
+    timeout,
     maxRetries: 0,
   });
+  clients.set(timeout, anthropic);
   return anthropic;
 }
 
@@ -281,10 +284,16 @@ const CALLABLE = {
 const noteCap = new DailyCap();
 const askCap = new DailyCap(60);
 const weeklyCap = new DailyCap(10);
+const letterCap = new DailyCap(3);
+
+// The letter's reply takes one to two minutes: the SDK gives up inside the
+// function's timeout, which ends inside the app's 240 s wait.
+const LETTER_SDK_TIMEOUT_MS = 200000;
+const LETTER_CALLABLE = { ...CALLABLE, timeoutSeconds: 220, memory: '512MiB' };
 
 // The client, or failed-precondition while the federation is not set up.
-function configuredClient(name) {
-  const client = anthropicClient();
+function configuredClient(name, timeout) {
+  const client = anthropicClient(timeout);
   if (client == null) {
     logger.warn(name, { reason: 'not_configured' });
     throw new HttpsError('failed-precondition', 'This is not set up yet.');
@@ -356,4 +365,19 @@ exports.askJournal = onCall(CALLABLE, async (request) => {
   const { query, reason } = await askJournal(client, input);
   logger.info('askJournal', { reason });
   return { query, reason };
+});
+
+// A review of a chosen period of the journal, as the device built and showed
+// it. Logs the reason code and how many passages were withheld, each reason
+// only up to any colon: never the uid, the journal or the letter.
+exports.writeLetter = onCall(LETTER_CALLABLE, async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to ask for a letter.');
+  requireVerified('writeLetter', request.auth);
+  const input = letter.validInput(request.data);
+  if (input == null) throw new HttpsError('invalid-argument', 'The journal is not in the expected form.');
+  const client = configuredClient('writeLetter', LETTER_SDK_TIMEOUT_MS);
+  takeCap('writeLetter', letterCap, request.auth.uid);
+  const { letter: written, reason, withheld } = await letter.writeLetter(client, input);
+  logger.info('writeLetter', { reason, withheld: withheld.map((w) => w.reason.split(':')[0]) });
+  return { letter: written, reason };
 });
