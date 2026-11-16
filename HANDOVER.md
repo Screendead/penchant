@@ -415,15 +415,33 @@ handover to do next rather than starting them yourself"; none is started). Each 
   `analyst-trial`, `tag-tidy-trial`). The key comes from the session's environment, which Jack sets up; never
   print, log or commit it. Run only the trial for the prompt that changed: the Haiku ones are a few dozen short
   calls; `letter-review` and `analyst-trial` use Opus and cost far more, so only when their code changed.
-- **N2. Ask your journal from Siri.** Probe first whether Ask can run in the headless engine a Siri intent gets
-  (key loaded, sealed entries opened, the callable reached) before building the intent.
-- **N3. Log from an Apple Watch.** Signing probe first: whether Jack's team can sign a watchOS target with the
-  entitlements it needs. If it cannot, that goes to Jack as a call and nothing is built.
-- **N4. Insights: urges at entries against urges at random check-ins**, the check-in card's point. Check-ins have
-  been collected since #330; it needs enough answered ones before it can say anything.
-- **N5. A widget test of the restore page's steps**, with its text field added to `test/keyboard_audit_test.dart`.
-- **N6. Insights treating caught-up entries differently** (`loggedVia` `caughtUp`: their times are recalled, not
-  recorded).
+- **N2. Ask your journal from Siri.** Probed 2026-11-16 (no code): an Ask intent would run in Penchant's process, in
+  the same kind of headless engine as the background flush, which signs in and loads the key; the journal key and the
+  Auth user are both after-first-unlock keychain items, so readable on a locked phone. Read from code and Apple's
+  docs, not proven on a device. Being built: the intent that takes a question and opens Ask with it asked
+  (`feat/ask-from-siri`), which either design needs. **Jack's call:** whether Siri also speaks the answer without
+  opening the app (about 4 days more: Ask moved out of its page into a headless entry point, the spoken sentence
+  built on the phone from a single-number card, since the model never sees results; a cold start plus Ask's call of
+  up to 40 s against Siri's patience is unmeasured, and a spoken answer skips the app lock unless the intent asks
+  for Face ID).
+- **N3. Log from an Apple Watch.** Signing probed 2026-11-16: a watchOS app `com.screendead.penchant.watchkitapp`
+  with App Group `group.com.screendead.penchant` signed on team `8N575942RT` with `-allowProvisioningUpdates` (local
+  branch `probe/watch-signing`, `tools/probe-watch-signing.rb`). The complication's extension is probed by the build.
+  Being built on `feat/watch-app`. The profile runs a year, as every profile of this team already did when Focus and
+  Journaling Suggestions were refused (2026-11-12), so it says nothing new about the team.
+- ~~**N4. Insights: urges at entries against urges at random check-ins.**~~ Done (#348): per habit, by day, over
+  days holding both an answered check-in and an entry with an urge (14 at least); a check-in's 0 is read as 1; floor
+  one point; in the page's family; check-ins read once per open by `ownerID` alone (no index); saved report format
+  7. Claude's defaults, Jack may overturn: per habit only, late answers count when given. Limits: a person who
+  leaves an entry's urge blank when there was none puts entries higher (at 40% of check-ins answered 0 that can
+  reach the floor; not simulated); time of day is not held fixed; a mean-zero drift in entries alone rejects at 7.7%
+  against a nominal 5% (far under the floor, so no cards). Unseen on a device.
+- ~~**N5. A widget test of the restore page's steps**~~ Done (#346): `test/backup_restore_page_test.dart`, and the
+  recovery-key field in the keyboard audit. No app code changed.
+- ~~**N6. Insights treating caught-up entries differently.**~~ Done (#347): a `caughtUp` entry counts in day totals
+  on its calendar day and every use of that habit that day is left out of the time-of-day comparisons
+  (`timedUses`); the two Insights subpages say how many. `spoken` entries keep their times. Left as they were: the
+  weekly review's busiest hours and the experiment's missed-day check still use the guessed time.
 - **Only if needed: the label camera's Claude fallback**, when Jack's use shows the on-device read misses often.
 
 1. **The Day Dial UI overhaul** (`r6-ui-direction`, below), from the mock-up and its Flutter notes (`CLAUDE.md`,
