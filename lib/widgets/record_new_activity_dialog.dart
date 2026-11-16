@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/free_text_triggers.dart';
+import 'package:tracker/data/habit_strength.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -18,6 +19,7 @@ import 'package:tracker/providers/unarchived_vice_list_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/widgets/info_box.dart';
+import 'package:tracker/widgets/strength_field.dart';
 import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/undo_bar.dart' as undo_bar;
 import 'package:tracker/widgets/urge_note_fields.dart';
@@ -75,6 +77,7 @@ class _RecordNewActivityDialogState
   List<String> triggers = const <String>[];
   int? urge;
   final TextEditingController noteController = TextEditingController();
+  final TextEditingController strengthController = TextEditingController();
   bool loading = false;
   bool _initialApplied = false;
 
@@ -125,6 +128,10 @@ class _RecordNewActivityDialogState
 
     final DateTime date = timeController.value;
     final Vice vice = selectedVice!;
+    final HabitStrength? strength = vice.strength;
+    final double? own = strength == null
+        ? null
+        : StrengthField.typed(strengthController.text);
     final num typed = parseAmount(quantityController.text)!;
     final StoredMeasure measure = storedMeasure(typed);
     final String entry = describeActivity(
@@ -151,6 +158,8 @@ class _RecordNewActivityDialogState
           urge: urge,
           note: note,
           loggedVia: LoggedVia.sheet,
+          abv: strength?.unit.alcohol == true ? own : null,
+          caffeineMg: strength?.unit.alcohol == false ? own : null,
         ),
         'Not saved: $entry',
       );
@@ -230,6 +239,8 @@ class _RecordNewActivityDialogState
             onChanged: (String? id) {
               setState(() {
                 selectedVice = vices.firstWhere((Vice v) => v.id == id);
+                // A strength typed for one habit means nothing for another.
+                strengthController.clear();
               });
             },
             items: vices
@@ -335,6 +346,8 @@ class _RecordNewActivityDialogState
                         noteController: noteController,
                         enabled: !loading,
                         error: error,
+                        strength: chosen?.strength,
+                        strengthController: strengthController,
                       ),
                       const SizedBox(height: 14),
                       ListenableBuilder(
@@ -403,6 +416,7 @@ class _RecordNewActivityDialogState
     timeController.dispose();
     quantityController.dispose();
     noteController.dispose();
+    strengthController.dispose();
     super.dispose();
   }
 }

@@ -11,6 +11,7 @@ import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/vice_form.dart';
 import 'package:tracker/data/category.dart';
 import 'package:tracker/data/habit_line.dart';
+import 'package:tracker/data/habit_strength.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
@@ -355,13 +356,75 @@ void main() {
       await _pumpOpened(tester, writes, [
         viceListProvider.overrideWith((ref) => AsyncData([lined])),
       ], const EditVice(viceID: 'coffee'));
-      final Finder none = find.text(ViceForm.lineNone);
+      final Finder none = find.text(ViceForm.lineNone).last;
       await tester.ensureVisible(none);
       await tester.tap(none);
       await tester.pumpAndSettle();
       await save(tester);
       expect(writes.writes, [
         const Write('updateVice', 'coffee', <String, Object?>{'line': null}),
+      ]);
+    });
+
+    testWidgets('writes a strength; Alcohol needs its serving size', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      final Finder alcohol = find.text(ViceForm.alcoholLabel);
+      await tester.ensureVisible(alcohol);
+      await tester.tap(alcohol);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(ViceForm.abvKey), '4.5');
+      await save(tester);
+      expect(writes.writes, isEmpty);
+      expect(find.text('Please enter a number'), findsOneWidget);
+
+      await tester.enterText(find.byKey(ViceForm.servingKey), '568');
+      await tester.pump();
+      expect(find.textContaining('2.6 units'), findsOneWidget);
+      await save(tester);
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{
+          'strength': HabitStrength.alcohol(
+            unit: StrengthUnit.ukUnit,
+            servingMl: 568,
+            abv: 4.5,
+          ),
+        }),
+      ]);
+    });
+
+    testWidgets('an untouched strength writes nothing; None clears it', (
+      WidgetTester tester,
+    ) async {
+      final Vice coffee = Vice(
+        id: 'coffee',
+        name: 'Coffee',
+        unit: Unit.drink,
+        ownerID: ownerID,
+        createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
+        archived: false,
+        strength: const HabitStrength.caffeine(caffeineMg: 95.5),
+      );
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWith((ref) => AsyncData([coffee])),
+      ], const EditVice(viceID: 'coffee'));
+      expect(find.byKey(ViceForm.caffeineKey), findsOneWidget);
+      await save(tester);
+      expect(writes.writes, isEmpty);
+
+      await _pumpOpened(tester, writes, [
+        viceListProvider.overrideWith((ref) => AsyncData([coffee])),
+      ], const EditVice(viceID: 'coffee'));
+      final Finder none = find.text(ViceForm.strengthNone).first;
+      await tester.ensureVisible(none);
+      await tester.tap(none);
+      await tester.pumpAndSettle();
+      await save(tester);
+      expect(writes.writes, [
+        const Write('updateVice', 'coffee', <String, Object?>{
+          'strength': null,
+        }),
       ]);
     });
 

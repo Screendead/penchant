@@ -53,11 +53,12 @@ void main() {
       exportCsv(_data()),
       'time,vice,quantity,amount,unit,vice_id,entry_id,triggers,'
       'urge,note,time_zone,written_at,logged_via,'
-      'follow_up_question,follow_up_quote,follow_up_answer\r\n'
+      'follow_up_question,follow_up_quote,follow_up_answer,'
+      'own_abv,own_caffeine_mg,strength_total,strength_unit\r\n'
       '2026-11-02T09:30:00.000Z,"Coffee, ""flat white""\nlarge",3,,drink,v1,a1,'
       '"work/meeting; Late, ""very""",,kept although no field list names it,'
-      ',,,,,\r\n'
-      '2026-11-02T11:30:00.000Z,,1,0.5,,gone,a2,,,,,,,,,\r\n',
+      ',,,,,,,,,\r\n'
+      '2026-11-02T11:30:00.000Z,,1,0.5,,gone,a2,,,,,,,,,,,,,\r\n',
     );
   });
 
@@ -83,8 +84,41 @@ void main() {
     );
     expect(
       csv.split('\r\n')[1],
-      endsWith(',4,,Europe/London,2026-11-02T21:00:00.000Z,sheet,,,'),
+      endsWith(',4,,Europe/London,2026-11-02T21:00:00.000Z,sheet,,,,,,,'),
     );
+  });
+
+  test("the CSV writes an entry's own strength and what it comes to", () {
+    final String csv = exportCsv(
+      AccountData(
+        vices: const <StoredDocument>[
+          (
+            id: 'beer',
+            data: <String, dynamic>{
+              'name': 'Beer',
+              'unit': 'drink',
+              'strengthUnit': 'ukUnit',
+              'servingMl': 500,
+              'abv': 4,
+            },
+          ),
+        ],
+        activities: <StoredDocument>[
+          (
+            id: 'a',
+            data: <String, dynamic>{
+              'viceID': 'beer',
+              'quantity': 2,
+              'amount': 1.5,
+              'createdAt': Timestamp.fromDate(_monday),
+              'abv': 6,
+            },
+          ),
+        ],
+      ),
+    );
+    // 6 × 500 ÷ 1000 × 1.5
+    expect(csv.split('\r\n')[1], endsWith(',6.0,,4.5,ukUnit'));
   });
 
   test('the JSON holds every stored field, ids, and UTC ISO-8601 times', () {

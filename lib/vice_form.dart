@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/data/category.dart';
 import 'package:tracker/data/habit_line.dart';
+import 'package:tracker/data/habit_strength.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -39,6 +40,19 @@ class ViceForm extends ConsumerStatefulWidget {
   static const Key costKey = ValueKey<String>('vice-form-cost');
   static const Key currencyKey = ValueKey<String>('vice-form-currency');
   static const Key lineAmountKey = ValueKey<String>('vice-form-line-amount');
+
+  static const Key servingKey = ValueKey<String>('vice-form-serving');
+  static const Key abvKey = ValueKey<String>('vice-form-abv');
+  static const Key drinkGramsKey = ValueKey<String>('vice-form-drink-grams');
+  static const Key caffeineKey = ValueKey<String>('vice-form-caffeine');
+
+  static const String strengthLabel = 'Strength (optional)';
+  static const String strengthNone = 'None';
+  static const String alcoholLabel = 'Alcohol %';
+  static const String caffeineLabel = 'Caffeine mg';
+  static const String strengthHelp =
+      'Adds a Units view to Trends. It only measures: no guideline, no '
+      'warnings.';
 
   static const String lineLabel = 'Your line (optional)';
   static const String lineNone = 'None';
@@ -92,7 +106,73 @@ class _ViceFormState extends ConsumerState<ViceForm> {
   late final TextEditingController lineController = TextEditingController(
     text: openedLineText,
   );
+  // Null for no strength; else whether it is alcohol or caffeine.
+  late bool? alcohol = opened?.strength?.unit.alcohol;
+  late StrengthUnit alcoholUnit = switch (opened?.strength?.unit) {
+    final StrengthUnit unit when unit.alcohol => unit,
+    _ =>
+      ref
+              .read(viceListProvider)
+              .value
+              ?.map((Vice v) => v.strength?.unit)
+              .nonNulls
+              .where((StrengthUnit u) => u.alcohol)
+              .firstOrNull ??
+          StrengthUnit.ukUnit,
+  };
+  // Each opens on its stored value; an untouched one keeps it exactly.
+  late final ({TextEditingController controller, double? stored}) serving =
+      _strengthText(opened?.strength?.servingMl);
+  late final ({TextEditingController controller, double? stored}) abv =
+      _strengthText(opened?.strength?.abv);
+  late final ({TextEditingController controller, double? stored}) drinkGrams =
+      _strengthText(opened?.strength?.drinkGrams);
+  late final ({TextEditingController controller, double? stored}) caffeine =
+      _strengthText(opened?.strength?.caffeineMg);
   bool saving = false;
+
+  static ({TextEditingController controller, double? stored}) _strengthText(
+    double? stored,
+  ) => (
+    controller: TextEditingController(
+      text: stored == null ? '' : formatAmount(stored),
+    ),
+    stored: stored,
+  );
+
+  static double? _valueOf(
+    ({TextEditingController controller, double? stored}) field,
+  ) {
+    final String text = field.controller.text.trim();
+    if (field.stored case final double stored
+        when text == formatAmount(stored)) {
+      return stored;
+    }
+    return switch (parseAmount(text)) {
+      final num value when value > 0 => value.toDouble(),
+      _ => null,
+    };
+  }
+
+  HabitStrength? get _strength {
+    switch (alcohol) {
+      case null:
+        return null;
+      case false:
+        return HabitStrength.caffeine(caffeineMg: _valueOf(caffeine));
+      case true:
+        final double? ml = _valueOf(serving);
+        if (ml == null) return null;
+        return HabitStrength.alcohol(
+          unit: alcoholUnit,
+          servingMl: ml,
+          abv: _valueOf(abv),
+          drinkGrams: alcoholUnit == StrengthUnit.standardDrink
+              ? _valueOf(drinkGrams)
+              : null,
+        );
+    }
+  }
 
   // A price is in the habit's currency, else another habit's, else the
   // device region's.
@@ -120,6 +200,14 @@ class _ViceFormState extends ConsumerState<ViceForm> {
     costController.dispose();
     currencyController.dispose();
     lineController.dispose();
+    for (final TextEditingController c in <TextEditingController>[
+      serving.controller,
+      abv.controller,
+      drinkGrams.controller,
+      caffeine.controller,
+    ]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -182,11 +270,16 @@ class _ViceFormState extends ConsumerState<ViceForm> {
         vice != null && unitAndPrice != unitAndPriceOf(vice);
     final HabitLine? line = _line;
     final bool lineChanged = vice != null && line != vice.line;
+    final HabitStrength? strength = _strength;
+    final bool strengthChanged = vice != null && strength != vice.strength;
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
 
-    // The label, price and line exist only sealed, so they wait for the key
-    // too.
-    if ((vice == null || unitAndPriceChanged || lineChanged) &&
+    // The label, price, line and strength exist only sealed, so they wait for
+    // the key too.
+    if ((vice == null ||
+            unitAndPriceChanged ||
+            lineChanged ||
+            strengthChanged) &&
         !ref.read(trackerWritesProvider).canCreate) {
       // The form stays open with what was typed.
       messenger.showSnackBar(
@@ -206,13 +299,15 @@ class _ViceFormState extends ConsumerState<ViceForm> {
             category: category,
             unitAndPrice: unitAndPrice,
             line: line,
+            strength: strength,
           );
     } else if (name != vice.name ||
         unit != vice.unit ||
         !vice.categoryStored ||
         category != vice.category ||
         unitAndPriceChanged ||
-        lineChanged) {
+        lineChanged ||
+        strengthChanged) {
       // Only the changed fields are written: an untouched unit may be a
       // legacy value the parser shows as the fallback.
       write = ref
@@ -226,6 +321,7 @@ class _ViceFormState extends ConsumerState<ViceForm> {
                 : category,
             unitAndPrice: unitAndPriceChanged ? unitAndPrice : null,
             line: lineChanged ? (line: line) : null,
+            strength: strengthChanged ? (strength: strength) : null,
           );
     } else {
       write = null;
@@ -440,11 +536,158 @@ class _ViceFormState extends ConsumerState<ViceForm> {
                 decoration: const InputDecoration(labelText: 'Category'),
               ),
               const SizedBox(height: 20),
+              _strengthField(context),
+              const SizedBox(height: 20),
               _lineField(context),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _number(
+    ({TextEditingController controller, double? stored}) field, {
+    required Key key,
+    required String label,
+    required String suffix,
+    required double most,
+    String? hint,
+    bool optional = true,
+  }) => TextFormField(
+    key: key,
+    controller: field.controller,
+    onTapOutside: closeKeyboardOnTapOutside,
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    decoration: InputDecoration(
+      labelText: label,
+      hintText: hint,
+      suffixText: suffix,
+    ),
+    onChanged: (_) => setState(() {}),
+    validator: (String? value) =>
+        field.stored != null && value?.trim() == formatAmount(field.stored!)
+        ? null
+        : strengthError(value, most, optional: optional),
+  );
+
+  Widget _strengthField(BuildContext context) {
+    final DialColors colors = DialColors.of(context);
+    final bool? kind = alcohol;
+    final HabitStrength? strength = _strength;
+    final String one =
+        _unitAndPrice.unitSingular ??
+        _unitAndPrice.unitLabel ??
+        (unit ?? Unit.fallback).singular;
+    final double? each = strength?.perServing();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          ViceForm.strengthLabel,
+          style: DialTypeScale.bodyS.copyWith(color: colors.muted),
+        ),
+        const SizedBox(height: DialSpace.xs),
+        PillSegments<bool?>(
+          segments: const <({bool? value, String label, String spoken})>[
+            (value: null, label: ViceForm.strengthNone, spoken: 'No strength'),
+            (
+              value: true,
+              label: ViceForm.alcoholLabel,
+              spoken: 'Alcohol strength',
+            ),
+            (
+              value: false,
+              label: ViceForm.caffeineLabel,
+              spoken: 'Caffeine amount',
+            ),
+          ],
+          selected: kind,
+          onChanged: (bool? value) => setState(() => alcohol = value),
+        ),
+        if (kind == true) ...<Widget>[
+          const SizedBox(height: DialSpace.s),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: _number(
+                  serving,
+                  key: ViceForm.servingKey,
+                  label: 'Each $one',
+                  hint: '568',
+                  suffix: 'ml',
+                  most: maxServingMl,
+                  optional: false,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _number(
+                  abv,
+                  key: ViceForm.abvKey,
+                  label: 'Usual strength',
+                  hint: '4.5',
+                  suffix: '% ABV',
+                  most: maxAbv,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DialSpace.s),
+          DropdownButtonFormField<StrengthUnit>(
+            initialValue: alcoholUnit,
+            items: <DropdownMenuItem<StrengthUnit>>[
+              for (final StrengthUnit u in StrengthUnit.values)
+                if (u.alcohol)
+                  DropdownMenuItem<StrengthUnit>(
+                    value: u,
+                    child: Text(u.label),
+                  ),
+            ],
+            onChanged: (StrengthUnit? value) {
+              if (value != null) setState(() => alcoholUnit = value);
+            },
+            decoration: const InputDecoration(labelText: 'Count in'),
+          ),
+          if (alcoholUnit == StrengthUnit.standardDrink) ...<Widget>[
+            const SizedBox(height: DialSpace.s),
+            _number(
+              drinkGrams,
+              key: ViceForm.drinkGramsKey,
+              label: 'One standard drink',
+              suffix: 'g of alcohol',
+              most: maxDrinkGrams,
+              optional: false,
+            ),
+          ],
+        ],
+        if (kind == false) ...<Widget>[
+          const SizedBox(height: DialSpace.s),
+          _number(
+            caffeine,
+            key: ViceForm.caffeineKey,
+            label: 'Usual caffeine, each $one',
+            hint: '95',
+            suffix: 'mg',
+            most: maxCaffeineMg,
+          ),
+        ],
+        const SizedBox(height: DialSpace.xs),
+        Text(
+          kind == true && alcoholUnit == StrengthUnit.ukUnit
+              ? 'A UK unit is 10 ml of pure alcohol (NHS).'
+                    '${each == null ? '' : ' One $one: ${strength!.label(each)}.'}'
+                    ' ${ViceForm.strengthHelp}'
+              : kind == true && alcoholUnit == StrengthUnit.grams
+              ? 'Counted at 8 g of alcohol per UK unit (NHS).'
+                    '${each == null ? '' : ' One $one: ${strength!.label(each)}.'}'
+                    ' ${ViceForm.strengthHelp}'
+              : '${each == null ? '' : 'One $one: ${strength!.label(each)}. '}'
+                    '${ViceForm.strengthHelp}',
+          style: DialTypeScale.bodyS.copyWith(color: colors.muted),
+        ),
+      ],
     );
   }
 
