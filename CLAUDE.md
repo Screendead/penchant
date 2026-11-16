@@ -579,6 +579,25 @@ lists the day's urges (`UrgeRow`), each opening its sheet (strength, "What happe
 averages, Insights, Ask or the letter. Neutral words: no praise, streaks or counts of urges passed. The export adds
 `penchant-urges-<date>.csv` and an `urges` array.
 
+**Random check-ins** (round 24 "A few random check-ins a day"). Off by default, per device: Settings > Reminder >
+Random check-ins, with From and Until (default 9:00 to 21:00, at least 3 hours, same day); turning on asks
+notification permission. `CheckIns` (`lib/reminder/check_ins.dart`) draws `checkInsPerDay` (3) moments a day with
+`Random.secure()`, one uniform to the second in each third of the window (`drawCheckInTimes`), for
+`checkInDaysAhead` (5) days, and keeps them in shared_preferences with the last day drawn: launch (via
+`dailyNudgeStartupProvider`) and each answer only add days, never redraw a waiting prompt (redrawing on each open
+would tie prompt times to app use); a new window redraws all. Each prompt is a quiet notification "Any urge right
+now?" (`scheduleCheckIns`, ids 5000 to 5999 rolling, category `check-in`, payload `check-in:<answer id>:<prompt
+ms>`, never a habit) with foreground actions 0 to 5 (as urges', for the journal key); a tap on its body opens
+`CheckInSheet` (`lib/widgets/check_in_sheet.dart`, 0 to 5, one tap answers, Not now, Turn off check-ins). The press
+waits in `pendingCheckInProvider` (a repeated press of one prompt is ignored) until Today has sign-in and a key, then
+`answerCheckIn` (`lib/writes/answer_check_in.dart`) writes it with Undo (delete) and withdraws the notification.
+Collection `checkIns`, born sealed, naming no habit: plaintext `ownerID` and `createdAt` (device clock when the press
+came), `sealed` holding `CheckInContent` (`lib/data/check_in.dart`): `strength` 0 to 5, `promptedAt`, `zone`,
+`answeredVia`. Rules: owner only, that field set on create, no update (Undo deletes). Nothing queries it yet, so no
+index; nothing reads it but the export (`penchant-check-ins-<date>.csv`, a `checkIns` array), account deletion and
+the guest sweep. Turn-off cancels every prompt, shown or waiting; sign-out and deletion `forget()` the setting and
+the drawn prompts. Insights does not compare them with entries' urges yet.
+
 **A habit's strength** (round 24, "Strength and standard units"). Optional `strengthUnit` (`ukUnit`, `grams`,
 `standardDrink` or `mg`), `servingMl` (above 0, at most 5,000), `abv` (above 0, at most 100), `drinkGrams` (above 0, at
 most 100) and `caffeineMg` (above 0, at most 2,000), read together as `Vice.strength` (`HabitStrength`,

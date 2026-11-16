@@ -11,6 +11,7 @@ import 'package:tracker/insights/experiment.dart';
 import 'package:tracker/main.dart';
 import 'package:tracker/providers/package_info_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
+import 'package:tracker/reminder/check_ins.dart';
 import 'package:tracker/reminder/daily_nudge.dart';
 import 'package:tracker/reminder/heavy_day.dart';
 import 'package:tracker/reminder/heavy_day_nudge.dart';
@@ -83,7 +84,25 @@ class _FakeScheduler implements NudgeScheduler {
 
   @override
   Future<void> cancelUrgeChecks() async {}
+
+  @override
+  Future<void> scheduleCheckIns(List<CheckInPrompt> prompts) async {}
+
+  @override
+  Future<void> cancelCheckIns() async {}
+
+  @override
+  Future<void> withdrawCheckIn(String id) async {}
 }
+
+// The heavy-day row's switch; random check-ins' sits below it.
+final Finder _heavySwitch = find.descendant(
+  of: find.ancestor(
+    of: find.text(ReminderSettings.heavyLabel),
+    matching: find.byType(MergeSemantics),
+  ),
+  matching: find.byType(Switch),
+);
 
 Widget _app(_FakeScheduler scheduler, {Widget home = const Settings()}) =>
     ProviderScope(
@@ -328,14 +347,14 @@ void main() {
     await tester.pumpWidget(_app(scheduler, home: const ReminderSettings()));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text(ReminderSettings.heavyFoot), 100);
-    expect(tester.widget<Switch>(find.byType(Switch).last).value, isFalse);
+    expect(tester.widget<Switch>(_heavySwitch).value, isFalse);
     expect(find.text(ReminderSettings.heavyTimeLabel), findsOneWidget);
     expect(scheduler.permissionRequests, 0);
 
     await tester.tap(find.text(ReminderSettings.heavyLabel));
     await tester.pumpAndSettle();
     expect(scheduler.permissionRequests, 1);
-    expect(tester.widget<Switch>(find.byType(Switch).last).value, isTrue);
+    expect(tester.widget<Switch>(_heavySwitch).value, isTrue);
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     expect(prefs.getBool(HeavyDayNudge.enabledKey), isTrue);
     expect(prefs.getBool(DailyNudge.enabledKey), isNull);
@@ -354,7 +373,7 @@ void main() {
     await tester.scrollUntilVisible(find.text(ReminderSettings.heavyFoot), 100);
     await tester.tap(find.text(ReminderSettings.heavyLabel));
     await tester.pumpAndSettle();
-    expect(tester.widget<Switch>(find.byType(Switch).last).value, isFalse);
+    expect(tester.widget<Switch>(_heavySwitch).value, isFalse);
     expect(find.text(NudgeCopy.permissionDenied), findsOneWidget);
   });
 

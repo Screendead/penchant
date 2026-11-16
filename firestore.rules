@@ -239,6 +239,21 @@ service cloud.firestore {
         && validSealed(request.resource.data.get('sealed', null));
     }
 
+    // A random check-in's answer, born sealed: how strong any urge was, when
+    // the prompt came, the time zone and how it was answered exist only
+    // inside the envelope, so lib/data/check_in.dart is their only guard. It
+    // names no habit. `createdAt` is the device clock at answering. Never
+    // changed once written: a mistaken answer is deleted (Undo), not edited.
+    match /checkIns/{checkInID} {
+      allow read, delete: if ownsExisting();
+
+      allow create: if createsOwn()
+        && request.resource.data.keys().hasAll(['sealed', 'ownerID', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['sealed', 'ownerID', 'createdAt'])
+        && request.resource.data.createdAt is timestamp
+        && validSealed(request.resource.data.sealed);
+    }
+
     // The journal key's id and its copy wrapped under the recovery key; never
     // the key itself. The wrap is Sealer's envelope around 32 bytes: 61.
     match /keys/{uid} {
