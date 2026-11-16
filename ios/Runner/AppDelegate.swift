@@ -15,6 +15,11 @@ import UserNotifications
     BackgroundFlush.register()
     HealthChannel.Sync.start()
     PlacesChannel.start()
+    // A night the app did not end (its morning passed, the person removed it
+    // from the Lock Screen, another account signed in) ends at launch.
+    if #available(iOS 17.0, *) {
+      Task { await NightOut.tidy(uid: Snapshot.load()?.uid) }
+    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -40,6 +45,9 @@ import UserNotifications
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "PhotosChannel") {
       PhotosChannel.register(with: registrar)
+    }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "NightChannel") {
+      NightChannel.register(with: registrar)
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "SecretPasteboard") {
       SecretPasteboard.register(with: registrar.messenger())

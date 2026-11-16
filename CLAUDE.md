@@ -840,6 +840,24 @@ and deletion), so the Mac never sees it. Its optional notification (`experimentN
 topped up on each launch, cancelled on stop, finish and sign-out) says "Experiment, day 9 of 42" and never names the
 habit; permission is asked only when it is turned on. Stopping removes the plan with no result.
 
+**Night out** (iPhone, iOS 17+; round 24). A habit tile's long-press menu (`TileAction`, `lib/widgets/tally_row.dart`)
+offers "Start a night" (`lib/night_out/`), which starts a Live Activity (`NightOut`, `ios/PenchantWidgets/NightOut.swift`,
+compiled into the app and the widget extension; drawn by `NightWidget.swift`) counting that habit from now, with a +1
+button (`NightLogIntent`, a `LiveActivityIntent`, so it runs in the app's process) that queues a log like a widget's
+(`loggedVia` `widget`). Only `NSSupportsLiveActivities` in the app's Info.plist: no entitlement, no push token, local
+updates only. By default the Lock Screen says "Tonight" in ink; the habit's name and colour only if chosen at the
+start. The night (`NightRecord`, `NightPlan.swift`, pure, `tools/night-plan.test.sh`) lives in the App Group: `base`, the
+habit's total since the start in the entries the app last saw, plus the ids of logs made outside the app since (the +1,
+widgets, controls, Siri: `LogOneIntent` and `UndoLogIntent` tell it). While the app runs, `nightOutSyncProvider` (kept
+alive by `MyApp`) listens to the habit's entries since the start (`viceActivitySinceForUserProvider`) and reconciles
+over `com.screendead.penchant/night_out` (`ios/Runner/NightChannel.swift`): new `base`, and an outside log is dropped once
+seen or once off the queue unseen (refused or undone), so an Undo, edit or delete in the app shows on the Lock Screen at
+once. It ends at the first 06:00 at least an hour away, or 8 hours after the start if sooner (ActivityKit ends a Live
+Activity at 8 hours); no code runs then, so the stale date hides the +1 and the next launch, resume or tap ends it. One
+night at a time. Native ends it at launch (`AppDelegate`) and Dart on resume and on a user change (sign-out, account
+deletion) when it is over, not the signed-in user's, or removed from the Lock Screen. Today shows `NightStrip` with End
+while it runs. Not offered on the Mac (`nightOutProvider` is null there).
+
 **Places** (iOS only; Core Location visits, opt-in from a card on Insights: When In Use first, then the upgrade to
 Always, which Apple shows at most once; `NSLocation...UsageDescription` strings, no background mode or paid
 capability). `ios/Runner/PlacesChannel.swift` makes its `CLLocationManager` in `didFinishLaunching`, since the system

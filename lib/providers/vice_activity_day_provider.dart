@@ -98,6 +98,24 @@ final viceActivityRecentForUserProvider = StreamProvider.autoDispose
       },
     );
 
+// Every activity from [start] to [end], live, for a night out's count
+// (lib/night_out/night_out.dart): the night crosses midnight, so no day's
+// query holds it.
+final viceActivitySinceForUserProvider = StreamProvider.autoDispose
+    .family<List<ViceActivity>, ({String uid, DateTime start, DateTime end})>(
+      retry: firestoreRetry,
+      (ref, key) {
+        final SealedOpener opener = SealedOpener(ref.watch(sealerProvider));
+        return _activitiesBetween(
+          key.uid,
+          key.start,
+          key.end,
+        ).snapshots().asyncMap(
+          (snapshot) => ViceActivity.openQuerySnapshot(snapshot, opener),
+        );
+      },
+    );
+
 typedef ActivityRange = ({DateTime start, DateTime end});
 
 // Every activity in [start, end), for Insights, Ask and the reviews. The same

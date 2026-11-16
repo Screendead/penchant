@@ -10,6 +10,7 @@ struct PenchantWidgetsBundle: WidgetBundle {
       if #available(iOS 18.0, *) {
         LogControl()
       }
+      NightWidget()
     #endif
   }
 }
