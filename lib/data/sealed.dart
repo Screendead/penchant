@@ -66,16 +66,29 @@ const List<String> urgeContentFields = <String>[
   'outcomeAt',
 ];
 
+// A random check-in's answer (lib/data/check_in.dart). Born sealed.
+const List<String> checkInContentFields = <String>[
+  'strength',
+  'promptedAt',
+  'zone',
+  'answeredVia',
+];
+
 const Map<String, List<String>> contentFields = <String, List<String>>{
   'vices': viceContentFields,
   'activities': activityContentFields,
   'dayNotes': dayNoteContentFields,
   'urges': urgeContentFields,
+  'checkIns': checkInContentFields,
 };
 
 /// Collections whose documents were sealed from their first write, so the
 /// first-launch migrator has nothing to seal there and never reads them.
-const Set<String> bornSealedCollections = <String>{'dayNotes', 'urges'};
+const Set<String> bornSealedCollections = <String>{
+  'dayNotes',
+  'urges',
+  'checkIns',
+};
 
 /// Shown for a vice whose sealed fields this device cannot open.
 const String lockedViceName = 'Locked habit';
