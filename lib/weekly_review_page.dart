@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tracker/claude/claude_working.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
@@ -40,6 +41,7 @@ class WeeklyReviewPage extends ConsumerWidget {
   static const String stoppedHeading = 'No longer clear';
   static const String loading = 'Working it out…';
   static const String writing = 'Writing…';
+  static const String sentFigures = 'Sent this week’s figures';
   static const String writtenBy = 'Written by Claude from the figures below';
   static const String nothingLogged = 'Nothing logged last week';
   static const String noTriggers = 'No triggers noted last week';
@@ -174,7 +176,8 @@ class WeeklyReviewPage extends ConsumerWidget {
 }
 
 // The week's figures and changed findings in sentences, only with the switch
-// on; while it is written a quiet line, and on any failure nothing, so the lists stand alone.
+// on; while it is written a working card that gives way to it in place, and
+// on any failure nothing, so the lists stand alone.
 class _WeekInWords extends ConsumerWidget {
   const _WeekInWords({required this.review});
 
@@ -183,15 +186,42 @@ class _WeekInWords extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (ref.watch(weeklyWordsProvider) == null) return const SizedBox.shrink();
+    return AnimatedSwitcher(
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : DialMotion.containerTransform,
+      switchInCurve: DialMotion.enter,
+      switchOutCurve: DialMotion.exit,
+      transitionBuilder: (Widget child, Animation<double> animation) =>
+          FadeTransition(
+            opacity: animation,
+            child: SizeTransition(
+              sizeFactor: animation,
+              alignment: Alignment.topCenter,
+              child: child,
+            ),
+          ),
+      child: _words(context, ref),
+    );
+  }
+
+  Widget _words(BuildContext context, WidgetRef ref) {
     // The findings' changes are part of what is worded, so wait for them;
     // without Health they are simply absent.
     final WeeklyInsights? insights = ref.watch(weeklyInsightsProvider).value;
-    if (insights == null) return const CardFoot(WeeklyReviewPage.writing);
+    if (insights == null) {
+      return const Padding(
+        key: ValueKey<String>('waiting'),
+        padding: EdgeInsets.only(top: DialSpace.s),
+        child: ClaudeWorkingCard(status: WeeklyReviewPage.writing),
+      );
+    }
     final WeeklyFigures? figures = WeeklyFigures.of(review, insights: insights);
     if (figures == null) return const SizedBox.shrink();
     final DialColors colors = DialColors.of(context);
     return switch (ref.watch(weeklyParagraphProvider(figures))) {
       AsyncData(value: final String text) => DialCard(
+        key: const ValueKey<String>('words'),
         children: <Widget>[
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
@@ -214,7 +244,14 @@ class _WeekInWords extends ConsumerWidget {
           ),
         ],
       ),
-      AsyncLoading() => const CardFoot(WeeklyReviewPage.writing),
+      AsyncLoading() => const Padding(
+        key: ValueKey<String>('writing'),
+        padding: EdgeInsets.only(top: DialSpace.s),
+        child: ClaudeWorkingCard(
+          status: WeeklyReviewPage.writing,
+          detail: WeeklyReviewPage.sentFigures,
+        ),
+      ),
       _ => const SizedBox.shrink(),
     };
   }

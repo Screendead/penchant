@@ -60,7 +60,7 @@ const double _maxHeight = 600;
 /// arrival, so it never promises a panel that does not come.
 abstract class NotePanelsState<T extends ConsumerStatefulWidget>
     extends ConsumerState<T>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final PageController pages = PageController();
   int page = 0;
   final GlobalKey<FormState> noteForm = GlobalKey<FormState>();
@@ -89,6 +89,10 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
     vsync: this,
     duration: _lit + _flight + _settle,
   );
+  // The ink line passing once under the note's words as it is sent to be
+  // read. One pass, not a loop: a sheet waiting on the reader must still
+  // settle.
+  late final AnimationController sweep = AnimationController(vsync: this);
   final GlobalKey stackKey = GlobalKey();
   final GlobalKey echoKey = GlobalKey();
   final Map<String, GlobalKey> chipKeys = <String, GlobalKey>{};
@@ -142,6 +146,7 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
     waited?.cancel();
     reading?.cancel();
     arrival.dispose();
+    sweep.dispose();
     pages.dispose();
     note.dispose();
     answer.dispose();
@@ -211,11 +216,18 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
           onError: (Object _) => failed(),
           onDone: () {
             waited?.cancel();
+            sweep.stop();
             if (mounted) setState(() => reading = null);
           },
           cancelOnError: true,
         );
     waited = Timer(NotePanels.readTimeout, failed);
+    if (!still) {
+      sweep.duration = Duration(
+        milliseconds: math.max(1200, 160 * _words(text).length),
+      );
+      sweep.forward(from: 0);
+    }
     if (reader is QuestioningNoteReader) {
       final int asking = ++_asking;
       reader.question(text).then((NoteQuestion? q) {
@@ -243,6 +255,7 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
     waited?.cancel();
     reading?.cancel();
     reading = null;
+    sweep.stop();
     arrival.stop();
     if (lit case final ReadTag t) shown.add(t.path);
     for (final ReadTag t in arriving) {
@@ -470,9 +483,19 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
                     horizontal: DialSpace.s,
                     vertical: DialSpace.xs,
                   ),
-                  child: RichText(
-                    key: echoKey,
-                    text: _echo(context, readNote!),
+                  child: CustomPaint(
+                    foregroundPainter: reading != null && !still
+                        ? _SweepPainter(
+                            sweep,
+                            echoKey,
+                            _words(readNote!),
+                            theme.colorScheme.onSurface,
+                          )
+                        : null,
+                    child: RichText(
+                      key: echoKey,
+                      text: _echo(context, readNote!),
+                    ),
                   ),
                 ),
               ),
@@ -558,11 +581,19 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
                   end,
                   curve: DialMotion.enter,
                 ).transform(arrival.value);
+                // An arc, lifted most at mid-flight, rather than a line.
                 return Stack(
                   children: <Widget>[
                     Positioned.fromRect(
-                      rect: Rect.lerp(f.from, f.to, t)!,
-                      child: child!,
+                      rect: Rect.lerp(
+                        f.from,
+                        f.to,
+                        t,
+                      )!.shift(Offset(0, -math.sin(math.pi * t) * 24)),
+                      child: Transform.scale(
+                        scale: 0.9 + 0.1 * t,
+                        child: child,
+                      ),
                     ),
                   ],
                 );
@@ -769,6 +800,65 @@ abstract class NotePanelsState<T extends ConsumerStatefulWidget>
       ),
     ]);
   }
+}
+
+List<TextRange> _words(String text) => <TextRange>[
+  for (final RegExpMatch m in RegExp(r'\S+').allMatches(text))
+    TextRange(start: m.start, end: m.end),
+];
+
+// Under each word in turn an ink line draws itself across, the last few
+// fading behind it.
+class _SweepPainter extends CustomPainter {
+  _SweepPainter(this.sweep, this.paragraph, this.words, this.ink)
+    : super(repaint: sweep);
+
+  final Animation<double> sweep;
+  final GlobalKey paragraph;
+  final List<TextRange> words;
+  final Color ink;
+  List<Rect>? _rects;
+
+  List<Rect> _measure(RenderParagraph p) => <Rect>[
+    for (final TextRange w in words)
+      if (p.getBoxesForSelection(
+            TextSelection(baseOffset: w.start, extentOffset: w.end),
+          )
+          case [final TextBox first, ...final List<TextBox> rest])
+        rest.fold(
+          first.toRect(),
+          (Rect a, TextBox b) => a.expandToInclude(b.toRect()),
+        ),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final RenderObject? p = paragraph.currentContext?.findRenderObject();
+    if (p is! RenderParagraph || !p.hasSize || words.isEmpty) return;
+    final List<Rect> rects = _rects ??= _measure(p);
+    if (rects.isEmpty || sweep.isCompleted) return;
+    final double at = sweep.value * rects.length;
+    final int current = at.floor().clamp(0, rects.length - 1);
+    final double drawn = Curves.easeOut.transform(at - current);
+    final Paint line = Paint();
+    for (int back = 3; back >= 0; back--) {
+      final int i = current - back;
+      if (i < 0) continue;
+      final Rect r = rects[i];
+      final double width = back == 0 ? r.width * drawn : r.width;
+      line.color = ink.withValues(alpha: 0.75 * (1 - back / 4));
+      canvas.drawRect(Rect.fromLTWH(r.left, r.bottom - 1.5, width, 1.5), line);
+    }
+    final Rect word = rects[current];
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(word.inflate(1.5), const Radius.circular(3)),
+      Paint()..color = ink.withValues(alpha: 0.06),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_SweepPainter old) =>
+      old.sweep != sweep || old.words != words || old.ink != ink;
 }
 
 class _FlyingTag extends StatelessWidget {

@@ -5,6 +5,7 @@ import 'package:tracker/analyst/investigation.dart';
 import 'package:tracker/ask/ask_answer.dart';
 import 'package:tracker/ask/ask_page.dart';
 import 'package:tracker/ask/journal_db.dart';
+import 'package:tracker/claude/claude_working.dart';
 import 'package:tracker/design/dial_theme.dart';
 import 'package:tracker/design/habit_mark.dart';
 import 'package:tracker/design/tokens.dart';
@@ -155,71 +156,78 @@ class _InvestigationViewState extends State<InvestigationView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerLow,
-            border: Border.all(color: colors.line),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Text(InvestigationView.label.toUpperCase(), style: small),
-                const SizedBox(height: 4),
-                Text(
-                  inv.question,
-                  style: DialTypeScale.body.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: scheme.onSurface,
+        ClaudeWorkingResult(
+          tag: ('investigate', inv.id),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerLow,
+              border: Border.all(color: colors.line),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text(InvestigationView.label.toUpperCase(), style: small),
+                  const SizedBox(height: 4),
+                  Text(
+                    inv.question,
+                    style: DialTypeScale.body.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurface,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                ...switch (outcome) {
-                  null => <Widget>[
-                    Text(
-                      InvestigationView.working(
-                        inv.rounds.length + 1,
-                        all.length,
+                  const SizedBox(height: 10),
+                  ...switch (outcome) {
+                    null => <Widget>[
+                      ClaudeWorkingCard(
+                        status: InvestigationView.working(
+                          inv.rounds.length + 1,
+                          all.length,
+                        ),
                       ),
-                      style: body,
-                    ),
-                  ],
-                  InvestigationShown(:final Finding finding) => <Widget>[
-                    Text(
-                      finding.headline,
-                      style: DialTypeScale.body.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: scheme.onSurface,
+                    ],
+                    InvestigationShown(:final Finding finding) => <Widget>[
+                      Text(
+                        finding.headline,
+                        style: DialTypeScale.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: scheme.onSurface,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(finding.body, style: body),
-                    const SizedBox(height: 10),
-                    Text(InvestigationView.reading.toUpperCase(), style: small),
-                    const SizedBox(height: 10),
-                    Text(
-                      InvestigationView.insights,
-                      style: DialTypeScale.bodyS.copyWith(color: colors.muted),
-                    ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton(
-                        onPressed: () =>
-                            Navigator.of(context).pushNamed('/insights'),
-                        child: const Text(InvestigationView.openInsights),
+                      const SizedBox(height: 6),
+                      Text(finding.body, style: body),
+                      const SizedBox(height: 10),
+                      Text(
+                        InvestigationView.reading.toUpperCase(),
+                        style: small,
                       ),
-                    ),
-                  ],
-                  InvestigationWithheld() => <Widget>[
-                    Text(InvestigationView.withheld, style: body),
-                  ],
-                  InvestigationFailed(:final String reason) => <Widget>[
-                    Text(InvestigationView.failed(reason), style: body),
-                  ],
-                },
-              ],
+                      const SizedBox(height: 10),
+                      Text(
+                        InvestigationView.insights,
+                        style: DialTypeScale.bodyS.copyWith(
+                          color: colors.muted,
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () =>
+                              Navigator.of(context).pushNamed('/insights'),
+                          child: const Text(InvestigationView.openInsights),
+                        ),
+                      ),
+                    ],
+                    InvestigationWithheld() => <Widget>[
+                      Text(InvestigationView.withheld, style: body),
+                    ],
+                    InvestigationFailed(:final String reason) => <Widget>[
+                      Text(InvestigationView.failed(reason), style: body),
+                    ],
+                  },
+                ],
+              ),
             ),
           ),
         ),
