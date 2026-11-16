@@ -36,6 +36,19 @@ const CHART_TYPES = SCHEMA.$defs.chart.properties.type.enum;
 const X_KINDS = SCHEMA.$defs.chart.properties.x_kind.enum;
 const AREAS = NOTE_TAGS.filter(({ path }) => !path.includes('/'));
 
+// The functions the prompt offers: each is on the phone's allow-list
+// (askFunctions in lib/ask/journal_db.dart, which a test compares) and in the
+// SQLite of the oldest supported systems (iOS 15's 3.36), so no unixepoch,
+// concat, string_agg or maths functions.
+const SQL_FUNCTIONS = [
+  'count', 'sum', 'total', 'avg', 'min', 'max', 'group_concat',
+  'row_number', 'rank', 'dense_rank', 'percent_rank', 'cume_dist', 'ntile', 'lag', 'lead',
+  'first_value', 'last_value', 'nth_value',
+  'date', 'time', 'datetime', 'julianday', 'strftime',
+  'length', 'lower', 'upper', 'trim', 'ltrim', 'rtrim', 'substr', 'replace', 'instr', 'printf',
+  'abs', 'round', 'coalesce', 'ifnull', 'nullif', 'iif', 'typeof',
+];
+
 const SYSTEM = [
   'You write read-only SQLite queries that answer one question about a private habit journal, as JSON in the given schema.',
   'You never see the journal or any result: the phone runs your SQL on its own copy and draws each card from the rows.',
@@ -65,6 +78,8 @@ const SYSTEM = [
   'SQL rules:',
   '- SQLite dialect. Each card is exactly one SELECT (WITH allowed), with no semicolon-separated statements,',
   '  no PRAGMA, no ATTACH, nothing that writes. Window functions, CTEs, julianday() and date() are fine.',
+  `- Call only these functions: ${SQL_FUNCTIONS.join(', ')}; plus CASE, CAST, LIKE, IN and EXISTS. No JSON functions,`,
+  '  no table-valued functions, no sqlite_ tables: the phone refuses them.',
   "- Dates are text: compare them as text ('2026-03-01' <= day). Use today from the input, never 'now'.",
   '- Name habits by id from the habit list (habit_id = 3), matching the question loosely: "wine" matches "Red wine";',
   '  archived habits can be asked about.',
@@ -261,7 +276,7 @@ function parseMessage(message) {
 async function askJournal(client, input, model = MODEL) {
   let message;
   try {
-    message = await client.messages.create(messageRequest(input, model), { timeout: REQUEST_TIMEOUT_MS });
+    message = await client.messages.create(messageRequest(input, model), { timeout: REQUEST_TIMEOUT_MS, maxRetries: 0 });
   } catch {
     return { answer: null, reason: 'api_error' };
   }
@@ -288,6 +303,7 @@ module.exports = {
   REASONS,
   REQUEST_TIMEOUT_MS,
   SCHEMA,
+  SQL_FUNCTIONS,
   SYSTEM,
   askJournal,
   messageRequest,

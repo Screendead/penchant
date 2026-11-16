@@ -128,6 +128,7 @@ class _AskPageState extends ConsumerState<AskPage> {
 
   JournalDb? _db;
   Object? _builtFrom;
+  Object? _failedFrom;
   final Map<(int, int), AskRun> _runs = <(int, int), AskRun>{};
 
   @override
@@ -152,6 +153,7 @@ class _AskPageState extends ConsumerState<AskPage> {
     _db?.close();
     _db = null;
     _builtFrom = null;
+    _failedFrom = null;
     _runs.clear();
   }
 
@@ -164,13 +166,21 @@ class _AskPageState extends ConsumerState<AskPage> {
   ) {
     final Object key = (vices, entries, notes, today);
     if (_db != null && _builtFrom == key) return _db;
+    // A build that failed is not tried again for the same read.
+    if (_failedFrom == key) return null;
     _drop();
-    _db = JournalDb.build(
-      vices: vices,
-      entries: entries,
-      notes: notes,
-      today: today,
-    );
+    try {
+      _db = JournalDb.build(
+        vices: vices,
+        entries: entries,
+        notes: notes,
+        today: today,
+      );
+    } catch (_) {
+      // Not reported: nothing about the journal goes into a report.
+      _failedFrom = key;
+      return null;
+    }
     _builtFrom = key;
     return _db;
   }
@@ -226,17 +236,16 @@ class _AskPageState extends ConsumerState<AskPage> {
     final AsyncValue<List<DayNote>>? notes = on
         ? ref.watch(allDayNotesProvider)
         : null;
-    final bool readFailed =
-        (entries?.hasError ?? false) || (notes?.hasError ?? false);
     JournalDb? db;
+    bool buildFailed = false;
     if (vices != null && entries?.value != null && notes?.value != null) {
-      try {
-        db = _database(vices, entries!.value!, notes!.value!, today);
-      } catch (_) {
-        // Not reported: nothing about the journal goes into a report.
-        db = null;
-      }
+      db = _database(vices, entries!.value!, notes!.value!, today);
+      buildFailed = db == null;
     }
+    final bool readFailed =
+        buildFailed ||
+        (entries?.hasError ?? false) ||
+        (notes?.hasError ?? false);
     final Map<String, HabitMark> marks = habitMarks(vices ?? const <Vice>[]);
     final Map<String, HabitMark> marksByName = <String, HabitMark>{
       for (final Vice v in vices ?? const <Vice>[])

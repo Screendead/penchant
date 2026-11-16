@@ -6,7 +6,7 @@
 // hold the planted answer.
 // Run: ANTHROPIC_API_KEY=... node functions/tools/ask-journal-trial.js [claude-sonnet-5-5 | claude-haiku-5-5]
 
-const { MODEL, MODELS, REQUEST_TIMEOUT_MS, messageRequest, parseMessage, validInput } = require('../ask_journal.js');
+const { MODEL, MODELS, REQUEST_TIMEOUT_MS, SQL_FUNCTIONS, messageRequest, parseMessage, validInput } = require('../ask_journal.js');
 const { NOTE_TAGS } = require('../note_tags.js');
 
 const TODAY = '2026-11-15';
@@ -174,6 +174,12 @@ function buildJournal() {
 function runSql(db, sql) {
   const text = String(sql).trim().replace(/;\s*$/, '');
   if (!/^(select|with)\b/i.test(text)) return { refused: true, error: 'refused: not a SELECT' };
+  // node:sqlite allows every function; the phone allows the prompt's list.
+  const words = new Set(['in', 'exists', 'values', 'as', 'over', 'cast', 'and', 'or', 'not', 'from', 'join', 'on', 'using', 'filter', 'when', 'then', 'else', 'where', 'by', 'select', 'with', 'recursive', 'union', 'all', 'is', 'like', 'between']);
+  const called = [...text.replace(/'(?:[^']|'')*'/g, "''").matchAll(/\b([A-Za-z_][A-Za-z0-9_]*)\s*\(/g)]
+    .map((m) => m[1].toLowerCase())
+    .filter((name) => !words.has(name) && !SQL_FUNCTIONS.includes(name));
+  if (called.length > 0) return { refused: true, error: `refused: function ${called[0]} not on the phone's list` };
   let statement;
   try {
     statement = db.prepare(text);

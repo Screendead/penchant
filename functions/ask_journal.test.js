@@ -252,7 +252,7 @@ test('an API failure is a reason, not a throw, and the call carries its own time
   };
   assert.deepEqual(await askJournal(answering, validInput(input), 'claude-haiku-5-5'), { answer, reason: 'ok' });
   assert.equal(calls[0].body.model, 'claude-haiku-5-5');
-  assert.deepEqual(calls[0].options, { timeout: REQUEST_TIMEOUT_MS });
+  assert.deepEqual(calls[0].options, { timeout: REQUEST_TIMEOUT_MS, maxRetries: 0 });
   assert.ok(REQUEST_TIMEOUT_MS >= 30000 && REQUEST_TIMEOUT_MS <= 50000);
 });
 

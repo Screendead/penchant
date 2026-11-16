@@ -300,7 +300,7 @@ calls again; nothing is stored. Cap 10 a day per uid per instance; logs the reas
 **Ask your journal** (`lib/ask/`, off by default; Settings' "Ask your journal", `AskJournalSetting`, whose disclosure
 says what is sent; `AskPage`, route `/ask`, in the Penchant menu while the switch is on; guests and unverified emails
 refused as above; emulator builds have no service). The model writes read-only SQL; the device runs it over a private
-copy of the journal; no row or result leaves the device (Jack, 2026-11-16: "just has to be maximally secure").
+copy of the journal; no row or result leaves the device (Jack: "just has to be maximally secure").
 `CallableAskJournal.request` is the only payload, and has no parameter for anything else: `question` (1 to 300),
 `today`, `weekday`, `habits` (`id`, `name`, `unit`, `unit_one`, `archived`; `askHabits`' order, ids from
 `numberedHabits`, the same the tables use) and `history`, this session's last 5 answered questions with the server's
@@ -379,7 +379,7 @@ guest leaves `userProvider`'s `User` anonymous, so guest checks ask `Account.isG
 month for its dots (the day query's shape and index); the editor listens to its one document; Manage Data counts each
 vice's activities with a server-side `count()`, which is not live, ignores writes queued on the device, and fails
 offline. Insights reads every activity from 2000 (the date picker's floor) to today, an unbounded activity query: a
-one-time `get()` per open, not a listener, so a log written meanwhile shows on the next open. Habits learns whether
+one-time `get()` per open, not a listener, so a log written meanwhile shows on the next open. Ask your journal reads the same range, and every day note once per open (`allDayNotesProvider`: `ownerID` equality alone, the automatic index). Habits learns whether
 entries of a deleted (or foreign) habit exist by one more `count()`, every owned activity, less each habit's count
 (`deletedHabitCountProvider`, shown only when every count is the server's); only then is its "Deleted habit" row there,
 and `DeletedHabitPage` reads every owned activity once per open (the export's shape, paged by document id, from the

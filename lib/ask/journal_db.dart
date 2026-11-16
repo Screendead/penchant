@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
+import 'package:flutter/foundation.dart';
 import 'package:tracker/ask/ask_answer.dart';
 import 'package:tracker/ask/ask_journal.dart';
 import 'package:tracker/ask/sqlite_ffi.dart';
@@ -242,6 +243,8 @@ class JournalDb {
     required List<ViceActivity> entries,
     required List<DayNote> notes,
     required DateTime today,
+    // Off only for the tests of the layers under it.
+    @visibleForTesting bool authorize = true,
   }) {
     final Sqlite sq = Sqlite.instance;
     final Pointer<Void> handle = using((Arena arena) {
@@ -266,7 +269,7 @@ class JournalDb {
     final JournalDb db = JournalDb._(handle);
     try {
       db._fill(vices, entries, notes, today);
-      db._lockDown();
+      db._lockDown(authorize: authorize);
     } catch (_) {
       db.close();
       rethrow;
@@ -465,7 +468,7 @@ class JournalDb {
     _exec('ANALYZE');
   }
 
-  void _lockDown() {
+  void _lockDown({required bool authorize}) {
     _exec('PRAGMA query_only = ON');
     void limit(int id, int value) => _sq.limit(_db, id, value);
     limit(Sq.limitAttached, 0);
@@ -478,18 +481,25 @@ class JournalDb {
     limit(Sq.limitFunctionArg, 16);
     limit(Sq.limitVariableNumber, 0);
     limit(Sq.limitTriggerDepth, 0);
-    if (_sq.setAuthorizer(_db, _authorizer, nullptr) != Sq.ok) {
+    if (authorize && _sq.setAuthorizer(_db, _authorizer, nullptr) != Sq.ok) {
       throw StateError('sqlite authorizer refused');
     }
     _sq.progressHandler(_db, 1000, _progressHandler, nullptr);
   }
 
   /// Runs one model-written query. Never throws for anything in [sql].
-  AskRun run(String sql) {
+  AskRun run(String sql) => _run(sql, checked: true);
+
+  /// [run] without the statement checks of the first layer, for the tests of
+  /// the layers under it.
+  @visibleForTesting
+  AskRun runUnchecked(String sql) => _run(sql, checked: false);
+
+  AskRun _run(String sql, {required bool checked}) {
     if (_closed) return const AskRefused(AskRefusal.failed);
     if (sql.length > AskLimits.sql) return const AskRefused(AskRefusal.tooLong);
     final String body = sql.replaceFirst(_leadingNoise, '');
-    if (!_selectStart.hasMatch(body)) {
+    if (checked && !_selectStart.hasMatch(body)) {
       return const AskRefused(AskRefusal.notSelect);
     }
     return using((Arena arena) {
@@ -523,10 +533,11 @@ class JournalDb {
                 allowMalformed: true,
               )
             : 'x';
-        if (rest.trim().isNotEmpty) {
+        if (checked && rest.trim().isNotEmpty) {
           return const AskRefused(AskRefusal.notOneStatement);
         }
-        if (_sq.stmtReadonly(stmt) == 0 || _sq.stmtIsExplain(stmt) != 0) {
+        if (checked &&
+            (_sq.stmtReadonly(stmt) == 0 || _sq.stmtIsExplain(stmt) != 0)) {
           return const AskRefused(AskRefusal.notSelect);
         }
         return _rows(stmt);

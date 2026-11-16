@@ -413,4 +413,17 @@ void main() {
       }, 'invalid');
     });
   });
+
+  test('every function the prompt offers is on the device allow-list', () {
+    final String js = File('functions/ask_journal.js').readAsStringSync();
+    final String list = RegExp(
+      r'const SQL_FUNCTIONS = \[([^\]]*)\]',
+    ).firstMatch(js)!.group(1)!;
+    final List<String> offered = <String>[
+      for (final RegExpMatch m in RegExp(r"'([a-z_0-9]+)'").allMatches(list))
+        m.group(1)!,
+    ];
+    expect(offered, isNotEmpty);
+    expect(askFunctions.containsAll(offered), isTrue);
+  });
 }

@@ -41,7 +41,8 @@ ViceActivity entry(
   locked: locked,
 );
 
-JournalDb journal() => JournalDb.build(
+JournalDb journal({bool authorize = true}) => JournalDb.build(
+  authorize: authorize,
   vices: <Vice>[habit('Wine', 0), habit('Coffee', 1, archived: true)],
   entries: <ViceActivity>[
     entry('Wine', DateTime(2026, 11, 1, 20, 15), quantity: 2),
@@ -420,6 +421,59 @@ void main() {
     test('nothing once closed', () {
       db.close();
       expect(refusalOf(db.run('SELECT 1')), AskRefusal.failed);
+    });
+  });
+
+  group('under the authorizer, with the statement checks off', () {
+    late JournalDb bare;
+    setUp(() => bare = journal(authorize: false));
+    tearDown(() => bare.close());
+
+    test('query_only refuses writes and schema changes', () {
+      for (final String sql in <String>[
+        "INSERT INTO habits (id, name) VALUES (9, 'x')",
+        'DELETE FROM entries',
+        'DROP TABLE entries',
+        'CREATE TABLE t (a)',
+      ]) {
+        expect(bare.runUnchecked(sql), isA<AskRefused>(), reason: sql);
+      }
+      expect(rowsOf(bare.run('SELECT count(*) FROM entries')), <List<Object?>>[
+        <Object?>[6],
+      ]);
+    });
+
+    test('the attached limit refuses ATTACH', () {
+      expect(
+        bare.runUnchecked("ATTACH DATABASE ':memory:' AS leak"),
+        isA<AskRefused>(),
+      );
+    });
+
+    test('the length limit refuses a 2 MB value', () {
+      expect(
+        refusalOf(bare.runUnchecked("SELECT printf('%.*c', 2000000, 'x')")),
+        AskRefusal.tooBig,
+      );
+    });
+
+    test('the progress handler stops an endless CTE', () {
+      expect(
+        refusalOf(
+          bare.runUnchecked(
+            'WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n) '
+            'SELECT count(*) FROM n',
+          ),
+        ),
+        AskRefusal.tooSlow,
+      );
+    });
+
+    test('extension loading is not there', () {
+      expect(
+        bare.runUnchecked("SELECT load_extension('/usr/lib/libz.dylib')"),
+        isA<AskRefused>(),
+      );
     });
   });
 }
