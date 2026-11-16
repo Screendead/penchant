@@ -140,10 +140,12 @@ struct HabitTodayView: View {
             .foregroundStyle(tint)
             .widgetAccentable()
             .minimumScaleFactor(0.6)
+          // Cut rather than shrunk past legibility: the bezel's label and
+          // the habit's colour name it too.
           Text(name)
-            .font(.system(size: 9, weight: .medium))
+            .font(.system(size: 10, weight: .semibold))
             .lineLimit(1)
-            .minimumScaleFactor(0.7)
+            .minimumScaleFactor(0.9)
         }
         .padding(.horizontal, 4)
       }

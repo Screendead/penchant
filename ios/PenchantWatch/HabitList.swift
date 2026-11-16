@@ -9,7 +9,9 @@ struct HabitList: View {
     NavigationStack {
       content
         .navigationTitle("Today")
-        .navigationBarTitleDisplayMode(.inline)
+        #if os(watchOS)
+          .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
     .tint(WatchPalette.text)
   }
@@ -32,6 +34,10 @@ struct HabitList: View {
     ScrollViewReader { proxy in
       ScrollView {
         VStack(spacing: 6) {
+          // Above the rows: on such a day every total shown means something else.
+          if !journal.board.current {
+            Footnote("Counting this watch's logs until your iPhone sends today's totals.")
+          }
           ForEach(journal.board.rows) { row in
             Button {
               journal.log(row.habit)
@@ -72,9 +78,6 @@ struct HabitList: View {
   }
 
   @ViewBuilder private var footnotes: some View {
-    if !journal.board.current {
-      Footnote("Counting this watch's logs until your iPhone sends today's totals.")
-    }
     if journal.board.waiting > 0 {
       Footnote(
         journal.board.waiting == 1
@@ -88,16 +91,19 @@ private struct HabitRow: View {
   let focused: Bool
 
   var body: some View {
-    HStack(spacing: 8) {
+    HStack(spacing: 6) {
       WatchMark(habit: row.habit)
         .frame(width: 14, height: 14)
       VStack(alignment: .leading, spacing: 0) {
+        // Two lines, and a little smaller, before a name is cut: a 40 mm row
+        // has room for about nine letters beside a two-digit total.
         Text(row.habit.name)
           .font(WatchType.text(16, .semibold))
           .foregroundStyle(WatchPalette.text)
-          .lineLimit(1)
+          .lineLimit(2)
+          .minimumScaleFactor(0.85)
         Text(row.unit)
-          .font(WatchType.text(12))
+          .font(WatchType.text(13))
           .foregroundStyle(WatchPalette.muted)
           .lineLimit(1)
       }
@@ -109,7 +115,8 @@ private struct HabitRow: View {
         .minimumScaleFactor(0.7)
         .lineLimit(1)
     }
-    .padding(.horizontal, 10)
+    .padding(.horizontal, 8)
+    .padding(.vertical, 4)
     .frame(maxWidth: .infinity, minHeight: 48)
     .background(WatchPalette.surface2, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     .overlay {
@@ -143,7 +150,7 @@ private struct UndoBar: View {
       HStack(spacing: 6) {
         VStack(alignment: .leading, spacing: 0) {
           Text("Logged 1 \(row.habit.unitOne)")
-            .font(WatchType.text(12))
+            .font(WatchType.text(13))
             .lineLimit(1)
           Text("Undo")
             .font(WatchType.text(16, .bold))
@@ -184,7 +191,7 @@ private struct Footnote: View {
 
   var body: some View {
     Text(text)
-      .font(WatchType.text(12))
+      .font(WatchType.text(14))
       .foregroundStyle(WatchPalette.muted)
       .multilineTextAlignment(.center)
       .padding(.horizontal, 6)
@@ -203,7 +210,7 @@ private struct WatchNotice: View {
           .font(WatchType.display(18, .bold))
           .foregroundStyle(WatchPalette.text)
         Text(detail)
-          .font(WatchType.text(14))
+          .font(WatchType.text(15))
           .foregroundStyle(WatchPalette.muted)
       }
       .multilineTextAlignment(.center)

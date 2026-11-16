@@ -39,7 +39,8 @@ enum WatchType {
 }
 
 // A habit's mark as the app draws it (habitMarks): filled for the first five
-// habits, a ring for the next five, then a dotted ring.
+// habits, a ring for the next five, then a dotted ring. Rings are thin marks,
+// drawn in the habit's ink (habitColourRule).
 struct WatchMark: View {
   let habit: WatchContext.Habit
   var lineWidth: CGFloat = 2.5
@@ -47,10 +48,10 @@ struct WatchMark: View {
   var body: some View {
     switch habit.style {
     case "ring":
-      Circle().strokeBorder(WatchPalette.fill(habit.slot), lineWidth: lineWidth)
+      Circle().strokeBorder(WatchPalette.ink(habit.slot), lineWidth: lineWidth)
     case "dotted":
       Circle().strokeBorder(
-        WatchPalette.fill(habit.slot), style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, dash: [0.1, 5]))
+        WatchPalette.ink(habit.slot), style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, dash: [0.1, 5]))
     default:
       Circle().fill(WatchPalette.fill(habit.slot))
     }
