@@ -135,6 +135,40 @@ void main() {
     }
   });
 
+  test('counts come from untruncated results, hours from whole cells', () {
+    final List<({int id, Vice vice})> habits = fixtureRounds().$2;
+    String check(SentRows rows, String text) => checkAnalystPassage(
+      text,
+      findingContext(<InvestigationRound>[
+        InvestigationRound(
+          <AskCard>[card(byMonth)],
+          const <AskRun>[],
+          <SentResult>[rows],
+        ),
+      ], habits),
+    );
+    const List<String> columns = <String>['habit', 'hour', 'day'];
+    const List<List<String?>> rows = <List<String?>>[
+      <String?>['Wine', '20', '2026-10-18'],
+      <String?>['Coffee', '8', '2026-10-18'],
+      <String?>['Tea', '20', null],
+    ];
+    const SentRows whole = SentRows(columns, rows, truncated: false);
+    expect(check(whole, 'All three habits peaked at 20:00 or 08:00.'), 'ok');
+    expect(check(whole, 'Two days.'), 'ok');
+    expect(check(whole, 'Four habits.'), 'number_word:four');
+    expect(check(whole, 'All 3 habits.'), 'number:3');
+    expect(check(whole, 'From 18:00 on.'), 'number:18:00');
+    expect(check(whole, 'At 20:30.'), 'number:20:30');
+    expect(
+      check(
+        const SentRows(columns, rows, truncated: true),
+        'All three habits.',
+      ),
+      'number_word:three',
+    );
+  });
+
   group('cellText', () {
     test('formats as the check reads it', () {
       expect(cellText(3), '3');

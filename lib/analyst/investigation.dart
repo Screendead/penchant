@@ -223,11 +223,16 @@ final Set<String> _treeLabels = <String>{
   for (final String path in triggerPaths()) ...triggerLabels(path)!,
 };
 final RegExp _ownWords = RegExp(r'^own words \d+$');
+final RegExp _wholeHour = RegExp(r'^\d{1,2}$');
 
 /// What a finding may use besides its own words: the numerals of every cell
 /// sent, and as phrases the habit names, unit words and the cells that are
 /// tag labels. Other text cells are not phrases: a query's own literal could
-/// otherwise carry any prose past the checks.
+/// otherwise carry any prose past the checks. Hours, each cell that is wholly
+/// an integer 0 to 23, which a clock time H:00 may name; counts, each
+/// untruncated result's number of rows and of distinct values in each
+/// column, which a count word two to twelve may name. The same as contextOf
+/// in functions/analyst.js.
 LetterContext findingContext(
   List<InvestigationRound> rounds,
   List<({int id, Vice vice})> habits,
@@ -240,6 +245,8 @@ LetterContext findingContext(
       h.vice.units.singular,
     ],
   ];
+  final Set<int> hours = <int>{};
+  final Set<int> counts = <int>{};
   for (final InvestigationRound r in rounds) {
     for (final SentResult s in r.sent) {
       if (s is! SentRows) continue;
@@ -248,11 +255,21 @@ LetterContext findingContext(
           if (cell == null) continue;
           numerals.addAll(numeralsIn(cell));
           if (_knownLabel(cell)) phrases.add(cell);
+          if (_wholeHour.hasMatch(cell) && int.parse(cell) <= 23) {
+            hours.add(int.parse(cell));
+          }
         }
+      }
+      if (s.truncated) continue;
+      counts.add(s.rows.length);
+      for (int i = 0; i < s.columns.length; i++) {
+        counts.add(
+          <String>{for (final List<String?> row in s.rows) ?row[i]}.length,
+        );
       }
     }
   }
-  return LetterContext.figures(numerals, phrases);
+  return LetterContext.figures(numerals, phrases, hours: hours, counts: counts);
 }
 
 /// Why [passage] cannot be shown, or `ok`: the letter's rules

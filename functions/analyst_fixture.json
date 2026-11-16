@@ -42,10 +42,11 @@
         ],
         "results": [
           {
-            "columns": ["month", "entries", "evening_pct", "top_tag"],
+            "columns": ["month", "entries", "evening_pct", "top_tag", "peak_hour"],
             "rows": [
-              ["2026-09", "41", "48", "With friends"],
-              ["2026-10", "64", "61.5", "own words 1"]
+              ["2026-09", "41", "48", "With friends", "20"],
+              ["2026-10", "64", "61.5", "own words 1", "8"],
+              ["2026-08", "37", "50", "With friends", "20"]
             ],
             "truncated": false
           },
@@ -78,6 +79,15 @@
     { "text": "Long days led to more Wine.", "expect": "cause:led to" },
     { "text": "More Wine because of work.", "expect": "cause:because" },
     { "text": "You should look at evenings.", "expect": "term:should" },
-    { "text": "\"tired again\" came up.", "expect": "quote" }
+    { "text": "\"tired again\" came up.", "expect": "quote" },
+    { "text": "Wine peaked at 20:00 in September.", "expect": "ok" },
+    { "text": "In October it peaked at 08:00, or 8:00.", "expect": "ok" },
+    { "text": "Wine peaked at 10:00.", "expect": "number:10:00" },
+    { "text": "Wine peaked at 21:00.", "expect": "number:21:00" },
+    { "text": "Wine peaked at 20:30.", "expect": "number:20:30" },
+    { "text": "All three months had Wine, over two kinds of tag.", "expect": "ok" },
+    { "text": "Four months had Wine.", "expect": "number_word:four" },
+    { "text": "Three months had twice as many.", "expect": "number_word:twice" },
+    { "text": "All 3 months had Wine.", "expect": "number:3" }
   ]
 }
