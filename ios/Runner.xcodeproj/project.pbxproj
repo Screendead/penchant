@@ -7,50 +7,70 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E1DF6F12D1AB3BEA7706A3D1 /* NightPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443C37B921E99EBB09AFD02C /* NightPlan.swift */; };
-		DF65151EB368F217AB6B5087 /* NightPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443C37B921E99EBB09AFD02C /* NightPlan.swift */; };
-		6B7E36CB40840262AFEBC1B4 /* NightOut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C86AA49C5C046545F825925 /* NightOut.swift */; };
-		3B7DCDADF27E4AB767BD1B48 /* NightOut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C86AA49C5C046545F825925 /* NightOut.swift */; };
-		1E9D963C064FF290F6918F4E /* NightWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA644CE5264227A382ADF3B1 /* NightWidget.swift */; };
-		B1532FE5C4A6B7DD73859D49 /* NightChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7076D6AFD8B32D39DDC6A8 /* NightChannel.swift */; };
 		088B9F94D6D69CBA0F521249 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A4C9459F8D54DA18A6252F28 /* Foundation.framework */; };
+		0B19C360282DF9C0B423E22A /* RedHatText-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 758424BFFC9EEF86F9B0229E /* RedHatText-Variable.ttf */; };
+		0B819AEA35B289AE8FDA77FA /* WatchModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B385AF16AA957A503C8C0B06 /* WatchModel.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
+		1CD092CACCFF14AE7A6CC3C3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B236EE157474171302FA42F /* Foundation.framework */; };
+		1E9D963C064FF290F6918F4E /* NightWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA644CE5264227A382ADF3B1 /* NightWidget.swift */; };
 		2328CB8305C4734257203DFE /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FA40F28F3455F1267E67CBDD /* GoogleService-Info.plist */; };
 		24A2D8DEB656A48E02FD4DEF /* LogWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033AD6AE558D469041736580 /* LogWidget.swift */; };
+		2AEC120E528238A9BFE8FD71 /* WatchStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95331962A93EDB2C9A99FEA6 /* WatchStore.swift */; };
 		33AE04F296D7AE125D79E327 /* RedHatDisplay-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7C14907B634B8FFBB1CD096F /* RedHatDisplay-Variable.ttf */; };
 		35537E769B73D3EB43BF6ADD /* LogQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227E1EA1AAF79873A5820DAE /* LogQueue.swift */; };
 		35E6E605FD98566D18E004C8 /* PenchantWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 25DA8ABFFA20C3B83D725C8E /* PenchantWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		3B7DCDADF27E4AB767BD1B48 /* NightOut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C86AA49C5C046545F825925 /* NightOut.swift */; };
+		3E3C87BD739D76002F5D81FD /* RedHatMono-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E5C158E400374D0B712277FD /* RedHatMono-Variable.ttf */; };
 		44FB14D2C9A2CA98E34EFCF3 /* WeekDial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B68BFAF71BC81A49821CE60 /* WeekDial.swift */; };
 		55472B4E166DAC649E7BA254 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 159B767A1C675D568D71AAF7 /* Snapshot.swift */; };
+		5AB228C09CAA6079564073FE /* RedHatDisplay-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7C14907B634B8FFBB1CD096F /* RedHatDisplay-Variable.ttf */; };
+		5C0C28A7D5932B97D90A8762 /* WatchSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = E035C2ED413EED2F61E1ECE0 /* WatchSession.swift */; };
+		6A0C508E81EA5B0467FCB0F3 /* Complications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88CCD5EA3CD600DA41926BBC /* Complications.swift */; };
+		6B7E36CB40840262AFEBC1B4 /* NightOut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C86AA49C5C046545F825925 /* NightOut.swift */; };
 		6E1795F424729B54757D33AF /* LogIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070FE6C176AAF6D354EDC246 /* LogIntents.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		75F5501C5CEA8A6D1975D4E6 /* RedHatMono-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E5C158E400374D0B712277FD /* RedHatMono-Variable.ttf */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		7D2E25E81C4B20FC1417325B /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBEDBC897A1B2CA1D22E3401 /* Theme.swift */; };
 		8EE7B624B3FF8FD24ECF5F41 /* AppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA94BC842A28F0E5104D1B2 /* AppShortcuts.swift */; };
+		9105AAA568986B17671772AD /* WatchLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0932597FC6A65292A8F3473 /* WatchLink.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		9B5D5E6FB425409F1F2C29B0 /* RedHatText-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 758424BFFC9EEF86F9B0229E /* RedHatText-Variable.ttf */; };
 		9D19346592041635B06713B8 /* LogControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDED82F96F1BBB1DCE3DF251 /* LogControl.swift */; };
-		BF5576092445DE5D11E90DB1 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 159B767A1C675D568D71AAF7 /* Snapshot.swift */; };
-		C97CE9F24C6EEE147683BDF0 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FDAF3C8130B148446AF8C30B /* WidgetKit.framework */; };
-		DF0F76AD70CC8FC84F00EAAB /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA8EEF44CF13EE5D63ED37E /* WidgetBridge.swift */; };
 		A1E57C0D9B3F4E6A8C2D1B01 /* HealthChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1B02 /* HealthChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D1B03 /* HealthDays.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1B04 /* HealthDays.swift */; };
 		A1E57C0D9B3F4E6A8C2D1C01 /* CalendarChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1C02 /* CalendarChannel.swift */; };
-		A1E57C0D9B3F4E6A8C2D2A01 /* SentenceEmbeddingChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D2A02 /* SentenceEmbeddingChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D1D01 /* RemindersChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1D02 /* RemindersChannel.swift */; };
-		A1E57C0D9B3F4E6A8C2D5E01 /* SpeechChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D5E02 /* SpeechChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D1E01 /* PlacesChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1E02 /* PlacesChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D1F01 /* PhotosChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D1F02 /* PhotosChannel.swift */; };
+		A1E57C0D9B3F4E6A8C2D2A01 /* SentenceEmbeddingChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D2A02 /* SentenceEmbeddingChannel.swift */; };
+		A1E57C0D9B3F4E6A8C2D5E01 /* SpeechChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D5E02 /* SpeechChannel.swift */; };
 		A1E57C0D9B3F4E6A8C2D6F01 /* LabelChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E57C0D9B3F4E6A8C2D6F02 /* LabelChannel.swift */; };
+		A3305B6566B6172AA643B955 /* WatchModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B385AF16AA957A503C8C0B06 /* WatchModel.swift */; };
+		B1532FE5C4A6B7DD73859D49 /* NightChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7076D6AFD8B32D39DDC6A8 /* NightChannel.swift */; };
+		BF5576092445DE5D11E90DB1 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 159B767A1C675D568D71AAF7 /* Snapshot.swift */; };
+		C04210C047872722FDB2F2BC /* HabitList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D4E50E41934A1444361E467 /* HabitList.swift */; };
+		C93D91A6078492B353F85D67 /* PenchantWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3ACAE6708C29D99683C4312 /* PenchantWatchApp.swift */; };
+		C97CE9F24C6EEE147683BDF0 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FDAF3C8130B148446AF8C30B /* WidgetKit.framework */; };
+		D5A2D53303869F1553C78BD5 /* WatchTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3CF2A8470F0EBCE9253C0D /* WatchTheme.swift */; };
+		D5E4939FD5FC4945B3704565 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FB2831A167648971F4C2D982 /* Assets.xcassets */; };
+		D991AFDDBB833D6ACF410BE2 /* PenchantWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1EDD4FC096FE6C1A244146BB /* PenchantWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		DF0F76AD70CC8FC84F00EAAB /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA8EEF44CF13EE5D63ED37E /* WidgetBridge.swift */; };
+		DF65151EB368F217AB6B5087 /* NightPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443C37B921E99EBB09AFD02C /* NightPlan.swift */; };
+		E1DF6F12D1AB3BEA7706A3D1 /* NightPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443C37B921E99EBB09AFD02C /* NightPlan.swift */; };
+		E59A842021083ED97569FA2F /* WatchStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95331962A93EDB2C9A99FEA6 /* WatchStore.swift */; };
 		E5FFCDD8E9C437FBA3489068 /* LastWeekWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 998351430EAA92ABEDA6864E /* LastWeekWidget.swift */; };
 		E79CFF4636BCA7CB66FC29C5 /* PenchantWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44389FCCD11C4104FEF54E49 /* PenchantWidgets.swift */; };
+		E89E3941101CB11BD3C1DE39 /* WatchModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B385AF16AA957A503C8C0B06 /* WatchModel.swift */; };
 		ED907333D07824E46214ADD2 /* LogQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227E1EA1AAF79873A5820DAE /* LogQueue.swift */; };
+		F20E297F751666141E20FB31 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B236EE157474171302FA42F /* Foundation.framework */; };
+		F965638B1757E987E5C2EE92 /* WatchTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3CF2A8470F0EBCE9253C0D /* WatchTheme.swift */; };
 		FA018D7A625CA05EDEFBF801 /* LogIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070FE6C176AAF6D354EDC246 /* LogIntents.swift */; };
 		FA223AE0737504484797BB6D /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB7817A797D5C1CC37CBACC6 /* SwiftUI.framework */; };
+		FBE4B4639E09477398D1894B /* PenchantWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 061C71619560AF2B40C5B518 /* PenchantWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,6 +80,20 @@
 			proxyType = 1;
 			remoteGlobalIDString = D8452227D4DAE6022DA0C771;
 			remoteInfo = PenchantWidgets;
+		};
+		AD86213F2F0F5A3C6A22B12E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 86AC9C0A338BC46DEB4B0B72;
+			remoteInfo = PenchantWatch;
+		};
+		E4CB08AD99E90FE9E4F6FDBF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6C005D30799494DE23BC2811;
+			remoteInfo = PenchantWatchWidgets;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -75,6 +109,17 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5645DD35461D83505FD11DB2 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				FBE4B4639E09477398D1894B /* PenchantWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -85,42 +130,53 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FE1CDAD7B1BFD40284631E83 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				D991AFDDBB833D6ACF410BE2 /* PenchantWatchWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		443C37B921E99EBB09AFD02C /* NightPlan.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NightPlan.swift; sourceTree = "<group>"; };
-		8C86AA49C5C046545F825925 /* NightOut.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NightOut.swift; sourceTree = "<group>"; };
-		FA644CE5264227A382ADF3B1 /* NightWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NightWidget.swift; sourceTree = "<group>"; };
-		8E7076D6AFD8B32D39DDC6A8 /* NightChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NightChannel.swift; sourceTree = "<group>"; };
 		033AD6AE558D469041736580 /* LogWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogWidget.swift; sourceTree = "<group>"; };
+		061C71619560AF2B40C5B518 /* PenchantWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PenchantWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		070FE6C176AAF6D354EDC246 /* LogIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogIntents.swift; sourceTree = "<group>"; };
+		0D4E50E41934A1444361E467 /* HabitList.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HabitList.swift; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		159B767A1C675D568D71AAF7 /* Snapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Snapshot.swift; sourceTree = "<group>"; };
+		1AB968884A82FA65742DC587 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1BCF6CA29011AF565B05302A /* PenchantWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = PenchantWidgets.entitlements; sourceTree = "<group>"; };
+		1EDD4FC096FE6C1A244146BB /* PenchantWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PenchantWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		227E1EA1AAF79873A5820DAE /* LogQueue.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogQueue.swift; sourceTree = "<group>"; };
 		25DA8ABFFA20C3B83D725C8E /* PenchantWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PenchantWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		2C165277ABDA9E7F9BAE7E8A /* PenchantWatch.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = PenchantWatch.entitlements; sourceTree = "<group>"; };
 		2CC8BF16A2E2BF31EDCE1023 /* Runner.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
 		44389FCCD11C4104FEF54E49 /* PenchantWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PenchantWidgets.swift; sourceTree = "<group>"; };
+		443C37B921E99EBB09AFD02C /* NightPlan.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NightPlan.swift; sourceTree = "<group>"; };
+		5B236EE157474171302FA42F /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		758424BFFC9EEF86F9B0229E /* RedHatText-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatText-Variable.ttf"; sourceTree = "<group>"; };
+		75CD3C972245CFCD37D963BC /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
-		A1E57C0D9B3F4E6A8C2D1B02 /* HealthChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HealthChannel.swift; sourceTree = "<group>"; };
-		A1E57C0D9B3F4E6A8C2D1B04 /* HealthDays.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HealthDays.swift; sourceTree = "<group>"; };
-		A1E57C0D9B3F4E6A8C2D1C02 /* CalendarChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CalendarChannel.swift; sourceTree = "<group>"; };
-		A1E57C0D9B3F4E6A8C2D2A02 /* SentenceEmbeddingChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SentenceEmbeddingChannel.swift; sourceTree = "<group>"; };
-		A1E57C0D9B3F4E6A8C2D1D02 /* RemindersChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RemindersChannel.swift; sourceTree = "<group>"; };
-		A1E57C0D9B3F4E6A8C2D5E02 /* SpeechChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SpeechChannel.swift; sourceTree = "<group>"; };
-		A1E57C0D9B3F4E6A8C2D1E02 /* PlacesChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlacesChannel.swift; sourceTree = "<group>"; };
-		A1E57C0D9B3F4E6A8C2D1F02 /* PhotosChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhotosChannel.swift; sourceTree = "<group>"; };
-		A1E57C0D9B3F4E6A8C2D6F02 /* LabelChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LabelChannel.swift; sourceTree = "<group>"; };
 		7AA8EEF44CF13EE5D63ED37E /* WidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
 		7AA94BC842A28F0E5104D1B2 /* AppShortcuts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppShortcuts.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		7B68BFAF71BC81A49821CE60 /* WeekDial.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeekDial.swift; sourceTree = "<group>"; };
 		7C14907B634B8FFBB1CD096F /* RedHatDisplay-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatDisplay-Variable.ttf"; sourceTree = "<group>"; };
+		88CCD5EA3CD600DA41926BBC /* Complications.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Complications.swift; sourceTree = "<group>"; };
+		8C86AA49C5C046545F825925 /* NightOut.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NightOut.swift; sourceTree = "<group>"; };
+		8D3CF2A8470F0EBCE9253C0D /* WatchTheme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchTheme.swift; sourceTree = "<group>"; };
+		8E7076D6AFD8B32D39DDC6A8 /* NightChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NightChannel.swift; sourceTree = "<group>"; };
+		95331962A93EDB2C9A99FEA6 /* WatchStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchStore.swift; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -129,22 +185,54 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		998351430EAA92ABEDA6864E /* LastWeekWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LastWeekWidget.swift; sourceTree = "<group>"; };
+		A1E57C0D9B3F4E6A8C2D1B02 /* HealthChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HealthChannel.swift; sourceTree = "<group>"; };
+		A1E57C0D9B3F4E6A8C2D1B04 /* HealthDays.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HealthDays.swift; sourceTree = "<group>"; };
+		A1E57C0D9B3F4E6A8C2D1C02 /* CalendarChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CalendarChannel.swift; sourceTree = "<group>"; };
+		A1E57C0D9B3F4E6A8C2D1D02 /* RemindersChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RemindersChannel.swift; sourceTree = "<group>"; };
+		A1E57C0D9B3F4E6A8C2D1E02 /* PlacesChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlacesChannel.swift; sourceTree = "<group>"; };
+		A1E57C0D9B3F4E6A8C2D1F02 /* PhotosChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhotosChannel.swift; sourceTree = "<group>"; };
+		A1E57C0D9B3F4E6A8C2D2A02 /* SentenceEmbeddingChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SentenceEmbeddingChannel.swift; sourceTree = "<group>"; };
+		A1E57C0D9B3F4E6A8C2D5E02 /* SpeechChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SpeechChannel.swift; sourceTree = "<group>"; };
+		A1E57C0D9B3F4E6A8C2D6F02 /* LabelChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LabelChannel.swift; sourceTree = "<group>"; };
 		A4C9459F8D54DA18A6252F28 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		B385AF16AA957A503C8C0B06 /* WatchModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchModel.swift; sourceTree = "<group>"; };
 		BB7817A797D5C1CC37CBACC6 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/SwiftUI.framework; sourceTree = DEVELOPER_DIR; };
+		BE14B060FFC143EBC5100735 /* PenchantWatchWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = PenchantWatchWidgets.entitlements; sourceTree = "<group>"; };
+		C0932597FC6A65292A8F3473 /* WatchLink.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchLink.swift; sourceTree = "<group>"; };
+		D3ACAE6708C29D99683C4312 /* PenchantWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PenchantWatchApp.swift; sourceTree = "<group>"; };
 		DBEDBC897A1B2CA1D22E3401 /* Theme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		DC2A1AF4201E4D3452339880 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E035C2ED413EED2F61E1ECE0 /* WatchSession.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchSession.swift; sourceTree = "<group>"; };
 		E5C158E400374D0B712277FD /* RedHatMono-Variable.ttf */ = {isa = PBXFileReference; includeInIndex = 1; path = "RedHatMono-Variable.ttf"; sourceTree = "<group>"; };
 		FA40F28F3455F1267E67CBDD /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		FA644CE5264227A382ADF3B1 /* NightWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NightWidget.swift; sourceTree = "<group>"; };
+		FB2831A167648971F4C2D982 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FDAF3C8130B148446AF8C30B /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/WidgetKit.framework; sourceTree = DEVELOPER_DIR; };
 		FDED82F96F1BBB1DCE3DF251 /* LogControl.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogControl.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		46B49D1715315128D3FB029D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1CD092CACCFF14AE7A6CC3C3 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EB1CF9000F007C117D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AD91C916EFDBF0428CC1553E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F20E297F751666141E20FB31 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -161,6 +249,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0C07DBA6B5156B2132F2E359 /* watchOS */ = {
+			isa = PBXGroup;
+			children = (
+				5B236EE157474171302FA42F /* Foundation.framework */,
+			);
+			name = watchOS;
+			sourceTree = "<group>";
+		};
 		0E1A57CC7800964EB45121C7 /* PenchantWidgets */ = {
 			isa = PBXGroup;
 			children = (
@@ -198,6 +294,7 @@
 			isa = PBXGroup;
 			children = (
 				2B2DA29884C6D3F28C5FCF3E /* iOS */,
+				0C07DBA6B5156B2132F2E359 /* watchOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -211,6 +308,23 @@
 			);
 			name = Fonts;
 			path = ../../assets/fonts;
+			sourceTree = "<group>";
+		};
+		78BC828678CBA457D84F37FB /* PenchantWatch */ = {
+			isa = PBXGroup;
+			children = (
+				B385AF16AA957A503C8C0B06 /* WatchModel.swift */,
+				95331962A93EDB2C9A99FEA6 /* WatchStore.swift */,
+				8D3CF2A8470F0EBCE9253C0D /* WatchTheme.swift */,
+				D3ACAE6708C29D99683C4312 /* PenchantWatchApp.swift */,
+				E035C2ED413EED2F61E1ECE0 /* WatchSession.swift */,
+				0D4E50E41934A1444361E467 /* HabitList.swift */,
+				FB2831A167648971F4C2D982 /* Assets.xcassets */,
+				1AB968884A82FA65742DC587 /* Info.plist */,
+				2C165277ABDA9E7F9BAE7E8A /* PenchantWatch.entitlements */,
+			);
+			name = PenchantWatch;
+			path = PenchantWatch;
 			sourceTree = "<group>";
 		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
@@ -234,6 +348,8 @@
 				FA40F28F3455F1267E67CBDD /* GoogleService-Info.plist */,
 				6595B3FE45D2C16D360291C1 /* Frameworks */,
 				0E1A57CC7800964EB45121C7 /* PenchantWidgets */,
+				78BC828678CBA457D84F37FB /* PenchantWatch */,
+				C5488C7D918799E801222DD5 /* PenchantWatchWidgets */,
 			);
 			sourceTree = "<group>";
 		};
@@ -242,6 +358,8 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				25DA8ABFFA20C3B83D725C8E /* PenchantWidgets.appex */,
+				061C71619560AF2B40C5B518 /* PenchantWatch.app */,
+				1EDD4FC096FE6C1A244146BB /* PenchantWatchWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -270,13 +388,61 @@
 				A1E57C0D9B3F4E6A8C2D6F02 /* LabelChannel.swift */,
 				7AA94BC842A28F0E5104D1B2 /* AppShortcuts.swift */,
 				2CC8BF16A2E2BF31EDCE1023 /* Runner.entitlements */,
+				C0932597FC6A65292A8F3473 /* WatchLink.swift */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		C5488C7D918799E801222DD5 /* PenchantWatchWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				88CCD5EA3CD600DA41926BBC /* Complications.swift */,
+				75CD3C972245CFCD37D963BC /* Info.plist */,
+				BE14B060FFC143EBC5100735 /* PenchantWatchWidgets.entitlements */,
+			);
+			name = PenchantWatchWidgets;
+			path = PenchantWatchWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		6C005D30799494DE23BC2811 /* PenchantWatchWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0C2A2F80E6F627099CEFE5B1 /* Build configuration list for PBXNativeTarget "PenchantWatchWidgets" */;
+			buildPhases = (
+				9E9DD1C0820D3E209CEE1372 /* Sources */,
+				AD91C916EFDBF0428CC1553E /* Frameworks */,
+				FD25BDD4E3DF3485D4B0CD43 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PenchantWatchWidgets;
+			productName = PenchantWatchWidgets;
+			productReference = 1EDD4FC096FE6C1A244146BB /* PenchantWatchWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		86AC9C0A338BC46DEB4B0B72 /* PenchantWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 04B336A17525220E90D4A321 /* Build configuration list for PBXNativeTarget "PenchantWatch" */;
+			buildPhases = (
+				9D19E76D98E8E87A2C9F3DB7 /* Sources */,
+				46B49D1715315128D3FB029D /* Frameworks */,
+				4AE7B358B540004BC1467B0E /* Resources */,
+				FE1CDAD7B1BFD40284631E83 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3567DBE4719766612A34166F /* PBXTargetDependency */,
+			);
+			name = PenchantWatch;
+			productName = PenchantWatch;
+			productReference = 061C71619560AF2B40C5B518 /* PenchantWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
@@ -288,6 +454,7 @@
 				5E1A7C0B2D4F4E8A9B3C6D10 /* Strip Firebase plist for emulators */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				4258A58E25EB904B1BD6EC5A /* Embed Foundation Extensions */,
+				5645DD35461D83505FD11DB2 /* Embed Watch Content */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				5E1A7C0B2D4F4E8A9B3C6D20 /* Upload Crashlytics symbols */,
 			);
@@ -295,6 +462,7 @@
 			);
 			dependencies = (
 				DE14C25053D73E2E441A49A4 /* PBXTargetDependency */,
+				F9F63265DC5A11D7986704D5 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -331,6 +499,24 @@
 				LastUpgradeCheck = 1510;
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
+					6C005D30799494DE23BC2811 = {
+						CreatedOnToolsVersion = 27.2;
+						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
+					};
+					86AC9C0A338BC46DEB4B0B72 = {
+						CreatedOnToolsVersion = 27.2;
+						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
+					};
 					97C146ED1CF9000F007C117D = {
 						CreatedOnToolsVersion = 7.3.1;
 						LastSwiftMigration = 1100;
@@ -370,11 +556,24 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				D8452227D4DAE6022DA0C771 /* PenchantWidgets */,
+				86AC9C0A338BC46DEB4B0B72 /* PenchantWatch */,
+				6C005D30799494DE23BC2811 /* PenchantWatchWidgets */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		4AE7B358B540004BC1467B0E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D5E4939FD5FC4945B3704565 /* Assets.xcassets in Resources */,
+				5AB228C09CAA6079564073FE /* RedHatDisplay-Variable.ttf in Resources */,
+				3E3C87BD739D76002F5D81FD /* RedHatMono-Variable.ttf in Resources */,
+				0B19C360282DF9C0B423E22A /* RedHatText-Variable.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EC1CF9000F007C117D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -394,6 +593,13 @@
 				33AE04F296D7AE125D79E327 /* RedHatDisplay-Variable.ttf in Resources */,
 				75F5501C5CEA8A6D1975D4E6 /* RedHatMono-Variable.ttf in Resources */,
 				9B5D5E6FB425409F1F2C29B0 /* RedHatText-Variable.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FD25BDD4E3DF3485D4B0CD43 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -511,17 +717,55 @@
 				55472B4E166DAC649E7BA254 /* Snapshot.swift in Sources */,
 				35537E769B73D3EB43BF6ADD /* LogQueue.swift in Sources */,
 				6E1795F424729B54757D33AF /* LogIntents.swift in Sources */,
+				0B819AEA35B289AE8FDA77FA /* WatchModel.swift in Sources */,
+				9105AAA568986B17671772AD /* WatchLink.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9D19E76D98E8E87A2C9F3DB7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A3305B6566B6172AA643B955 /* WatchModel.swift in Sources */,
+				E59A842021083ED97569FA2F /* WatchStore.swift in Sources */,
+				F965638B1757E987E5C2EE92 /* WatchTheme.swift in Sources */,
+				C93D91A6078492B353F85D67 /* PenchantWatchApp.swift in Sources */,
+				5C0C28A7D5932B97D90A8762 /* WatchSession.swift in Sources */,
+				C04210C047872722FDB2F2BC /* HabitList.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E9DD1C0820D3E209CEE1372 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E89E3941101CB11BD3C1DE39 /* WatchModel.swift in Sources */,
+				2AEC120E528238A9BFE8FD71 /* WatchStore.swift in Sources */,
+				D5A2D53303869F1553C78BD5 /* WatchTheme.swift in Sources */,
+				6A0C508E81EA5B0467FCB0F3 /* Complications.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		3567DBE4719766612A34166F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = PenchantWatchWidgets;
+			target = 6C005D30799494DE23BC2811 /* PenchantWatchWidgets */;
+			targetProxy = E4CB08AD99E90FE9E4F6FDBF /* PBXContainerItemProxy */;
+		};
 		DE14C25053D73E2E441A49A4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = PenchantWidgets;
 			target = D8452227D4DAE6022DA0C771 /* PenchantWidgets */;
 			targetProxy = 51953EAF63AAF46B6D386982 /* PBXContainerItemProxy */;
+		};
+		F9F63265DC5A11D7986704D5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = PenchantWatch;
+			target = 86AC9C0A338BC46DEB4B0B72 /* PenchantWatch */;
+			targetProxy = AD86213F2F0F5A3C6A22B12E /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -545,6 +789,32 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		05852D285644B4FCA53B72F7 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PenchantWatchWidgets/PenchantWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8N575942RT;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PenchantWatchWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant.watchkitapp.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Profile;
+		};
 		249021D3217E4FDB00AE95B9 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -625,6 +895,58 @@
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Profile;
+		};
+		303EE99E932EB23C5C2D9E02 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PenchantWatch/PenchantWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8N575942RT;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PenchantWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Profile;
+		};
+		4CB4AF7429CEC1F6E46554F8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PenchantWatchWidgets/PenchantWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8N575942RT;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PenchantWatchWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant.watchkitapp.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
 		};
 		8C60EDD2F9D50F9D585C44AE /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -873,9 +1195,108 @@
 			};
 			name = Profile;
 		};
+		B128CA8D343D230B8A64FE52 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PenchantWatchWidgets/PenchantWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8N575942RT;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PenchantWatchWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant.watchkitapp.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		C890E643DE6124FDA59A88B4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PenchantWatch/PenchantWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8N575942RT;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PenchantWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		EFD68F9DBD1F8032FFE4B8AA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PenchantWatch/PenchantWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8N575942RT;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PenchantWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.screendead.penchant.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		04B336A17525220E90D4A321 /* Build configuration list for PBXNativeTarget "PenchantWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C890E643DE6124FDA59A88B4 /* Release */,
+				EFD68F9DBD1F8032FFE4B8AA /* Debug */,
+				303EE99E932EB23C5C2D9E02 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0C2A2F80E6F627099CEFE5B1 /* Build configuration list for PBXNativeTarget "PenchantWatchWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B128CA8D343D230B8A64FE52 /* Release */,
+				4CB4AF7429CEC1F6E46554F8 /* Debug */,
+				05852D285644B4FCA53B72F7 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		3E3F2F3F10B6A84F6F2FC34B /* Build configuration list for PBXNativeTarget "PenchantWidgets" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

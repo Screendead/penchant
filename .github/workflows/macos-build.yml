@@ -47,9 +47,25 @@ jobs:
           key: deriveddata-${{ env.IMAGE }}-${{ hashFiles('.github/actions/setup-flutter/action.yml', 'tools/ci-content-mtimes.py', 'pubspec.lock', 'ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: |
             deriveddata-${{ env.IMAGE }}-
-      # The Simulator debug build the e2e run makes.
+      # Runner embeds the Apple Watch app, and Flutter builds a watch companion for the Simulator only with a
+      # device id (buildXcodeProject in flutter_tools' ios/mac.dart). e2e.yml's choice of simulator.
+      - name: Pick a simulator
+        run: |
+          udid=$(xcrun simctl list devices available -j | jq -r '
+            .devices | to_entries
+            | map(select(.key | test("SimRuntime\\.iOS-")))
+            | sort_by(.key | capture("iOS-(?<v>[0-9-]+)$").v | split("-") | map(tonumber))
+            | last.value | map(select(.name | startswith("iPhone")))
+            | (map(select(.name == "iPhone 17 Pro")) + .) | .[0].udid // empty')
+          if [ -z "$udid" ]; then
+            xcrun simctl list devices available
+            echo "No available iPhone simulator." >&2
+            exit 1
+          fi
+          echo "SIMULATOR=$udid" >> "$GITHUB_ENV"
+      # The Simulator debug build the e2e run makes, with the watch app and its complications for the Watch Simulator.
       - name: Build (iOS Simulator, debug)
-        run: flutter build ios --simulator --debug --dart-define=USE_FIREBASE_EMULATORS=true
+        run: flutter build ios --simulator --debug -d "$SIMULATOR" --dart-define=USE_FIREBASE_EMULATORS=true
   macos:
     runs-on: macos-26
     timeout-minutes: 45
