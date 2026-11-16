@@ -188,7 +188,10 @@ void main() {
       expect(find.text('Beer'), findsOneWidget);
       expect(find.text(EntryWordsPage.leftOut(1)), findsOneWidget);
       expect(writes.writes, isEmpty);
+      expect(find.text(EntryWordsPage.unclearSkipped), findsOneWidget);
 
+      await tester.ensureVisible(find.text(EntryWordsPage.saveAll));
+      await tester.pumpAndSettle();
       await tester.tap(find.text(EntryWordsPage.saveAll));
       await tester.pumpAndSettle();
       final List<Write> made = writes.writes
