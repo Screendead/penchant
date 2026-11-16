@@ -59,6 +59,11 @@ RegExp _terms(List<String> terms) => RegExp(
 final RegExp _denied = _terms(letterDeniedTerms);
 final RegExp _numberWord = _terms(letterNumberWords);
 final RegExp _numeral = RegExp(r'\d+(?:[.:]\d+)*');
+
+/// The runs of digits [checkPassage] compares, with any '.' or ':' between.
+Iterable<String> numeralsIn(String s) =>
+    _numeral.allMatches(s).map((Match m) => m[0]!);
+
 final RegExp _nonAsciiNumeral = RegExp(r'(?![0-9])\p{N}', unicode: true);
 final RegExp _quoteSpan = RegExp(r'“([^“”]*)”|"([^"]*)"');
 final RegExp _quoteMark = RegExp(r'[“”"]');
@@ -66,6 +71,14 @@ final RegExp _quoteMark = RegExp(r'[“”"]');
 /// What a passage may use besides its own words, from the request sent.
 class LetterContext {
   LetterContext._(this.numerals, this.notes, this.phrases);
+
+  /// The analyst's: numerals from the results it saw, no notes to quote, and
+  /// [phrases] longest first.
+  LetterContext.figures(this.numerals, Iterable<String> phrases)
+    : notes = const <String>[],
+      phrases =
+          phrases.where((String p) => p.trim().isNotEmpty).toSet().toList()
+            ..sort((String a, String b) => b.length.compareTo(a.length));
 
   /// From a payload's JSON (`LetterPayload.json`), as functions/letter.js
   /// contextOf reads its validated input.

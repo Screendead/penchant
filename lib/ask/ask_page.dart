@@ -1,6 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/analyst/analyst_setting.dart';
+import 'package:tracker/analyst/investigation.dart';
+import 'package:tracker/analyst/investigation_view.dart';
 import 'package:tracker/ask/ask_answer.dart';
 import 'package:tracker/ask/ask_chart.dart';
 import 'package:tracker/ask/ask_journal.dart';
@@ -111,6 +114,8 @@ class AskPage extends ConsumerStatefulWidget {
       'the numbers hold up.';
   static const String openInsights = 'Open it in Insights';
   static const String cannot = 'Penchant can’t answer that yet.';
+  static const String investigate = 'Investigate with Claude';
+  static const String investigateTyped = 'Investigate this question';
 
   static String cannotDetail(AskReason reason) => switch (reason) {
     AskReason.notAboutJournal => 'It answers questions about your habits.',
@@ -190,9 +195,9 @@ class _AskPageState extends ConsumerState<AskPage> {
     final List<Vice>? vices = ref.read(viceListProvider).value;
     final String question = _controller.text.trim();
     if (service == null || vices == null || question.isEmpty) return;
-    final List<({int id, Vice vice})> sent = numberedHabits(
-      vices,
-    ).take(askHabits(vices).length).toList();
+    final List<({int id, Vice vice})> sent = numberedHabits(vices)
+        .take(askHabits(vices).length)
+        .toList();
     final DateTime today = ref.read(todayProvider);
     final AskSession session = ref.read(askSessionProvider.notifier);
     final List<AskTurn> history = askHistory(ref.read(askSessionProvider));
@@ -216,7 +221,70 @@ class _AskPageState extends ConsumerState<AskPage> {
 
   void _newQuestion() {
     ref.read(askSessionProvider.notifier).clear();
+    ref.read(investigationSessionProvider.notifier).clear();
     _runs.clear();
+  }
+
+  /// One investigation of [question], only after the person says yes to
+  /// what it sends, over its own figures-only database, closed at the end.
+  Future<void> _investigate(String question) async {
+    final String q = question.trim();
+    if (q.isEmpty || ref.read(investigatorProvider) == null) return;
+    if (!await confirmInvestigation(context) || !mounted) return;
+    final Investigator? investigator = ref.read(investigatorProvider);
+    final List<Vice>? vices = ref.read(viceListProvider).value;
+    final DateTime today = ref.read(todayProvider);
+    final List<ViceActivity>? entries = ref
+        .read(viceActivityRangeProvider(insightsRange(today)))
+        .value;
+    final List<DayNote>? notes = ref.read(allDayNotesProvider).value;
+    if (investigator == null ||
+        vices == null ||
+        entries == null ||
+        notes == null) {
+      return;
+    }
+    final String? uid = ref.read(userProvider).value?.uid;
+    final InvestigationSession session = ref.read(
+      investigationSessionProvider.notifier,
+    );
+    if (_controller.text.trim() == q) _controller.clear();
+    final int id = session.start(q);
+    final JournalDb db;
+    try {
+      db = JournalDb.build(
+        vices: vices,
+        entries: entries,
+        notes: notes,
+        today: today,
+        figuresOnly: true,
+      );
+    } catch (_) {
+      // Not reported: nothing about the journal goes into a report.
+      session.settle(
+        id,
+        const InvestigationFailed('read', <InvestigationRound>[]),
+      );
+      return;
+    }
+    try {
+      final InvestigationOutcome outcome = await runInvestigation(
+        investigator: investigator,
+        db: db,
+        question: q,
+        habits: numberedHabits(vices).take(askHabits(vices).length).toList(),
+        today: today,
+        stillWanted: () => mounted && ref.read(userProvider).value?.uid == uid,
+        onRound: (List<InvestigationRound> rounds) {
+          if (mounted) session.progress(id, rounds);
+        },
+      );
+      if (mounted && ref.read(userProvider).value?.uid == uid) {
+        session.settle(id, outcome);
+      }
+    } finally {
+      db.close();
+    }
   }
 
   void _openDay(DateTime day) =>
@@ -227,6 +295,10 @@ class _AskPageState extends ConsumerState<AskPage> {
     final bool on = ref.watch(askJournalProvider) != null;
     final List<Vice>? vices = ref.watch(viceListProvider).value;
     final List<AskedQuestion> asked = ref.watch(askSessionProvider);
+    final bool canInvestigate = on && ref.watch(investigatorProvider) != null;
+    final List<Investigation> investigations = ref.watch(
+      investigationSessionProvider,
+    );
     final DateTime today = ref.watch(todayProvider);
     // One read of the journal while the page is open and asking is on: the
     // same one-time read and index as Insights.
@@ -265,20 +337,37 @@ class _AskPageState extends ConsumerState<AskPage> {
             hint: asked.isEmpty ? AskPage.hint : AskPage.followUpHint,
             onAsk: _ask,
           ),
-          if (asked.isNotEmpty)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: _newQuestion,
-                child: const Text(AskPage.newQuestion),
-              ),
+          if (asked.isNotEmpty || investigations.isNotEmpty || canInvestigate)
+            Wrap(
+              children: <Widget>[
+                if (asked.isNotEmpty || investigations.isNotEmpty)
+                  TextButton(
+                    onPressed: _newQuestion,
+                    child: const Text(AskPage.newQuestion),
+                  ),
+                if (canInvestigate)
+                  TextButton(
+                    onPressed: vices == null
+                        ? null
+                        : () => _investigate(_controller.text),
+                    child: const Text(AskPage.investigateTyped),
+                  ),
+              ],
             ),
+        ],
+        for (final Investigation inv in investigations.reversed) ...<Widget>[
+          const SizedBox(height: DialSpace.l),
+          InvestigationView(
+            investigation: inv,
+            marksByName: marksByName,
+            onOpenDay: _openDay,
+          ),
         ],
         for (final AskedQuestion q in asked.reversed) ...<Widget>[
           const SizedBox(height: DialSpace.l),
           _QuestionPill(q.question),
           const SizedBox(height: 8),
-          ..._answer(context, q, db, readFailed, marksByName),
+          ..._answer(context, q, db, readFailed, marksByName, canInvestigate),
         ],
       ],
     );
@@ -290,7 +379,17 @@ class _AskPageState extends ConsumerState<AskPage> {
     JournalDb? db,
     bool readFailed,
     Map<String, HabitMark> marksByName,
+    bool canInvestigate,
   ) {
+    final Widget? investigate = canInvestigate
+        ? Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton(
+              onPressed: () => _investigate(q.question),
+              child: const Text(AskPage.investigate),
+            ),
+          )
+        : null;
     final TextStyle body = DialTypeScale.body.copyWith(
       color: Theme.of(context).colorScheme.onSurface,
     );
@@ -323,6 +422,10 @@ class _AskPageState extends ConsumerState<AskPage> {
                   child: const Text(AskPage.openInsights),
                 ),
               ),
+              if (investigate != null) ...<Widget>[
+                const SizedBox(height: 6),
+                investigate,
+              ],
             ],
           ),
         ];
@@ -333,6 +436,10 @@ class _AskPageState extends ConsumerState<AskPage> {
               Text(AskPage.cannot, style: headline),
               const SizedBox(height: 4),
               Text(AskPage.cannotDetail(answer.reason), style: body),
+              if (investigate != null) ...<Widget>[
+                const SizedBox(height: 10),
+                investigate,
+              ],
             ],
           ),
         ];

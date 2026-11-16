@@ -17,6 +17,7 @@ const { validFigures, writeWeekly } = require('./weekly_words.js');
 const { askJournal, validInput } = require('./ask_journal.js');
 const { verifiedCaller } = require('./caller.js');
 const letter = require('./letter.js');
+const analyst = require('./analyst.js');
 
 initializeApp();
 
@@ -285,11 +286,18 @@ const noteCap = new DailyCap();
 const askCap = new DailyCap(60);
 const weeklyCap = new DailyCap(10);
 const letterCap = new DailyCap(3);
+// An investigation counts once, at its first step; later steps carry the
+// transcript from the device, which proves nothing, so steps are capped too.
+const investigationCap = new DailyCap(5);
+const investigationStepCap = new DailyCap(40);
 
 // The letter's reply takes one to two minutes: the SDK gives up inside the
 // function's timeout, which ends inside the app's 240 s wait.
 const LETTER_SDK_TIMEOUT_MS = 200000;
 const LETTER_CALLABLE = { ...CALLABLE, timeoutSeconds: 220, memory: '512MiB' };
+// One step of an investigation, inside the app's 130 s wait.
+const STEP_SDK_TIMEOUT_MS = 100000;
+const STEP_CALLABLE = { ...CALLABLE, timeoutSeconds: 120, memory: '512MiB' };
 
 // The client, or failed-precondition while the federation is not set up.
 function configuredClient(name, timeout) {
@@ -381,4 +389,24 @@ exports.writeLetter = onCall(LETTER_CALLABLE, async (request) => {
   const { letter: written, reason, withheld } = await letter.writeLetter(client, input);
   logger.info('writeLetter', { reason, withheld: withheld.map((w) => w.reason.split(':')[0]) });
   return { letter: written, reason };
+});
+
+// One step of an investigation: more queries for the device to run, or the
+// finding. Logs the reason code, any check's reason up to a colon, and the
+// step number and how many queries came: never the uid, the question, the
+// SQL, the results or the finding.
+exports.investigate = onCall(STEP_CALLABLE, async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to investigate.');
+  requireVerified('investigate', request.auth);
+  const input = analyst.validInput(request.data);
+  if (input == null) throw new HttpsError('invalid-argument', 'The investigation is not in the expected form.');
+  const client = configuredClient('investigate', STEP_SDK_TIMEOUT_MS);
+  takeCap('investigate', investigationStepCap, request.auth.uid);
+  if (input.rounds.length === 0) takeCap('investigate', investigationCap, request.auth.uid);
+  const { step, reason, why } = await analyst.investigate(client, input);
+  const fields = { reason, step: input.rounds.length + 1 };
+  if (step != null) fields.queries = step.queries.length;
+  if (typeof why === 'string') fields.why = why.split(':')[0];
+  logger.info('investigate', fields);
+  return { step, reason };
 });

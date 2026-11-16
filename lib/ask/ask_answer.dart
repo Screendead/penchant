@@ -154,6 +154,10 @@ AskCard? _card(Object? value) {
   return AskCard(title: title, explain: explain, sql: sql, chart: chart);
 }
 
+/// One card as the schema's `$defs/card` gives it, or null unless it fits
+/// exactly; the analyst's queries are cards too.
+AskCard? parseAskCard(Object? value) => _card(value);
+
 /// The answer, or null unless [value] fits the schema exactly: no missing or
 /// extra key, every enum known, every text within its bounds, and the cards
 /// the kind calls for (1 to 3 for an answer, none otherwise; a reason only
