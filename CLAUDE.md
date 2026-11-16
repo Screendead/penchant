@@ -549,8 +549,9 @@ offline log with its sync time); `loggedVia` `oneTap`, `sheet` or `widget` (onbo
 never edited. The amount sheet and editor (`AmountFields`) and the picker after a log (`askWhatWasGoingOn`) ask for
 urge and note (`lib/widgets/urge_note_fields.dart`); the sheet's own picker asks triggers only. `answersTooLong`
 refuses answers whose JSON beside the longest silent fields would pass the envelope's 4094 bytes. It also holds the
-optional `followUpQuestion`, `followUpQuote` and `followUpAnswer` (Follow-up question), sealed only. Insights does not
-yet read any of them (it still places an entry abroad on the viewer's hour); the export appends `urge`, `note`,
+optional `followUpQuestion`, `followUpQuote` and `followUpAnswer` (Follow-up question), sealed only. Insights reads
+`urge` (Random check-ins) and `loggedVia` (Say it to log and Catch up) alone, and still places an entry abroad on the
+viewer's hour; the export appends `urge`, `note`,
 `time_zone`, `written_at`, `logged_via` after `triggers`. An older build that edits an entry's triggers rebuilds the
 envelope from its triggers alone and drops the rest (accepted, Jack, 2026-11-13).
 
@@ -674,10 +675,20 @@ waits in `pendingCheckInProvider` (a repeated press of one prompt is ignored) un
 `answerCheckIn` (`lib/writes/answer_check_in.dart`) writes it with Undo (delete) and withdraws the notification.
 Collection `checkIns`, born sealed, naming no habit: plaintext `ownerID` and `createdAt` (device clock when the press
 came), `sealed` holding `CheckInContent` (`lib/data/check_in.dart`): `strength` 0 to 5, `promptedAt`, `zone`,
-`answeredVia`. Rules: owner only, that field set on create, no update (Undo deletes). Nothing queries it yet, so no
-index; nothing reads it but the export (`penchant-check-ins-<date>.csv`, a `checkIns` array), account deletion and
-the guest sweep. Turn-off cancels every prompt, shown or waiting; sign-out and deletion `forget()` the setting and
-the drawn prompts. Insights does not compare them with entries' urges yet.
+`answeredVia`. Rules: owner only, that field set on create, no update (Undo deletes). Its one query is `ownerID`
+equality alone (`allCheckInsProvider`, `lib/providers/check_in_provider.dart`: every answer read once per Insights
+open, the automatic index); the export (`penchant-check-ins-<date>.csv`, a `checkIns` array), account deletion and
+the guest sweep read it too. Turn-off cancels every prompt, shown or waiting; sign-out and deletion `forget()` the
+setting and the drawn prompts. Insights compares them with entries' urges (`lib/insights/check_in_urges.dart`, card
+`lib/widgets/check_in_urges_card.dart` under What sets it off): per unarchived habit, over the days (`lateDayOf`)
+holding both an answered check-in and an entry of it with an urge, that day's mean urge at entries less its mean at
+check-ins, a check-in's 0 read as 1 (an entry's scale starts at 1, so the scales alone would put entries higher; the
+card shows those means and counts the 0s). The differences are tested against 0 through `judgeDays` (an
+intercept-only fit: the lag-1 widening and the weekly block bootstrap), from `minCheckInUrgeDays` (14) such days, in
+the page's family, floor one point (`checkInUrgeFloor`); a refusal joins `setsOffRefusals` last in source order.
+Every check-in counts for every habit (it asks about any urge), and a late answer counts at the time it was given.
+`test/insights/check_in_urges_test.dart` holds the null simulations (one urge read both ways; a mean-zero drift in
+entries alone, where the test by itself rejects at about 8% and the floor keeps cards out) and the power.
 
 **A habit's strength** (round 24, "Strength and standard units"). Optional `strengthUnit` (`ukUnit`, `grams`,
 `standardDrink` or `mg`), `servingMl` (above 0, at most 5,000), `abv` (above 0, at most 100), `drinkGrams` (above 0, at

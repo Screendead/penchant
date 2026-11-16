@@ -42,6 +42,7 @@ import 'package:tracker/insights/replacement.dart';
 import 'package:tracker/insights/replacement_copy.dart';
 import 'package:tracker/insights/sets_off_refusal.dart';
 import 'package:tracker/insights/trigger_amounts.dart';
+import 'package:tracker/insights/check_in_urges.dart';
 import 'package:tracker/insights/day_tags.dart';
 import 'package:tracker/insights/day_tags_copy.dart';
 import 'package:tracker/insights/what_follows.dart';
@@ -66,6 +67,7 @@ import 'package:tracker/widgets/before_use_card.dart';
 import 'package:tracker/widgets/experiment_widgets.dart';
 import 'package:tracker/widgets/habit_follows_card.dart';
 import 'package:tracker/widgets/trigger_amounts_card.dart';
+import 'package:tracker/widgets/check_in_urges_card.dart';
 import 'package:tracker/widgets/day_tags_card.dart';
 import 'package:tracker/widgets/info_box.dart';
 import 'package:tracker/widgets/measure_shift_card.dart';
@@ -778,7 +780,8 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           costs.calendarDays.isEmpty &&
           costs.places.isEmpty &&
           costs.dayTags.isEmpty &&
-          costs.triggers.isEmpty)
+          costs.triggers.isEmpty &&
+          costs.checkInUrges.isEmpty)
         const NotYetBox(
           InsightsPage.setsOffTitle,
           body: InsightsPage.setsOffBody,
@@ -869,6 +872,24 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
                   costs.calendarDays.isEmpty &&
                   costs.places.isEmpty &&
                   costs.dayTags.isEmpty
+              ? 0
+              : DialSpace.xs,
+        ),
+      for (final (int i, CheckInUrge urge) in costs.checkInUrges.indexed)
+        CheckInUrgesCard(
+          urge: urge,
+          habit: costs.nameOf(urge.habitId),
+          mark: costs.marks[urge.habitId] ?? const HabitMark(0),
+          locale: formatLocale,
+          top:
+              i == 0 &&
+                  costs.before.isEmpty &&
+                  costs.follows.isEmpty &&
+                  costs.calendar.isEmpty &&
+                  costs.calendarDays.isEmpty &&
+                  costs.places.isEmpty &&
+                  costs.dayTags.isEmpty &&
+                  costs.triggers.isEmpty
               ? 0
               : DialSpace.xs,
         ),
@@ -1146,6 +1167,10 @@ class _Costs {
         );
     dayTags = tagged.days;
     triggers = tagged.entries;
+    checkInUrges = checkInUrgeCards(<CheckInUrge>[
+      for (final CheckInUrge u in report.checkInUrges)
+        if (_names.containsKey(u.habitId)) u,
+    ]);
     shifts = <MeasureShift>[
       for (final MeasureShift s in report.shifts)
         MeasureShift(
@@ -1179,6 +1204,7 @@ class _Costs {
         for (final AtPlace a in this.places) a.habitId,
         for (final DayTagCard c in dayTags) c.habitId,
         for (final TriggerCard c in triggers) c.habitId,
+        for (final CheckInUrge u in checkInUrges) u.habitId,
       },
       logged: computed.firstDays.keys.toSet(),
     )..sort((a, b) => nameOf(a.habitId).compareTo(nameOf(b.habitId)));
@@ -1217,6 +1243,9 @@ class _Costs {
 
   /// Entry trigger cards, less each finding said on a [dayTags] card.
   late final List<TriggerCard> triggers;
+
+  /// The urge at a habit's entries against random check-ins, where found.
+  late final List<CheckInUrge> checkInUrges;
   late final List<MeasureShift> shifts;
   late final DateTime? firstDay;
 
@@ -1343,6 +1372,8 @@ class _Costs {
           ),
         for (final TriggerCard card in triggers)
           triggerText(card, nameOf(card.habitId)),
+        for (final CheckInUrge u in checkInUrges)
+          checkInUrgeText(u, nameOf(u.habitId), formatLocale),
       ],
       setsOffRefused: <String>[
         for (final SetsOffRefusal r in setsOffRefused)
