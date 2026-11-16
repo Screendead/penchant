@@ -59,6 +59,13 @@ RegExp _terms(List<String> terms) => RegExp(
 final RegExp _denied = _terms(letterDeniedTerms);
 final RegExp _numberWord = _terms(letterNumberWords);
 final RegExp _numeral = RegExp(r'\d+(?:[.:]\d+)*');
+final RegExp _clockHour = RegExp(r'^(\d{1,2}):00$');
+
+/// What a count word allowed by [LetterContext.counts] stands for, from 2.
+const List<String> _countWords = <String>[
+  'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', //
+  'eleven', 'twelve',
+];
 
 /// The runs of digits [checkPassage] compares, with any '.' or ':' between.
 Iterable<String> numeralsIn(String s) =>
@@ -70,15 +77,21 @@ final RegExp _quoteMark = RegExp(r'[“”"]');
 
 /// What a passage may use besides its own words, from the request sent.
 class LetterContext {
-  LetterContext._(this.numerals, this.notes, this.phrases);
+  LetterContext._(this.numerals, this.notes, this.phrases)
+    : hours = const <int>{},
+      counts = const <int>{};
 
-  /// The analyst's: numerals from the results it saw, no notes to quote, and
-  /// [phrases] longest first.
-  LetterContext.figures(this.numerals, Iterable<String> phrases)
-    : notes = const <String>[],
-      phrases =
-          phrases.where((String p) => p.trim().isNotEmpty).toSet().toList()
-            ..sort((String a, String b) => b.length.compareTo(a.length));
+  /// The analyst's: numerals from the results it saw, no notes to quote,
+  /// [phrases] longest first, and the [hours] and [counts] it was shown.
+  LetterContext.figures(
+    this.numerals,
+    Iterable<String> phrases, {
+    this.hours = const <int>{},
+    this.counts = const <int>{},
+  }) : notes = const <String>[],
+       phrases =
+           phrases.where((String p) => p.trim().isNotEmpty).toSet().toList()
+             ..sort((String a, String b) => b.length.compareTo(a.length));
 
   /// From a payload's JSON (`LetterPayload.json`), as functions/letter.js
   /// contextOf reads its validated input.
@@ -150,6 +163,12 @@ class LetterContext {
   final List<String> notes;
   final List<String> phrases;
 
+  /// Hours a clock time H:00 or HH:00 may name though not itself a numeral.
+  final Set<int> hours;
+
+  /// Values a count word two to twelve may name.
+  final Set<int> counts;
+
   bool quotes(String text) => notes.any((String n) => n.contains(text));
 }
 
@@ -190,11 +209,19 @@ String checkPassage(String passage, LetterContext context) {
   }
   if (_nonAsciiNumeral.hasMatch(rest)) return 'number';
   for (final Match m in _numeral.allMatches(rest)) {
-    if (!context.numerals.contains(m[0])) return 'number:${m[0]}';
+    final String n = m[0]!;
+    if (context.numerals.contains(n)) continue;
+    final Match? clock = _clockHour.firstMatch(n);
+    if (clock != null && context.hours.contains(int.parse(clock[1]!))) continue;
+    return 'number:$n';
   }
   final String normalised = rest.replaceAll('’', "'");
-  final Match? word = _numberWord.firstMatch(normalised);
-  if (word != null) return 'number_word:${word[2]!.toLowerCase()}';
+  for (final Match word in _numberWord.allMatches(normalised)) {
+    final String w = word[2]!.toLowerCase();
+    final int value = _countWords.indexOf(w) + 2;
+    if (value >= 2 && context.counts.contains(value)) continue;
+    return 'number_word:$w';
+  }
   final Match? term = _denied.firstMatch(normalised);
   if (term != null) return 'term:${term[2]!.toLowerCase()}';
   return 'ok';

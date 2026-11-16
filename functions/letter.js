@@ -72,6 +72,10 @@ const termPattern = (terms) =>
   new RegExp(`(^|[^a-z'])(${terms.map(escapeRegExp).join('|')})(?=$|[^a-z'])`, 'i');
 const DENIED = termPattern(LETTER_DENIED_TERMS);
 const NUMBER_WORD = termPattern(NUMBER_WORDS);
+const NUMBER_WORD_ALL = new RegExp(NUMBER_WORD.source, 'gi');
+// What a count word allowed by context.counts stands for.
+const COUNT_WORDS = ['two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+const CLOCK_HOUR = /^(\d{1,2}):00$/;
 
 const NUMERAL = /\d+(?:[.:]\d+)*/g;
 const NON_ASCII_NUMERAL = /[^\P{N}0-9]/u;
@@ -277,7 +281,9 @@ function contextOf(input) {
 //    a. no numeral but ASCII digits;
 //    b. each run of digits, with any '.' or ':' between digits, equals one in
 //       the figures, the period or a sent label;
-//    c. no word of NUMBER_WORDS;
+//       (or, where context.hours is given, is H:00 or HH:00 for an hour in it);
+//    c. no word of NUMBER_WORDS (but, where context.counts is given, two to
+//       twelve for a value in it);
 //    d. no term of LETTER_DENIED_TERMS (’ read as ').
 function checkPassage(passage, context) {
   let rest = passage;
@@ -297,11 +303,18 @@ function checkPassage(passage, context) {
   }
   if (NON_ASCII_NUMERAL.test(rest)) return 'number';
   for (const n of rest.match(NUMERAL) || []) {
-    if (!context.numerals.has(n)) return `number:${n}`;
+    if (context.numerals.has(n)) continue;
+    const clock = n.match(CLOCK_HOUR);
+    if (clock && context.hours && context.hours.has(Number(clock[1]))) continue;
+    return `number:${n}`;
   }
   const normalised = rest.replace(/’/g, "'");
-  const word = normalised.match(NUMBER_WORD);
-  if (word) return `number_word:${word[2].toLowerCase()}`;
+  for (const word of normalised.matchAll(NUMBER_WORD_ALL)) {
+    const w = word[2].toLowerCase();
+    const value = COUNT_WORDS.indexOf(w) + 2;
+    if (value >= 2 && context.counts && context.counts.has(value)) continue;
+    return `number_word:${w}`;
+  }
   const term = normalised.match(DENIED);
   if (term) return `term:${term[2].toLowerCase()}`;
   return 'ok';

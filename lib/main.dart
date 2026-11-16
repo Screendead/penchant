@@ -4,12 +4,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/notes/note_search_page.dart';
 import 'package:tracker/backup/backup_page.dart';
 import 'package:tracker/ask/ask_page.dart';
 import 'package:tracker/claude/claude_working_gallery.dart';
 import 'package:tracker/letter/letter_page.dart';
 import 'package:tracker/say_it/entry_reader.dart';
 import 'package:tracker/say_it/entry_words_page.dart';
+import 'package:tracker/notes/older_notes_page.dart';
+import 'package:tracker/notes/tag_tidy_page.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/account_settings.dart';
@@ -136,6 +139,18 @@ class _MyAppState extends ConsumerState<MyApp> {
   final GlobalKey<ScaffoldMessengerState> messengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
+  // Brings note search to the top, or leaves it there if it already is.
+  void _openNoteSearch() {
+    final NavigatorState? navigator = navigatorKey.currentState;
+    if (navigator == null) return;
+    bool showing = false;
+    navigator.popUntil((Route<dynamic> top) {
+      showing = top.settings.name == NoteSearchPage.route;
+      return true;
+    });
+    if (!showing) navigator.pushNamed(NoteSearchPage.route);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AsyncValue<User?> userValue = ref.watch(userProvider);
@@ -195,6 +210,7 @@ class _MyAppState extends ConsumerState<MyApp> {
           child: ReduceMotionScope(
             child: AppLockGate(
               child: AppMenuBar(
+                onFind: user == null ? null : _openNoteSearch,
                 child: rejectedWritesBuilder(
                   context,
                   RecoveryKeyGate(child: child ?? const SizedBox.shrink()),
@@ -266,6 +282,8 @@ Widget routePage(String? name, {DateTime? now}) {
       return const InsightsPage();
     case ['insights', 'week']:
       return const WeeklyReviewPage();
+    case ['search']:
+      return const NoteSearchPage();
     case ['ask']:
       return const AskPage();
     case ['letter']:
@@ -302,6 +320,10 @@ Widget routePage(String? name, {DateTime? now}) {
       return const RecoveryKeyPage();
     case ['settings', 'backup']:
       return const BackupPage();
+    case ['settings', 'older-notes']:
+      return const OlderNotesPage();
+    case ['settings', 'tidy-tags']:
+      return const TagTidyPage();
     default:
       return const NotFound();
   }

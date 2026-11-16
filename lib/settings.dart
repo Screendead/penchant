@@ -21,6 +21,8 @@ import 'package:tracker/design/tokens.dart';
 import 'package:tracker/providers/appearance_provider.dart';
 import 'package:tracker/providers/reduce_motion_provider.dart';
 import 'package:tracker/notes/note_reader_setting.dart';
+import 'package:tracker/notes/older_notes_page.dart';
+import 'package:tracker/notes/tag_tidy_page.dart';
 import 'package:tracker/notes/follow_up_setting.dart';
 import 'package:tracker/insights/weekly_words_setting.dart';
 import 'package:tracker/analyst/analyst_setting.dart';
@@ -388,6 +390,8 @@ class _SettingsState extends ConsumerState<Settings> {
           children: <Widget>[
             NoteReaderSetting(),
             FollowUpSetting(),
+            OlderNotesRow(),
+            TagTidyRow(),
             WeeklyWordsSetting(),
             AskJournalSetting(),
             AnalystSetting(),

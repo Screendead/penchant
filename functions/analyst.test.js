@@ -170,3 +170,59 @@ test('the trial formats cells as the device does', () => {
   assert.equal(trial.cell(null), null);
   assert.ok(trial.QUESTIONS.length >= 3);
 });
+
+test('a card past Ask\'s bounds is dropped, the rest kept, and none left is cards', () => {
+  const wide = { ...card, chart: { type: 'table', x: 'month', y: ['a', 'b', 'c', 'd', 'e', 'f'], series: '', x_kind: 'category' } };
+  const kept = analyst.validStep({ kind: 'queries', queries: [card, wide, card], finding: noFinding });
+  assert.deepEqual(kept.queries, [card, card]);
+  const four = analyst.validStep({ kind: 'queries', queries: [wide, card, card, card, card], finding: noFinding });
+  assert.equal(four.queries.length, analyst.LIMITS.queries);
+  const none = analyst.parseMessage(text(JSON.stringify({ kind: 'queries', queries: [wide], finding: noFinding })));
+  assert.deepEqual(none, { step: null, reason: 'unparsable', why: 'cards' });
+  assert.ok(analyst.SYSTEM.includes('y at most 4 numeric columns'));
+});
+
+// Results as the trial of 2026-11-16 sent them, cut to what the cases need.
+const withResults = (...results) => ({
+  ...input(),
+  rounds: [{ queries: results.map(() => card), results }],
+});
+const judged = (data, body) =>
+  analyst.judge({ kind: 'finding', queries: [], finding: { headline: 'Wine.', body, rests_on: [1] } }, analyst.validInput(data));
+
+test('a count word stands when a result counted it, and not otherwise', () => {
+  const byHabit = {
+    columns: ['habit', 'september', 'october'],
+    rows: [['Wine', '37', '37'], ['Cigarettes', '84', '82'], ['Coffee', '56', '57']],
+    truncated: false,
+  };
+  assert.equal(judged(withResults(byHabit), 'Totals were close for all three habits.').reason, 'ok');
+  assert.equal(judged(withResults(byHabit), 'Totals were close for all four habits.').why, 'number_word:four');
+  assert.equal(judged(withResults(byHabit), 'Totals were close for all 3 habits.').why, 'number:3');
+  assert.equal(judged(withResults({ ...byHabit, truncated: true }), 'All three habits.').why, 'number_word:three');
+  assert.equal(judged(withResults(byHabit), 'All three habits, twice as many.').why, 'number_word:twice');
+});
+
+test('a clock time H:00 stands when a cell held the hour whole, and not otherwise', () => {
+  const byHour = {
+    columns: ['hour', 'period', 'pct'],
+    rows: [['18', 'December', '11.3'], ['20', 'December', '46.8'], ['8', 'December', '2']],
+    truncated: false,
+  };
+  assert.equal(judged(withResults(byHour), 'At 20:00 came 46.8% of it, and 2% at 08:00.').reason, 'ok');
+  assert.equal(judged(withResults(byHour), 'At 21:00 came 46.8% of it.').why, 'number:21:00');
+  assert.equal(judged(withResults(byHour), 'At 20:30 came 46.8% of it.').why, 'number:20:30');
+  // Day 18 of a date is no hour, nor is a threshold written only in the SQL.
+  const byDay = { columns: ['day', 'cigarettes'], rows: [['2026-10-18', '2']], truncated: false };
+  assert.equal(judged(withResults(byDay), 'From 18:00 on came 2.').why, 'number:18:00');
+});
+
+test('distinct values ignore nulls, as on the device', () => {
+  const rows = {
+    columns: ['habit', 'hour', 'day'],
+    rows: [['Wine', '20', '2026-10-18'], ['Coffee', '8', '2026-10-18'], ['Tea', '20', null]],
+    truncated: false,
+  };
+  assert.equal(judged(withResults(rows), 'All three habits peaked at 20:00 or 08:00.').reason, 'ok');
+  assert.equal(judged(withResults(rows), 'Two days.').reason, 'ok');
+});

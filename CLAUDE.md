@@ -286,6 +286,33 @@ nothing. An answer (at most 500) is stored with its question and quote as the se
 the day note sheet show it (`SavedFollowUp`). The function logs whether a question came and its drop code before any
 colon (`term:x` logs `term`). `functions/tools/follow-up-review.js` runs 40 made-up notes with an API key.
 
+**Tag older notes** (`lib/notes/older_notes*.dart`; round 24). Settings' "Tag older notes" row, usable while the note
+reader's switch is on, opens `OlderNotesPage` (`/settings/older-notes`). It reads the journal once (Insights' range
+read) and offers unlocked entries with a note, newest first, leaving out (and counting) locked entries and entries
+already holding 10 tags. "Read the next 20 notes" sends each note alone through `olderNoteReaderProvider` (the same
+`readNote` call, no follow-up question) one at a time, at most `olderNotesDailyCap` (40) a local day on the device, under
+the function's 60, so new notes can still be read. `OlderNotesRunner` (`olderNotesProvider`) runs the batch outside the
+page; Stop drops the note in flight, which stays unread. Progress is the sealed kept file `older-notes`
+(`keptSealedFilesProvider`): ids read or decided, tags awaiting review with their quotes, and the day's count. Each
+read note is reviewed with its quotes marked and a row per tag (`shownTags`: quoted in the note as it is now, not
+already on it, no more than the entry has room for); Keep ticked or Drop all per note, or every ticked tag shown after
+a confirmation with the count. Saving goes through `setTriggers` (`cachedContent` or the read content,
+`withAnswers`, `updateActivity`, `settle`), so the whole envelope is resealed; a save that fails at once keeps its
+note for review. More notes are read only once the review list is empty.
+
+**Tidy my tags** (`lib/notes/tag_tidy*.dart`; round 24). `TagTidyPage` (`/settings/tidy-tags`, a Settings row for a
+verified account, no switch: the page shows every label before sending and sends only on the tap) gathers own-words
+triggers (`ownWords`: anything not a tree path) from unlocked entries and day notes, read once (the range read and
+`allDayNotesProvider`), and sends the labels alone, most used first, at most 200, each 1 to 60 units with no line break
+(`sendableLabel`), to the callable `tidyTags` (`functions/tag_tidy.js`: Claude Haiku 5.5, thinking off, effort low,
+structured output; 10 a day per uid per instance; 25 s request, 30 s handler, 35 s on the device; logs the reason and
+counts only). It answers merges (labels into one of them) and mappings (labels onto a leaf of the tree), each label
+in one suggestion at most; `CallableTagTidier.suggestionsIn` checks them again. The person accepts each; Apply says
+how many entries and day notes change and that it cannot be undone in one step, then rewrites their triggers
+(`tidied`: order kept, each once) through `setTriggers` and `setDayNote`, moves the picker's own-words counts
+(`FreeTextTriggers.rename`), and reads the journal again. New entries typed with an old label are not mapped.
+`functions/tools/tag-tidy-trial.js` runs made-up label lists with an API key.
+
 **Weekly review in words** (`lib/insights/weekly_words.dart`, off by default; Settings' "Last week in words",
 `WeeklyWordsSetting`). `WeeklyFigures.of` sends the callable `writeWeekly` the week's computed figures alone: each
 habit under a placeholder ("Habit A") with its unit words, totals and counts as numerals, busiest hours, tag paths
@@ -349,13 +376,16 @@ and `rounds`, each step's cards and per card its result cut by `cutResult` (cell
 places trimmed; at most 20 columns, 50 rows and 8000 characters of JSON) or its `AskRefusal` code alone. The callable
 (`functions/analyst.js`: `validInput` bounds every key, 5 earlier rounds, 8192 per result and 150,000 in all, then
 one streamed Claude Opus 5.5 call, effort medium, thinking adaptive, no fallbacks, structured output `{kind, queries,
-finding}` with Ask's card schema) answers 1 to 3 more cards or a finding `{headline, body, rests_on}`; the last step
+finding}` with Ask's card schema; a card outside Ask's bounds is dropped, and the step fails as `cards` only when none
+remains) answers 1 to 3 more cards or a finding `{headline, body, rests_on}`; the last step
 must conclude (`no_finding`). The server is stateless and trusts nothing in the transcript; caps 5 investigations (on
 an empty transcript) and 40 steps a day per uid per instance; 120 s, 512 MiB, its client 100 s, inside the app's 130
 s; logs the reason, any check's reason before its colon, the step number and query count. A finding is shown only if
 both sides' `checkFinding` pass: every statement it rests on ran; its headline, body and every card's title and
-explanation pass the letter's `checkPassage` with no notes to quote (numerals only those of cells sent; habit names,
-units and tag-label cells as phrases, never other text cells, which a query's literal could fill) and no `analystCausalTerms`; else "Claude's account didn't pass Penchant's checks"
+explanation pass the letter's `checkPassage` with no notes to quote (numerals only those of cells sent, plus a clock time H:00 for
+an hour a cell holds whole, 0 to 23, and a count word two to twelve for an untruncated result's row count or a column's
+number of distinct values; habit names, units and tag-label cells as phrases, never other text cells, which a query's
+literal could fill) and no `analystCausalTerms`; else "Claude's account didn't pass Penchant's checks"
 and nothing of it shows (both suites run `functions/analyst_fixture.json`). Shown, it is labelled a reading of figures
 counted here, not a finding, hands causes to Insights, and lists its queries as Ask's cards from this device's own
 runs. Investigations live in memory (`investigationSessionProvider`), cleared on New question and user change; one
@@ -868,7 +898,7 @@ so an untouched new entry is logged at the moment of saving, to the second. The 
 
 **Server side.** Two scheduled functions in `functions/index.js`, and the callables `readNote` (Note reader,
 Follow-up question), `writeWeekly` (Weekly review in words), `askJournal` (Ask your journal), `investigate` (Analyst),
-`writeLetter` (Letter) and `readEntries` (Say it to log, Catch up), each requiring
+`writeLetter` (Letter), `tidyTags` (Tidy my tags) and `readEntries` (Say it to log, Catch up), each requiring
 sign-in and a verified, non-guest account (`permission-denied`), answering `failed-precondition` until the Anthropic federation is set, with its own `DailyCap`, and sharing
 `maxInstances: 2`, 15 s, 256 MiB and the `note-reader@` service account (`writeLetter`: 220 s and 512 MiB, its client a
 200 s timeout, inside the app's 240 s). `monthlySummaries` (03:00 UTC on the 1st;
@@ -1030,6 +1060,21 @@ one, and `withoutPhotos` removes them and the places only photos gave. `atPlace`
 them is unknown, and in simulation (#296) photos set off by a habit raised false cards above the family's rate even
 counting only the hours they cover, with too few days to find a real difference. They only find and name places;
 `roughLocationOfPlaces` ignores them too.
+
+**Note search** (`lib/notes/note_search_page.dart`, `/search`, from the Penchant menu and the Mac's Edit > Find,
+Cmd-F, which `MyApp` hands `AppMenuBar` while someone is signed in and the app is not covered). It searches entry
+notes, day notes and saved follow-up answers on the device, from the whole-journal read and `allDayNotesProvider`;
+locked items are skipped and counted. Word search (`lib/notes/note_search.dart`, pure) folds case and diacritics
+(`FoldedText` keeps each folded unit's span of the original for highlights), drops English stop words unless the
+query is nothing else, lets a word of three letters or more match words it begins, and ranks every word (or the
+query as written) above some words (more of them first), recent first within each; results group by day and open
+the entry editor or day note sheet by their routes. Meaning search (`lib/notes/note_meaning.dart`) asks
+`ios/Runner/SentenceEmbeddingChannel.swift` (both Runners) for Apple's `NLEmbedding.sentenceEmbedding` in the
+device's first language, embeds notes lazily in batches of 64, keeps the vectors in memory for the signed-in uid,
+and adds notes matching no word from cosine 0.40, below every word match under "Close in meaning". It is off by
+default behind a per-device switch on the page (`noteSearchMeaning`), shown only where the embedding exists:
+on `tools/note-search-trial.swift`'s made-up notes it put an expected note in the top 3 for 8 of 15 queries against
+words' 10 and combined 11, and 1 of its 25 meaning-only results was expected. Keep that script's rules in step.
 
 **Daylight** (`lib/insights/daylight.dart`, no network, no permission of its own). A `RoughLocation`, whole degrees,
 held in memory only: the place with the most stay time (`roughLocationOfPlaces`), else the device time zone's city

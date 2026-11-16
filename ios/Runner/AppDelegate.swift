@@ -38,6 +38,9 @@ import UserNotifications
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "CalendarChannel") {
       CalendarChannel.register(with: registrar)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "SentenceEmbeddingChannel") {
+      SentenceEmbeddingChannel.register(with: registrar)
+    }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "RemindersChannel") {
       RemindersChannel.register(with: registrar)
     }

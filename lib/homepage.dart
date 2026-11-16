@@ -13,6 +13,7 @@ import 'package:tracker/say_it/entry_reader.dart';
 import 'package:tracker/say_it/entry_words_page.dart';
 import 'package:tracker/letter/letter_page.dart';
 import 'package:tracker/letter/letter_setting.dart';
+import 'package:tracker/notes/note_search_page.dart';
 import 'package:tracker/onboarding/onboarding.dart';
 import 'package:tracker/providers/offline_provider.dart';
 import 'package:tracker/providers/sync_status_provider.dart';
@@ -30,6 +31,7 @@ class Homepage extends ConsumerStatefulWidget {
   static const Key menuKey = ValueKey<String>('penchant-menu');
   static const String habitsItem = 'Habits';
   static const String insightsItem = 'Insights';
+  static const String searchItem = 'Search';
   static const String askItem = 'Ask your journal';
   static const String letterItem = 'Letter';
   static const String catchUpItem = 'Catch up';
@@ -211,6 +213,13 @@ class _AppMenu extends ConsumerWidget {
                 onPressed: () =>
                     Navigator.of(context).pushNamed(InsightsPage.route),
                 child: const Text(Homepage.insightsItem),
+              ),
+              MenuItemButton(
+                style: itemStyle,
+                leadingIcon: const StrokeIcon(DialGlyph.search, size: 20),
+                onPressed: () =>
+                    Navigator.of(context).pushNamed(NoteSearchPage.route),
+                child: const Text(Homepage.searchItem),
               ),
               if (ask)
                 MenuItemButton(

@@ -39,6 +39,7 @@ class MainFlutterWindow: NSWindow {
     DeviceAuth.register(with: flutterViewController.registrar(forPlugin: "DeviceAuth").messenger)
     EntryPrompt.register(with: flutterViewController.registrar(forPlugin: "EntryPrompt"))
     CalendarChannel.register(with: flutterViewController.registrar(forPlugin: "CalendarChannel"))
+    SentenceEmbeddingChannel.register(with: flutterViewController.registrar(forPlugin: "SentenceEmbeddingChannel"))
     BackupFiles.register(with: flutterViewController.registrar(forPlugin: "BackupFiles").messenger)
     super.awakeFromNib()
   }
