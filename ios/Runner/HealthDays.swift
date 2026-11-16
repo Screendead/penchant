@@ -3,6 +3,41 @@ import Foundation
 // The day, night and sample arithmetic behind HealthChannel.swift. It imports
 // no HealthKit, so tools/health-days.test.sh can compile and test it on its own.
 enum HealthDays {
+  // One entry's sample for HealthChannel's writeEntry, from the Dart side's
+  // arguments (lib/health_write/health_write.dart). Nil for anything else, so
+  // nothing malformed reaches the person's Health store.
+  struct EntryWrite: Equatable {
+    let kind: String
+    let syncID: String
+    let habit: String
+    let version: Int64
+    let value: Double
+    let at: Date
+  }
+
+  static let writeKinds: Set<String> = ["alcohol", "caffeine"]
+  static let entryPrefix = "penchant.entry."
+  static let habitPrefix = "penchant.habit."
+
+  static func entryWrite(_ arguments: Any?) -> EntryWrite? {
+    guard let args = arguments as? [String: Any],
+      let kind = args["kind"] as? String, writeKinds.contains(kind),
+      let syncID = args["syncID"] as? String, isID(syncID, entryPrefix),
+      let habit = args["habit"] as? String, isID(habit, habitPrefix),
+      let version = (args["version"] as? NSNumber)?.int64Value, version > 0,
+      let value = (args["value"] as? NSNumber)?.doubleValue, value.isFinite, value > 0,
+      let at = (args["at"] as? NSNumber)?.int64Value
+    else { return nil }
+    return EntryWrite(
+      kind: kind, syncID: syncID, habit: habit, version: version, value: value,
+      at: Date(timeIntervalSince1970: Double(at) / 1000))
+  }
+
+  static func isID(_ value: Any?, _ prefix: String) -> Bool {
+    guard let id = value as? String, id.hasPrefix(prefix) else { return false }
+    return id.count > prefix.count && id.count <= 200
+  }
+
   struct SleepSample {
     let start: Date
     let end: Date
