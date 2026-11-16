@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tracker/say_it/entry_reader.dart';
+import 'package:tracker/say_it/entry_words_page.dart';
 import 'package:tracker/backup/backup_page.dart';
 import 'package:tracker/providers/show_day_provider.dart';
 import 'package:tracker/formats.dart';
@@ -615,6 +617,11 @@ class _ViceTrackerState extends ConsumerState<ViceTracker> {
                 ],
                 onLog: _log,
                 onRecord: _record,
+                onSay: ref.watch(entryReaderProvider(EntryMode.now)) == null
+                    ? null
+                    : () => Navigator.of(
+                        context,
+                      ).pushNamed(EntryWordsPage.sayRoute),
               );
 
         // In the split view the Log button sits under the last tally, and at

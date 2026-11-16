@@ -25,7 +25,8 @@ abstract interface class SpeechSource {
 
 class ChannelSpeechSource implements SpeechSource {
   ChannelSpeechSource({MethodChannel? channel})
-    : _channel = channel ?? const MethodChannel('com.screendead.penchant/speech') {
+    : _channel =
+          channel ?? const MethodChannel('com.screendead.penchant/speech') {
     _channel.setMethodCallHandler(_handle);
   }
 
@@ -97,13 +98,14 @@ final Provider<SpeechSource?> speechSourceProvider = Provider<SpeechSource?>(
 
 /// Whether to offer the microphone: false off iOS, where on-device
 /// recognition is missing for the locale, or when asking fails.
-final speechAvailableProvider =
-    FutureProvider.autoDispose<bool>((Ref ref) async {
-      final SpeechSource? source = ref.watch(speechSourceProvider);
-      if (source == null) return false;
-      try {
-        return await source.available();
-      } catch (_) {
-        return false;
-      }
-    });
+final speechAvailableProvider = FutureProvider.autoDispose<bool>((
+  Ref ref,
+) async {
+  final SpeechSource? source = ref.watch(speechSourceProvider);
+  if (source == null) return false;
+  try {
+    return await source.available();
+  } catch (_) {
+    return false;
+  }
+});

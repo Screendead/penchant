@@ -77,6 +77,11 @@ enum DialGlyph {
     'M3 5h18v4H3z',
     'M5 9v10h14V9',
     'M12 18v-6M9.5 14.5L12 12l2.5 2.5',
+  ]),
+  mic(<String>[
+    'M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z',
+    'M5.5 11.5a6.5 6.5 0 0 0 13 0',
+    'M12 18v3',
   ]);
 
   const DialGlyph(this.paths);

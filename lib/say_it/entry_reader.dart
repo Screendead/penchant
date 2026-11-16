@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tracker/account/claude_access.dart';
+import 'package:tracker/data/activity_content.dart';
 import 'package:tracker/data/day.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/trigger_tree.dart';
@@ -247,6 +248,9 @@ DraftEntry? _checked(
       triggers.add(path);
     }
   }
+  if (answersTooLong(triggers: triggers, urge: null, note: kept) != null) {
+    return null;
+  }
   return DraftEntry(
     vice: byId[habit]!,
     amount: amount is double && amount == amount.roundToDouble()
@@ -321,14 +325,16 @@ class CallableEntryReader implements EntryReader {
 
 /// Null unless [mode]'s switch is on, a verified account is signed in and
 /// this is not an emulator build (the function exists only in production).
-final entryReaderProvider =
-    Provider.family<EntryReader?, EntryMode>((Ref ref, EntryMode mode) {
-      if (useFirebaseEmulators) return null;
-      if (!ref.watch(entryReadingEnabledProvider(mode))) return null;
-      if (ref.watch(userProvider).value == null) return null;
-      if (!ref.watch(claudeAllowedProvider)) return null;
-      return CallableEntryReader(
-        (Map<String, Object?> data, Duration timeout) =>
-            callClaude('readEntries', timeout, data),
-      );
-    });
+final entryReaderProvider = Provider.family<EntryReader?, EntryMode>((
+  Ref ref,
+  EntryMode mode,
+) {
+  if (useFirebaseEmulators) return null;
+  if (!ref.watch(entryReadingEnabledProvider(mode))) return null;
+  if (ref.watch(userProvider).value == null) return null;
+  if (!ref.watch(claudeAllowedProvider)) return null;
+  return CallableEntryReader(
+    (Map<String, Object?> data, Duration timeout) =>
+        callClaude('readEntries', timeout, data),
+  );
+});

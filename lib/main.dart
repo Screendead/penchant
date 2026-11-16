@@ -8,6 +8,8 @@ import 'package:tracker/backup/backup_page.dart';
 import 'package:tracker/ask/ask_page.dart';
 import 'package:tracker/claude/claude_working_gallery.dart';
 import 'package:tracker/letter/letter_page.dart';
+import 'package:tracker/say_it/entry_reader.dart';
+import 'package:tracker/say_it/entry_words_page.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:tracker/journal_key/recovery_key_screens.dart';
 import 'package:tracker/account_settings.dart';
@@ -266,6 +268,10 @@ Widget routePage(String? name, {DateTime? now}) {
       return const AskPage();
     case ['letter']:
       return const LetterPage();
+    case ['say-it']:
+      return const EntryWordsPage(mode: EntryMode.now);
+    case ['catch-up']:
+      return const EntryWordsPage(mode: EntryMode.days);
     case ['claude-working'] when useFirebaseEmulators:
       return const ClaudeWorkingGallery();
     case ['manage-data']:
