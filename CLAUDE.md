@@ -387,6 +387,28 @@ Insights; starting an experiment from it is not built. Cap 3 a day per uid per i
 withheld reasons up to any colon. `functions/tools/letter-review.js` writes letters for 5 made-up journals with an API
 key, printing each letter, what was withheld and why, and the seconds taken.
 
+**Claude-working screen** (`lib/claude/`). Every Claude call in flight is shown through one component. The call site
+makes a `ClaudeWork` (status, optional detail, the person's own words sent as `subject`, `steps` for the analyst,
+`showElapsed` for long calls), keeps it current with `say` and ends it with `finish(answered|failed|stopped)`. It calls
+`showClaudeWorking(context, work, resultTag:, onStop:)` without awaiting it, from the tapped widget's context: after
+`ClaudeWorking.delay` (600 ms) still running, a `ClaudeWorkingRoute` grows out of that widget's rect; once shown it
+stays `minShown` (1.4 s); answered, it draws together into a plate whose `Hero` flies into the result wrapped in
+`ClaudeWorkingResult` with the same tag (unique per page, e.g. `('ask', id)`), else it shrinks back to the widget. Back
+hides it with the call still running; Stop calls `onStop`, which must really drop the result (`AskSession.drop`, the
+investigation's stopped ids, `LetterRunner.abandon`). Status text names only what is known ("Sent your question",
+"Ran 3 queries on this phone"); no progress figures. `ClaudeWorkingCard` is the same look in place, for a pending
+answer on the page and for weekly review in words (it starts on open, so nothing goes fullscreen); the note reader
+keeps its in-place read (an ink underline sweeping the note, chips arcing out of their quotes). Three looks share
+everything else (`ClaudeWorkingLook`, `claudeWorkingLookProvider`, `lib/claude/claude_working_painters.dart`): `dial`
+(the last 28 days as rings of a 24-hour face, a hand ringing each entry as it passes), `ink` (lines tracing out from
+the person's words across their entries) and `lens` (a loupe over a 28-day field of hours). They draw the device's own
+entries (`claudeWorkingMarksProvider`, a bounded 28-day range query; nothing of it is sent). Painters repaint from a
+`WorkingClock` ticker inside a `RepaintBoundary`, with no widget rebuilds per frame; under reduce motion the clock
+stands still, the route fades in 150 ms and nothing schedules frames, so tests can `pumpAndSettle`. With motion on, a
+pending card loops: pump fixed durations. The gallery (`ClaudeWorkingGallery`, route `/claude-working`, a Settings row)
+exists only in emulator builds and plays each look over fake calls; `integration_test/claude_working_gallery_test.dart`
+(through `tools/e2e-screenshots.sh`, not in `all_test.dart`) takes its stills.
+
 Every Firebase Auth call goes through `ref.read(accountProvider)`, one `Account` (`lib/account/account.dart`):
 sign-in, register (plus verification email), anonymous guest start, linking a guest to email and password (same uid,
 then verification email), password reset, re-authentication, profile and email changes, sign-out, and account-wide
