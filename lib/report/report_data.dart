@@ -324,3 +324,33 @@ List<ReportNote> _dayNotes(AccountData data, ReportWindow window) {
   }
   return notes..sort((ReportNote a, ReportNote b) => a.at.compareTo(b.at));
 }
+
+/// Where each day's total sits among the period's days with use, in standard
+/// deviations from their mean: null for a day with none, and 0 for every day
+/// while fewer than [dayScoreMinDays] days had use or they all match.
+List<double?> dayScores(List<double> days) {
+  final List<double> used = <double>[
+    for (final double d in days)
+      if (d > 0) d,
+  ];
+  final double mean = used.isEmpty
+      ? 0
+      : used.reduce((double a, double b) => a + b) / used.length;
+  final double sd = used.length < 2
+      ? 0
+      : sqrt(
+          used
+                  .map((double d) => (d - mean) * (d - mean))
+                  .reduce((double a, double b) => a + b) /
+              (used.length - 1),
+        );
+  final bool flat = used.length < dayScoreMinDays || sd < 1e-9;
+  return <double?>[
+    for (final double d in days) d > 0 ? (flat ? 0 : (d - mean) / sd) : null,
+  ];
+}
+
+const int dayScoreMinDays = 5;
+
+/// Scores at or past this many standard deviations take the strongest colour.
+const double dayScoreFullAt = 2;
