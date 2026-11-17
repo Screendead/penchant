@@ -55,6 +55,18 @@ const PdfColor _muted = PdfColor(0.36, 0.36, 0.36);
 const PdfColor _faint = PdfColor(0.62, 0.62, 0.62);
 const PdfColor _rule = PdfColor(0.78, 0.78, 0.78);
 const PdfColor _shade = PdfColor(0.9, 0.9, 0.9);
+// Light enough at full strength for black figures on them.
+const PdfColor _low = PdfColor(0.47, 0.78, 0.5);
+const PdfColor _high = PdfColor(0.94, 0.45, 0.4);
+const PdfColor _none = PdfColor(0.13, 0.13, 0.13);
+
+PdfColor _scoreColour(double score) {
+  final double t = (score.abs() / dayScoreFullAt).clamp(0, 1);
+  final PdfColor end = score < 0 ? _low : _high;
+  double mix(double a) => 1 + (a - 1) * t;
+  return PdfColor(mix(end.red), mix(end.green), mix(end.blue));
+}
+
 const PdfColor _barColour = PdfColor(0.45, 0.45, 0.45);
 
 Future<Uint8List> reportPdf(
@@ -340,14 +352,30 @@ List<pw.Widget> _calendars(ReportData data, HabitReport habit, _Styles s) {
       children: <pw.Widget>[
         _sectionTitle('Each day', s),
         pw.Spacer(),
-        pw.Container(
-          width: 9,
-          height: 7,
-          decoration: const pw.BoxDecoration(color: _shade),
-        ),
-        pw.SizedBox(width: 3),
-        pw.Text('a day with an entry; blank, none logged', style: s.tinyMuted),
+        for (final (PdfColor colour, String label) in <(PdfColor, String)>[
+          (_low, 'less than usual'),
+          (PdfColors.white, 'usual'),
+          (_high, 'more than usual'),
+          (_none, 'none logged'),
+        ]) ...<pw.Widget>[
+          pw.SizedBox(width: 6),
+          pw.Container(
+            width: 9,
+            height: 7,
+            decoration: pw.BoxDecoration(
+              color: colour,
+              border: pw.Border.all(color: _rule, width: 0.4),
+            ),
+          ),
+          pw.SizedBox(width: 3),
+          pw.Text(label, style: s.tinyMuted),
+        ],
       ],
+    ),
+    pw.Text(
+      'Shaded by how far each day sits from the average of this period’s '
+      'days with an entry; strongest at two standard deviations.',
+      style: s.tinyMuted,
     ),
     pw.SizedBox(height: 4),
     for (int i = 0; i < months.length; i += _monthsPerRow)
@@ -380,6 +408,7 @@ pw.Widget _month(
   final int length = DateTime(month.year, month.month + 1, 0).day;
   final int rows = ((lead + length) / 7).ceil();
   final DateFormat weekdayLetter = DateFormat.E(formatLocale);
+  final List<double?> scores = dayScores(habit.days);
   pw.Widget cell(int index) {
     final int day = index - lead + 1;
     if (day < 1 || day > length) {
@@ -389,11 +418,16 @@ pw.Widget _month(
     final int offset = daysBetween(data.window.start, date);
     final bool inWindow = offset >= 0 && offset < habit.days.length;
     final double total = inWindow ? habit.days[offset] : 0;
+    final double? score = inWindow ? scores[offset] : null;
     return pw.Expanded(
       child: pw.Container(
         height: _cellHeight,
         decoration: pw.BoxDecoration(
-          color: total > 0 ? _shade : null,
+          color: !inWindow
+              ? null
+              : score == null
+              ? _none
+              : _scoreColour(score),
           border: pw.Border.all(color: _rule, width: 0.4),
         ),
         child: pw.Stack(
@@ -403,9 +437,11 @@ pw.Widget _month(
               top: 1,
               child: pw.Text(
                 '$day',
-                style: inWindow
-                    ? s.dayNumber
-                    : s.dayNumber.copyWith(color: _rule),
+                style: !inWindow
+                    ? s.dayNumber.copyWith(color: _rule)
+                    : score == null
+                    ? s.dayNumber.copyWith(color: _rule)
+                    : s.dayNumber.copyWith(color: _muted),
               ),
             ),
             if (total > 0)

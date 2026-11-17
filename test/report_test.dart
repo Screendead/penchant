@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -138,6 +140,32 @@ void main() {
           const ReportOptions(viceIDs: <String>{'wine'}, months: 12),
         ).habits.single.hourDays,
         90,
+      );
+    });
+  });
+
+  group('dayScores', () {
+    test('standard deviations among days with use; none is null', () {
+      final List<double?> scores = dayScores(<double>[0, 1, 2, 3, 4, 5, 0]);
+      expect(scores.first, isNull);
+      expect(scores.last, isNull);
+      // Mean 3, sample SD sqrt(2.5).
+      expect(scores[3], 0);
+      expect(scores[5]!, closeTo(2 / sqrt(2.5), 1e-9));
+      expect(scores[1]!, closeTo(-2 / sqrt(2.5), 1e-9));
+    });
+
+    test('too few days with use, or all alike, are all usual', () {
+      expect(dayScores(<double>[0, 1, 5, 9, 0]), <double?>[
+        null,
+        0,
+        0,
+        0,
+        null,
+      ]);
+      expect(
+        dayScores(List<double>.filled(10, 2)),
+        List<double?>.filled(10, 0),
       );
     });
   });

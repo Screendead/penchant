@@ -34,7 +34,9 @@ through `Account.fetchData`, the export's server read, so offline it fails. `bui
 only `ReportData`. Totals are Trends' arithmetic: `bucketTotals` per day over the window, `bucketTotals` and
 `bucketUnits` per week from the week holding its first day (the region's first weekday, short end weeks labelled),
 `hourProfile` (its last 90 days, which the page says). Nothing from Health is read. `report_pdf.dart` lays it out with
-the pure-Dart `pdf` package: A4, or Letter in `letterRegions`; black on white; a month grid per calendar month,
+the pure-Dart `pdf` package: A4, or Letter in `letterRegions`; black on white, except each day of the month grids, shaded green to white to red by
+`dayScores` (standard deviations from the mean of the period's days with use, full at 2; under 5 such days, all
+white) and near-black with none logged; a month grid per calendar month,
 three to a row; one `MultiPage` per habit, so one habit over three months is one page (`test/report_test.dart`);
 no author in the metadata. `pdf` reads only a variable font's default instance, so it embeds static cuts in
 `assets/fonts/pdf/`, made by `tools/pdf-fonts.py` (fontTools). `ReportPreviewPage` shows the pages through
