@@ -82,8 +82,16 @@ pw.Document reportDocument(
   // names the habit it shows.
   void section(String name, List<pw.Widget> body) => doc.addPage(
     pw.MultiPage(
-      pageFormat: format,
-      margin: const pw.EdgeInsets.fromLTRB(40, 34, 40, 30),
+      // White drawn, not assumed: the preview rasters a page with no
+      // background as transparent, which dark mode shows as black.
+      pageTheme: pw.PageTheme(
+        pageFormat: format,
+        margin: const pw.EdgeInsets.fromLTRB(40, 34, 40, 30),
+        buildBackground: (pw.Context context) => pw.FullPage(
+          ignoreMargins: true,
+          child: pw.Container(color: PdfColors.white),
+        ),
+      ),
       maxPages: 400,
       header: (pw.Context context) => pw.Container(
         margin: const pw.EdgeInsets.only(bottom: 14),
