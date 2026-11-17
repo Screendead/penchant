@@ -12,7 +12,7 @@ leaves the old session's pages on the stack.
 24-hour face with a bead per entry at its local wall-clock time, a tally row per unarchived habit (`TallyRow`), and
 the Log button (`LogButton`, `lib/widgets/log_fan.dart`). Dial geometry is pure functions in
 `lib/data/dial_layout.dart`: angle from the wall-clock minute (a DST day's 15:00 sits at 15); bead radius
-7.5·√(quantity ÷ typical) clamped to 5–14, typical being the habit's stored typical (Server side) or else the median
+7.5·√(quantity ÷ typical) clamped to 5–14, typical being the habit's stored typical (Server side, `server.md`) or else the median
 of its entries that day; a habit's later entries in one hour step out to the other tracks; neighbours on a track move
 apart along the arc, never off it. Fan geometry is in `lib/data/fan_layout.dart` (up to eight wedges, then seven and
 More). Face, hand and beads are `CustomPainter`s; each bead is also a `Semantics` button opening its entry's editor,

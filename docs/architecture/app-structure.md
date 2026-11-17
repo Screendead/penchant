@@ -50,7 +50,7 @@ unanswered. Both Undo through `undoLog`.
 (`lib/widgets/what_was_going_on_sheet.dart`), three panels over `NotePanels` (`lib/widgets/note_panels.dart`): the
 note, tags, the urge. Only Back and Next move between them (no swipe; an off-stage panel takes no focus, semantics or
 taps), with Done, the step count and Undo log on each; what it saves, and how, is as before. With a `NoteReader`
-(below) and a note, the tags panel shows the note and turns each phrase the reader quotes into a selected chip the
+(`claude-features.md`) and a note, the tags panel shows the note and turns each phrase the reader quotes into a selected chip the
 person can drop; with no reader, no note, an error or 10 s without an answer it is the hand picker, which is always
 there. Nothing is saved until Done. The record sheet and the entry editor keep `showTriggerPicker`, which returns
 the triggers alone.
@@ -116,19 +116,19 @@ entries of a deleted (or foreign) habit exist by one more `count()`, every owned
 and `DeletedHabitPage` reads every owned activity once per open (the export's shape, paged by document id, from the
 server), then every owned vice, to list those of no vice. Their deletes are confirmed on the page, with no Undo: the
 rules refuse recreating an entry whose vice the writer does not own. The vice lists have no limit (`r4-vice-cap`, under
-Days).
+Days in `data-model.md`).
 
 Tests in `test/` run without Firebase, overriding providers in a `ProviderScope` or `ProviderContainer`
 (`test/fakes.dart` builds models and a mocked `User`). Firestore writes go through `TrackerWrites` and Auth calls
 through `Account`, so fakes cover every write path: `test/fake_writes.dart` records each write (for
 `trackerWritesProvider.overrideWithValue`), `test/fake_account.dart` likewise for `accountProvider` and
 `exportShareProvider`. Code calling `FirebaseFirestore.instance` or `FirebaseAuth.instance` directly is untestable
-that way; `integration_test/` drives the real app on an iOS Simulator against the emulators instead (Commands covers
+that way; `integration_test/` drives the real app on an iOS Simulator against the emulators instead (CLAUDE.md's Commands covers
 it and the rules suite).
 
 **Offline.** Production Firestore has disk persistence and an explicit 100 MB cache (`_configureFirestoreCache`,
 `lib/firebase_init.dart`); the emulator path has persistence off. Every write awaits through `settleWrite` (Reads and
-writes, above). `ViceActivity.pending` carries `hasPendingWrites`; the day and history providers listen with
+writes, in this file). `ViceActivity.pending` carries `hasPendingWrites`; the day and history providers listen with
 `includeMetadataChanges: true` so the server's acknowledgement clears it. `offlineProvider` is true once a vices
 listener has answered from cache for three seconds; it drives the offline banner and an empty day's offline wording.
 `syncStatusProvider` (`lib/providers/sync_status_provider.dart`) drives the header's Synced/Syncing pill and the menu

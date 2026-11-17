@@ -2,7 +2,7 @@
 
 **Data model.** The app is Penchant and its UI says "habit" (Jack, 2026-11-05, #81); Dart identifiers, routes,
 Firestore names and export columns keep "vice", to stay compatible with stored data and old exports. Flat top-level
-collections joined by `viceID` (and `dayNotes` and `urges`, Urges below): `vices` (`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`, optional
+collections joined by `viceID` (and `dayNotes` and `urges`, `urges-and-check-ins.md`): `vices` (`name`, `unit`, `ownerID`, `createdAt`, `archived`, `category`, optional
 `unitLabel`, `unitSingular`, `costPerUnit`, `currency`, `lineAmount`, `linePeriod`) and
 `activities` (`viceID`, `quantity`, `ownerID`, `createdAt`, optional `amount` and `updatedAt`, and sealed content:
 `triggers` and the optional `urge`, `note`, `zone`, `writtenAt`, `loggedVia`); a third, `summaries`, is server-written (Server side,
@@ -18,8 +18,8 @@ offline log with its sync time); `loggedVia` `oneTap`, `sheet` or `widget` (onbo
 never edited. The amount sheet and editor (`AmountFields`) and the picker after a log (`askWhatWasGoingOn`) ask for
 urge and note (`lib/widgets/urge_note_fields.dart`); the sheet's own picker asks triggers only. `answersTooLong`
 refuses answers whose JSON beside the longest silent fields would pass the envelope's 4094 bytes. It also holds the
-optional `followUpQuestion`, `followUpQuote` and `followUpAnswer` (Follow-up question), sealed only. Insights reads
-`urge` (Random check-ins) and `loggedVia` (Say it to log and Catch up) alone, and still places an entry abroad on the
+optional `followUpQuestion`, `followUpQuote` and `followUpAnswer` (Follow-up question, `claude-features.md`), sealed only. Insights reads
+`urge` (Random check-ins, `urges-and-check-ins.md`) and `loggedVia` (Say it to log and Catch up, `claude-features.md`) alone, and still places an entry abroad on the
 viewer's hour; the export appends `urge`, `note`,
 `time_zone`, `written_at`, `logged_via` after `triggers`. An older build that edits an entry's triggers rebuilds the
 envelope from its triggers alone and drops the rest (accepted, Jack, 2026-11-13).
@@ -78,7 +78,7 @@ false; `categoryMigrationProvider` (`lib/writes/category_migration.dart`, kept a
 `fillViceCategory`, a transaction that writes only if the server copy lacks a category, since a launch's first
 snapshot is cached and on a second device can predate a category picked elsewhere. Offline it fails and a later
 snapshot or launch retries; nothing queues. An archived vice leaves recording and Today's dial, tallies and Log fan;
-Manage Data still opens its history and Trends lists it last (Today and Trends, below).
+Manage Data still opens its history and Trends lists it last (`today-and-trends.md`).
 
 **Units and price.** A vice may carry its own unit label (`unitLabel`, 1 to 20 UTF-16 code units, in place of the
 `Unit` preset's words: `Vice.units`, a `UnitWords`) with its form for one (`unitSingular`, same bounds, ignored

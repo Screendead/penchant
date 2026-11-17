@@ -2,7 +2,8 @@
 
 ## State and the current task
 
-This file holds how the code works and the hard rules. `HANDOVER.md` holds the current task: the queue and each item's
+This file holds the hard rules, the commands and a short map of the code; how each area works is in
+`docs/architecture/` (Architecture, below, says which file to read before touching what). `HANDOVER.md` holds the current task: the queue and each item's
 state, calls waiting on Jack, and options set aside with reasons. Read it at the start of every session; "do the next
 thing" means the top unblocked item in its queue. Update it in the same commit that closes an item or records a call;
 git holds the history. If it and this file disagree about state, `HANDOVER.md` wins. A recommendation (Claude's, never
@@ -171,3 +172,102 @@ bump it when the local `flutter --version` changes. CI uses `dart analyze` becau
 `dart analyze` and shows in the IDE, but `flutter analyze` prints none of its warnings on this pin. Move it only with
 the Flutter pin: a plugin whose `analysis_server_plugin` speaks another protocol than the pinned Dart's analysis server
 never starts, and `dart analyze` hangs (3.1.6 to 3.1.8 under Dart 3.12).
+
+## Architecture
+
+How each area works is in `docs/architecture/`, moved there from this file on 2026-11-17 because every session loads
+this file. Read the named doc before changing an area. **New or changed feature detail goes in the area's doc, never
+here**: this section keeps one to three lines per area (key files, the invariant that is easy to break, what leaves
+the device). `test/claude_md_size_test.dart` fails when this file passes its byte cap or names a doc that does not
+exist; raise the cap only with Jack's say-so.
+
+| Doc | Read before touching |
+| --- | --- |
+| `app-structure.md` | `lib/providers/`, `lib/writes/`, `lib/account/`, the amount sheet, "What was going on?", offline, `test/` fakes |
+| `data-model.md` | Firestore fields, `firestore.rules`, `lib/data/`, units, price, a habit's line and strength, days, indexes |
+| `sealing-and-backup.md` | `lib/crypto/`, `lib/data/sealed.dart`, sealed device files, `lib/backup/` |
+| `claude-features.md` | `lib/notes/`, `lib/insights/weekly_words.dart`, `lib/letter/`, `lib/say_it/`, `lib/claude/`, matching `functions/` |
+| `ask-and-analyst.md` | `lib/ask/`, `lib/analyst/`, `functions/ask_journal.js`, `functions/analyst.js`, Siri's `AskJournalIntent` |
+| `urges-and-check-ins.md` | `lib/widgets/urge_sheet.dart`, `lib/reminder/`, urges, check-ins, the heavy-day prompt |
+| `insights.md` | `lib/insights/`, Health, Calendar and Reminders, places, photos, experiments, daylight, note search |
+| `today-and-trends.md` | Navigation, `ViceTracker`, the Day Dial, `lib/trends/`, the split view, reduce motion |
+| `iphone-extras.md` | `lib/label/`, `lib/night_out/`, `ios/PenchantWidgets/`, `ios/PenchantWatch*/` |
+| `platform.md` | Mac helpers (`PenchantMenuBar`, `PenchantSync`), Swift packages, `lib/firebase_init.dart`, API key, macOS auth fields |
+| `server.md` | `functions/index.js`, `monthlySummaries`, `dailyOrphanCleanup`, the callables' shared limits |
+| `design.md` | `lib/design/`, fonts, habit colours, `lib/report/`, `lib/app_lock/` |
+
+Flutter over Firebase Auth + Firestore (project `screendead-vice-tracker`) for iOS 15+ and macOS 12+ only; both
+platforms are bundle ID `com.screendead.penchant` on one Firebase iOS app registration. The app is Penchant and its UI
+says "habit"; Dart identifiers, routes, Firestore names and export columns keep "vice" (Jack, 2026-11-05, #81).
+
+**Native dependencies come from Swift Package Manager, with no CocoaPods on either platform.** `pubspec.yaml` sets
+`enable-swift-package-manager: true`; `firebase-ios-sdk` is 12.19.3, never lower (#56); `test/apple_dependencies_test.dart`
+checks both `Package.resolved` copies. A new plugin without a `Package.swift` makes Flutter write a Podfile and fails
+that test: keep the Podfile, name the plugin here, change the test (`platform.md`).
+
+**Providers** (`app-structure.md`). Riverpod without codegen, all hand-written in `lib/providers/`. Each Firestore
+query is a `...ForUserProvider` family keyed on the uid behind a wrapper using `watchForSignedInUser`; don't add a
+query provider that watches `userProvider` itself (that shape leaked the previous user's data). Never gate UI on
+`ref.read(provider.future)`: render loading and error from the watched `AsyncValue`. Families and wrappers are
+`autoDispose`.
+
+**Writes** (`app-structure.md`). Widgets write only through `ref.read(trackerWritesProvider)` (`TrackerWrites`) and
+settle each write with `rejectedWritesProvider.notifier.settle`; Auth calls only through `ref.read(accountProvider)`
+(`Account`). Code calling `FirebaseFirestore.instance` or `FirebaseAuth.instance` directly is untestable with the fakes
+in `test/fake_writes.dart` and `test/fake_account.dart`. Query bounds there says how each query is bounded; the
+whole-journal read `readJournal` runs once per open, not as a listener.
+
+**Data model and rules** (`data-model.md`). Flat top-level collections joined by `viceID`. A new field needs a rules
+change and a test; parsers never throw (`lib/data/json_fields.dart`). The rules fix each collection's field set on
+create and allow updates only to listed fields, so legacy documents stay readable. Days are local midnights from
+`lib/data/day.dart`, never `Duration(days:)`. A new composite query shape needs a `firestore.indexes.json` entry
+(`test/firestore_indexes_test.dart`); the emulators never enforce indexes. `Account.ownedCollections` and
+`OWNED_COLLECTIONS` (`functions/cleanup.js`) must match; `test/restore_test.dart` fails when the first gains one.
+
+**Sealing** (`sealing-and-backup.md`). Content fields are sealed with the user's journal key (`lib/crypto/`,
+`lib/data/sealed.dart`); `quantity`, `amount`, `createdAt`, `viceID`, `ownerID` stay plaintext. A new content field
+joins `contentFields` and the rules' `sealedAlone` and `changedContent` calls, unless the rules refuse it in plaintext.
+Device files holding journal content, findings or Health-derived values are sealed too (`lib/crypto/sealed_files.dart`).
+`sealerProvider` is null while no key exists, and every create path checks it first. Backup and restore never adopt
+the backup's key.
+
+**Claude features** (`claude-features.md`, `ask-and-analyst.md`, `server.md`). Note reader, follow-up question, tag
+older notes, tidy my tags, weekly review in words, Ask, Analyst, Letter, Say it and Catch up: each off by default or
+sent only on a tap, each a callable in `functions/` with its own daily cap, refusing a guest or an unverified email
+(`claudeAllowedProvider`, `verifiedCaller`), and logging reason codes and counts only, never content. Each doc says
+exactly what is sent. Ask's model SQL runs on the device under the layers in `lib/ask/journal_db.dart` and no row or
+result leaves it; the Analyst sends cut results from a figures-only database that holds no note text. Server and device run the same checks on a reply
+(the `functions/*_fixture.json` files); keep both in step. Every call in flight shows through `lib/claude/`.
+
+**Urges, check-ins and prompts** (`urges-and-check-ins.md`). `urges` and `checkIns` are born sealed; notifications
+never name a habit or amount, and their actions are foreground (a background action has no journal key). Urges never
+count in totals, Insights, Ask or the letter.
+
+**Insights** (`insights.md`). Nothing read from Health, Calendar, Reminders, places or photos leaves the device. The
+only Health writes are a strength habit's entries, on the person's say-so, and their types never join `readTypes`.
+Raise `healthReadTypesVersion` with any change to `readTypes`, and `insightsViewFormat` with any change to the report's
+types. Comparisons share the page's false-discovery family.
+
+**Today and Trends** (`today-and-trends.md`). `ViceTracker` is Today: the Day Dial (`lib/widgets/day_dial.dart`, pure
+geometry in `lib/data/dial_layout.dart`), tally tiles and the Log button; `TrendsSheet` (`lib/trends/`) over it, a
+split view from 900 pt. Habits list oldest first everywhere; tests override both habit lists (`habitOverrides`). Under
+reduce motion the dial's motion is a 150 ms fade, so tests of pending entries cannot `pumpAndSettle` with animations on.
+
+**iPhone and Watch extras** (`iphone-extras.md`). Read a label (Vision on the device; nothing kept or sent), Night out
+(a local-only Live Activity), and the Apple Watch app, which holds no key, token or entry. Never pass `-sdk` to an iOS
+xcodebuild (Commands).
+
+**Platform** (`platform.md`). `lib/firebase_init.dart` does all Firebase setup; the emulator define points at
+`demo-tracker` and startup throws on a non-`demo-` project. Flagged builds strip the Firebase plist and never activate
+App Check or Crashlytics. Crash reports carry the literal context, never what the user typed. The client API key in
+both `GoogleService-Info.plist` files and `lib/firebase_options.dart` is a public identifier by design; never commit a
+service-account file or `privateKey.json`. Penchant.app embeds `PenchantMenuBar` and `PenchantSync`; the sync helper
+keeps nothing of the user's after a run.
+
+**Server side** (`server.md`). `functions/index.js`: the scheduled `monthlySummaries` (reads only `viceID` and
+`quantity`) and `dailyOrphanCleanup` (dry while `DELETE_ORPHANED_DATA` is false), and the Claude callables.
+
+**Design** (`design.md`). `lib/design/tokens.json` is the source of truth, `tokens.dart` mirrors it
+(`test/design_tokens_test.dart`). Screens take colours from the theme, never literals (`test/theme_test.dart`); no
+`ColorScheme` role takes a habit colour. A habit's colour is its creation order: pass `habitMarks` the full
+`viceListProvider` list, not the unarchived one. Report and App lock are in the same doc.

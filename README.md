@@ -20,7 +20,7 @@ releases are the `seed-emulators` and `release` skills (`.claude/skills/`).
 
 ## Where things are
 
-- `CLAUDE.md`: how the code works, the hard rules and the commands.
+- `CLAUDE.md`: the hard rules, the commands and a map of the code; `docs/architecture/`: how each area works.
 - `HANDOVER.md`: the current task queue and the calls waiting on the owner.
 - `tech-debt/`: the debt register; `ideas/`: the product backlog. Both burn down by deletion (their READMEs).
 - `CHANGELOG.md`: user-visible changes per release.

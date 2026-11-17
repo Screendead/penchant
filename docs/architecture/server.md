@@ -9,7 +9,7 @@ sign-in and a verified, non-guest account (`permission-denied`), answering `fail
 `r8-bead-size`) writes `summaries/{uid}` for every user owning a vice: `{computedAt, windowDays: 90, vices: {viceID:
 {typical, count}}}`, the median positive quantity of their last 90 days of activities and the entries it covers
 (`functions/summary.js`, same median as `typicalQuantity` in `lib/data/dial_layout.dart`). It reads only `viceID` and
-`quantity`, never a name or unit, which `r2-e2ee` seals; amounts and times stay plaintext for it (Sealed fields).
+`quantity`, never a name or unit, which `r2-e2ee` seals; amounts and times stay plaintext for it (Sealed fields, `sealing-and-backup.md`).
 Per user, one paged query on the existing (`ownerID`, `createdAt` desc) index, capped at 20,000 entries; writes go in
 batches of 400; it deletes the summary of any uid owning no vice (a deleted account keeps its summary until the next
 run). Rules let the owner read `summaries/{uid}` and nobody write it; the Admin SDK bypasses them. `habitSummaryProvider`

@@ -2,7 +2,7 @@
 
 **Health** (iOS only; `ios/Runner/HealthChannel.swift`, `lib/insights/health_source.dart`). Nothing read from
 Health leaves the device: not Firestore, analytics or crash reports. The only writes are a strength habit's entries, on
-the person's say-so (A habit's strength, above): `numberOfAlcoholicBeverages` and `dietaryCaffeine`, never in
+the person's say-so (A habit's strength, `data-model.md`): `numberOfAlcoholicBeverages` and `dietaryCaffeine`, never in
 `readTypes`, so Insights cannot read Penchant's own samples back as an outcome; keep them out of it. Insights' daily values live in
 `health-daily.json` in Caches (not backed up; `lib/insights/health_sync.dart`); each open asks the channel's
 `changes` (an `HKAnchoredObjectQuery` per type from its saved anchor, state in Caches' `health-sync.json`, pure part

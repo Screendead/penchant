@@ -2,7 +2,7 @@
 
 **Ask your journal** (`lib/ask/`, off by default; Settings' "Ask your journal", `AskJournalSetting`, whose disclosure
 says what is sent; `AskPage`, route `/ask`, in the Penchant menu while the switch is on; guests and unverified emails
-refused as above; emulator builds have no service). The model writes read-only SQL; the device runs it over a private
+refused as for the note reader, `claude-features.md`; emulator builds have no service). The model writes read-only SQL; the device runs it over a private
 copy of the journal; no row or result leaves the device (Jack: "just has to be maximally secure").
 `CallableAskJournal.request` is the only payload, and has no parameter for anything else: `question` (1 to 300),
 `today`, `weekday`, `habits` (`id`, `name`, `unit`, `unit_one`, `archived`; `askHabits`' order, ids from
