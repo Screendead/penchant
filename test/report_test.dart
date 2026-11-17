@@ -254,7 +254,8 @@ void main() {
 
     await tester.tap(find.text(ReportPreviewPage.share));
     await tester.pumpAndSettle();
-    expect(output.shared, 'penchant-report-2026-11-16.pdf');
+    // The page stamps the file with the clock, not the overridden today.
+    expect(output.shared, reportFileName(DateTime.now()));
     expect(output.discarded, 0);
 
     tester.state<NavigatorState>(find.byType(Navigator)).pop();
