@@ -12,6 +12,8 @@ on:
       - ".github/workflows/rules-tests.yml"
       - ".github/workflows/deploy-firestore.yml"
       - ".github/workflows/checks.yml"
+  # A deploy skipped by a red check is not retried by any later push that misses these paths.
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
