@@ -153,7 +153,7 @@ touching the rules, indexes, `firebase.json` or the suite. A PR with no checks h
   lines from its resolved firebase-ios-sdk and forces `flutter_secure_storage_darwin` to the file keychain, so a green
   run proves the app, not sign-in or keychain storage in the signed app; those need a signed local run.
 - `deploy-firestore.yml`, on a push to `master` touching the rules, indexes, `firebase.json`, the rules suite or these
-  workflows, re-runs both and only if they pass deploys `firestore.rules` and `firestore.indexes.json` to production
+  workflows (or `gh workflow run deploy-firestore.yml` on `master`, after a deploy a red check skipped), re-runs both and only if they pass deploys `firestore.rules` and `firestore.indexes.json` to production
   with the firebase-tools pinned in `tests/firestore-rules/package-lock.json`. Gated on repository variable
   `DEPLOY_FIRESTORE_RULES` (unset, skipped; state under Hard rules); deploys queue in one concurrency group so the
   newest commit lands last.
