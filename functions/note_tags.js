@@ -1,7 +1,7 @@
 'use strict';
 
 // The app's starter trigger tree (lib/data/trigger_tree.dart) as id paths and
-// labels; note_tags.test.js fails when the two differ.
+// labels; note_reader.test.js fails when the two differ.
 const NOTE_TAGS = [
   ['social', 'Who was there'],
   ['social/friends', 'With friends'],

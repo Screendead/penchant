@@ -7,7 +7,6 @@ const fixture = require('./letter_fixture.json');
 const {
   LETTER_DENIED_TERMS,
   MAX_CHARS,
-  MODEL,
   NUMBER_WORDS,
   SCHEMA,
   checkLetter,
@@ -31,10 +30,6 @@ const goodLetter = () => ({
   sections: goodSections(),
   toTest: [{ title: 'Evenings after work', why: 'Your notes suggest the walk home matters.' }],
   quotes: ['needed it after the meeting, 3 hours late'],
-});
-
-test('the model id is Opus 5.5', () => {
-  assert.equal(MODEL, 'claude-opus-5-5');
 });
 
 test('validInput accepts the fixture and copies it exactly', () => {

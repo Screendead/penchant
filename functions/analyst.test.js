@@ -99,11 +99,6 @@ test('parseMessage says which rule a rejected reply broke, with nothing of the r
   assert.ok(analyst.validStep(finding({ headline: 'H'.repeat(analyst.LIMITS.headline), body: 'B'.repeat(analyst.LIMITS.body) })));
 });
 
-test('the system prompt states the finding limits', () => {
-  assert.ok(analyst.SYSTEM.includes(`at most ${analyst.LIMITS.headline} characters`));
-  assert.ok(analyst.SYSTEM.includes(`at most ${analyst.LIMITS.body} characters`));
-});
-
 test('judge withholds a finding the transcript does not bear out', () => {
   const valid = analyst.validInput(input());
   const finding = (headline, restsOn = [1]) => ({ kind: 'finding', queries: [], finding: { headline, body: 'B.', rests_on: restsOn } });

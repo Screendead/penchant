@@ -349,23 +349,16 @@ async function investigate(client, input) {
 }
 
 module.exports = {
-  CAUSAL_TERMS,
   LIMITS,
-  MAX_CHARS,
-  MAX_RESULT_CHARS,
   MAX_ROUNDS,
-  MODEL,
-  REFUSALS,
   SCHEMA,
   SYSTEM,
-  checkFinding,
   checkPassage,
   contextOf,
   investigate,
   judge,
   messageRequest,
   parseMessage,
-  statements,
   validInput,
   validStep,
 };

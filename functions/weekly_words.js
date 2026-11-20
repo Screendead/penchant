@@ -249,14 +249,10 @@ async function writeWeekly(client, figures) {
 }
 
 module.exports = {
-  MAX_FINDINGS,
-  MAX_HABITS,
   MODEL,
-  NUMBER_WORDS,
   checkParagraph,
   messageRequest,
   parseMessage,
-  tagLabel,
   validFigures,
   writeWeekly,
 };
