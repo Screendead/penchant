@@ -2,6 +2,9 @@
 // form's Strength section, the amount sheet with an entry's own strength,
 // with its Apple Health switch off and on, and Trends in the Units view:
 //   flutter test test/strength_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

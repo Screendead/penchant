@@ -1,6 +1,9 @@
 // Renders the lock screen and Settings with App lock on, light and dark, at 390x844 to PNGs for the pitch. Skipped
 // unless a directory is given:
 //   flutter test test/app_lock_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

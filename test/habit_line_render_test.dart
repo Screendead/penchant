@@ -1,6 +1,9 @@
 // Renders a habit's line as light stills, beside the picked mock-up
 // (docs/pitch/round-17/goals/optionC.html):
 //   flutter test test/habit_line_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

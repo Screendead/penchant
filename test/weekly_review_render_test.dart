@@ -1,6 +1,9 @@
 // Renders the weekly review at 390x844 in both themes, its top and scrolled to
 // the findings (docs/pitch/round-14/weekly-review/):
 //   flutter test test/weekly_review_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

@@ -1,6 +1,9 @@
 // Renders Today at 390x844 (with last night's line in one scene), and the Mac's split view at 900, 1200 and 1600 pt
 // wide, in light and dark to PNGs, for a look at the real fonts and colours. Skipped unless a directory is given:
 //   flutter test test/today_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

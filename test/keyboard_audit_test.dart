@@ -371,7 +371,12 @@ Future<void> _openRoute(
 }
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues(<String, Object>{}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    // A blinking caret never settles, so each settle would run to its timeout.
+    EditableText.debugDeterministicCursor = true;
+  });
+  tearDown(() => EditableText.debugDeterministicCursor = false);
 
   testWidgets('amount sheet', (WidgetTester tester) async {
     await withClock(Clock.fixed(_now), () async {

@@ -2,6 +2,9 @@
 // and back, for reviewing the motion frame by frame:
 //   flutter test test/auth_switch_frames_render_test.dart --dart-define=RENDER_DIR=<dir>
 // tools/auth-switch-frames.sh turns the frames into a GIF and a contact sheet.
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

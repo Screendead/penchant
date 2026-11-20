@@ -2,6 +2,9 @@
 // each page, then the options and preview screens at 390x844 in light and
 // dark, for a look at the real layout. Skipped unless a directory is given:
 //   flutter test test/report_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

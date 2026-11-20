@@ -1,6 +1,9 @@
 // Renders sign-in, sign-up, Settings, Appearance and Account Settings at the Day Dial mock-up's size and
 // text, for side-by-side comparison with it (tools/fidelity/README.md):
 //   flutter test test/fidelity_account_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

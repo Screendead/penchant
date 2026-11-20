@@ -3,6 +3,9 @@
 // comparison with the mock-up's Record still (stills-record.png, frame 2;
 // tools/fidelity/README.md):
 //   flutter test test/fidelity_amount_sheet_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

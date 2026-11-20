@@ -2,6 +2,9 @@
 // last night at the top, the What it costs drill-in, the early days and not
 // yet connected (docs/pitch/round-12/insights/built/):
 //   flutter test test/fidelity_insights_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

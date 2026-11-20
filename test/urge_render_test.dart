@@ -2,6 +2,9 @@
 // long-press menu, the urge sheet, Trends with urge marks, and a day's urges
 // in Trends. Skipped unless a directory is given:
 //   flutter test test/urge_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

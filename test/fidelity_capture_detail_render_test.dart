@@ -3,6 +3,9 @@
 // mock-up's size, for side-by-side comparison with
 // docs/pitch/round-17/capture-detail/optionC.html:
 //   flutter test test/fidelity_capture_detail_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

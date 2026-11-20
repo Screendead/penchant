@@ -3,6 +3,9 @@
 // finding, the plan screen, Today's strip over a shaded dial, a clear result
 // and a "can't tell" one (docs/pitch/round-18/built/self-experiments/):
 //   flutter test test/experiment_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
