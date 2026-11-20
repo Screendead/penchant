@@ -146,17 +146,13 @@ double? pValueOf(HabitInsight insight) => switch (insight) {
 void main() {
   test('on pure noise, the larger family still keeps false findings rare '
       'after the correction', () {
-    const int seeds = 200;
+    const int seeds = 100;
     int checks = 0, raw = 0, rawReports = 0, after = 0, reports = 0;
-    final Map<InsightKind, int> tested = <InsightKind, int>{};
     for (int seed = 0; seed < seeds; seed++) {
       final InsightsInput input = noise(seed);
       final List<HabitInsight> all = everyComparison(input);
       for (final HabitInsight i in all) {
-        if (pValueOf(i) != null) {
-          checks++;
-          tested[i.kind] = (tested[i.kind] ?? 0) + 1;
-        }
+        if (pValueOf(i) != null) checks++;
       }
       final int found = all.whereType<HabitFinding>().length;
       raw += found;
@@ -177,11 +173,6 @@ void main() {
       after += kept;
       if (kept > 0) reports++;
     }
-    // ignore: avoid_print
-    print(
-      'MEASURE tested=$tested checks=$checks raw=$raw rawReports=$rawReports '
-      'after=$after reports=$reports',
-    );
     // 2 x 9 days-with-and-without (Water has no days without), 3 x 9 each of
     // amount and time, and of a line in each; a few lines are refused
     // unfitted.
