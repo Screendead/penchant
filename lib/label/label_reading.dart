@@ -152,7 +152,6 @@ LabelReading readLabel(List<String> lines) {
       if (line.trim().isNotEmpty) line.trim(),
   ];
 
-  // Strength.
   final List<LabelValue> sureAbv = <LabelValue>[];
   final List<LabelValue> looseAbv = <LabelValue>[];
   for (int i = 0; i < text.length; i++) {
