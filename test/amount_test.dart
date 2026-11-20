@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/json_fields.dart';
-import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/usage_series.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/formats.dart';

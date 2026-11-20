@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tracker/vice_form.dart';
 import 'package:tracker/data/json_fields.dart';
 import 'package:tracker/data/limits.dart';
 import 'package:tracker/data/vice.dart';
@@ -28,8 +27,6 @@ Future<void> _pump(
   );
   await tester.pump();
 }
-
-Finder _field(String label) => find.widgetWithText(TextFormField, label);
 
 void main() {
   group('viceNameError', () {
