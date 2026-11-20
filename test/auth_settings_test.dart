@@ -1,14 +1,11 @@
 import 'dart:ui' show CheckedState;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/design/app_theme.dart';
-import 'package:tracker/design/tokens.dart';
 import 'package:tracker/widgets/auth_parts.dart';
-import 'package:tracker/widgets/settings_card.dart';
 
 import 'fake_account.dart';
 
@@ -36,7 +33,6 @@ bool _checked(WidgetTester tester, String rule) =>
 
 void main() {
   group('the sign-in screen', () {
-
     testWidgets('ticks each password rule as it is met and enables Create '
         'account only when all are', (WidgetTester tester) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
@@ -80,7 +76,5 @@ void main() {
       expect(button().onPressed, isNotNull);
       semantics.dispose();
     });
-
   });
-
 }

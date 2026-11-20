@@ -18,7 +18,6 @@ import 'package:tracker/providers/weekly_review_provider.dart';
 import 'package:tracker/insights/weekly_review.dart';
 import 'package:tracker/insights/weekly_words.dart';
 import 'package:tracker/insights/weekly_words_setting.dart';
-import 'package:tracker/weekly_review_page.dart';
 
 import 'fakes.dart';
 import 'weekly_review_fixture.dart';
@@ -122,34 +121,6 @@ const List<(String, String)> _cases = <(String, String)>[
   ('Habits A and B came to 9 and 14.', 'placeholder'),
   ('  ', 'empty'),
 ];
-
-class _FakeWords implements WeeklyWords {
-  _FakeWords(this.answer);
-
-  final Future<String?> Function() answer;
-  final List<WeeklyFigures> asked = <WeeklyFigures>[];
-
-  @override
-  Future<String?> write(WeeklyFigures figures) {
-    asked.add(figures);
-    return answer();
-  }
-}
-
-Future<void> _pumpPage(WidgetTester tester, WeeklyWords? words) async {
-  tester.view.devicePixelRatio = 1;
-  tester.view.physicalSize = const Size(600, 3200);
-  addTearDown(tester.view.reset);
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: reviewOverrides(words: words),
-      child: MaterialApp(
-        theme: appTheme(Brightness.light),
-        home: const WeeklyReviewPage(),
-      ),
-    ),
-  );
-}
 
 void main() {
   group('WeeklyFigures', () {
@@ -485,6 +456,5 @@ void main() {
       expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
       expect(await saved(), isTrue);
     });
-
   });
 }

@@ -205,7 +205,6 @@ void main() {
       await ask(tester, 'Two?');
       expect(service.histories.last, isEmpty);
     });
-
   });
 
   group('Investigate', () {
@@ -287,6 +286,5 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(monthSql), findsOneWidget);
     });
-
   });
 }

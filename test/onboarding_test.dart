@@ -18,7 +18,6 @@ import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
-import 'package:tracker/vice_form.dart';
 import 'package:tracker/vice_tracker.dart';
 
 import 'fake_writes.dart';

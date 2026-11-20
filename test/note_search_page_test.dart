@@ -176,7 +176,6 @@ Future<void> _type(WidgetTester tester, String query) async {
 }
 
 void main() {
-
   group('renders', () {
     setUpAll(_loadFonts);
     for (final Brightness brightness in Brightness.values) {

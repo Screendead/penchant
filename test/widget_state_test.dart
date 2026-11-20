@@ -3,14 +3,12 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/authenticate.dart';
 import 'package:tracker/data/day.dart';
-import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/vice.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/formats.dart';
@@ -27,9 +25,7 @@ import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
 import 'package:tracker/vice_activity_history_page.dart';
-import 'package:tracker/trends/trends_sheet.dart';
 import 'package:tracker/widgets/day_dial.dart';
-import 'package:tracker/widgets/log_fan.dart';
 import 'package:tracker/vice_tracker.dart';
 import 'package:tracker/widgets/time_dial.dart';
 import 'package:tracker/widgets/undo_bar.dart';
@@ -49,15 +45,6 @@ class _FakeToday extends Today {
 
   void moveTo(DateTime day) => state = day;
 }
-
-Vice _archivedVice(String id) => Vice(
-  id: id,
-  name: id,
-  unit: Unit.values.first,
-  ownerID: ownerID,
-  createdAt: Timestamp.fromMillisecondsSinceEpoch(0),
-  archived: true,
-);
 
 String _fieldText(WidgetTester tester, String label) => tester
     .widget<TextFormField>(find.widgetWithText(TextFormField, label))
@@ -88,7 +75,6 @@ Future<void> _pump(
 void main() {
   final DateTime today = startOfDay(DateTime.now());
   final Vice coffee = fakeVice('coffee');
-  final Vice tea = _archivedVice('tea');
 
   group('the app root', () {
     testWidgets('waits for the restored session instead of showing sign-in', (

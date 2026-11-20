@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,7 +7,6 @@ import 'package:tracker/account/claude_access.dart';
 import 'package:tracker/analyst/analyst_setting.dart';
 import 'package:tracker/ask/ask_journal.dart';
 import 'package:tracker/ask/ask_journal_setting.dart';
-import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/insights/weekly_words.dart';
 import 'package:tracker/letter/letter_setting.dart';
 import 'package:tracker/letter/letter_writer.dart';
@@ -117,5 +115,4 @@ void main() {
       expect(c.read(investigatorProvider), isNull);
     });
   });
-
 }

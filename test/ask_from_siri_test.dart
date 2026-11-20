@@ -246,7 +246,6 @@ void main() {
       expect(find.text(siriTurnOnNotice), findsOneWidget);
       expect(c.read(pendingSiriQuestionProvider), isNull);
     });
-
   });
 
   group('AskPage with a question from Siri', () {

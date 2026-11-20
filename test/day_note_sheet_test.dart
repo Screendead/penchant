@@ -16,7 +16,6 @@ import 'package:tracker/providers/day_note_provider.dart';
 import 'package:tracker/providers/today_provider.dart';
 import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
-import 'package:tracker/widgets/day_note_line.dart';
 import 'package:tracker/widgets/day_note_sheet.dart';
 import 'package:tracker/widgets/note_panels.dart';
 import 'package:tracker/writes/settle_write.dart';
@@ -135,7 +134,6 @@ void main() {
         expect(page(name), isA<NotFound>(), reason: name);
       }
     });
-
   });
 
   testWidgets('a new note is created from the first panel\'s Done', (
