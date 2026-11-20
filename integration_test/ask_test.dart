@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/ask/ask_answer.dart';
-import 'package:tracker/ask/ask_chart.dart';
 import 'package:tracker/ask/ask_journal.dart';
 import 'package:tracker/ask/ask_page.dart';
 import 'package:tracker/data/vice.dart';
