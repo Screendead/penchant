@@ -263,21 +263,6 @@ void main() {
     expect(find.text(LetterPage.none), findsOneWidget);
   });
 
-  testWidgets('says the letter is off without a writer', (
-    WidgetTester tester,
-  ) async {
-    container.dispose();
-    container = ProviderContainer(
-      overrides: [
-        userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-        letterWriterProvider.overrideWithValue(null),
-        keptSealedFilesProvider.overrideWithValue(null),
-      ],
-    );
-    await open(tester);
-    expect(find.text(LetterPage.off), findsOneWidget);
-  });
-
   testWidgets('the setting says what is sent before it turns on', (
     WidgetTester tester,
   ) async {

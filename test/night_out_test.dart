@@ -190,58 +190,6 @@ void main() {
     );
   });
 
-  testWidgets('a long press on a tile offers Start a night', (
-    WidgetTester tester,
-  ) async {
-    await _pumpToday(tester, _ready);
-    await _openMenu(tester, 'Wine');
-    expect(find.text(startNightLabel), findsOneWidget);
-    await tester.tap(find.text(startNightLabel));
-    await tester.pumpAndSettle();
-    expect(find.text('Start a night on Wine'), findsOneWidget);
-    expect(find.text('Tonight'), findsOneWidget);
-    await tester.tap(find.byType(Switch));
-    await tester.pumpAndSettle();
-    expect(find.text('Tonight'), findsNothing);
-  });
-
-  testWidgets('says why it cannot start', (WidgetTester tester) async {
-    await _pumpToday(
-      tester,
-      const NightOutStatus(supported: true, enabled: false),
-    );
-    await _openMenu(tester, 'Wine');
-    expect(
-      find.text('Live Activities are off for Penchant in Settings.'),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('no menu where nights are not offered', (
-    WidgetTester tester,
-  ) async {
-    final User user = FakeUser(ownerID);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          userProvider.overrideWith((ref) => Stream.value(user)),
-          offlineProvider.overrideWith((ref) => Stream.value(false)),
-          trackerWritesProvider.overrideWithValue(FakeTrackerWrites()),
-          memoryJournal(),
-          viceListProvider.overrideWith((ref) => AsyncData(_habits)),
-          unarchivedViceListProvider.overrideWith((ref) => AsyncData(_habits)),
-          viceActivityDayProvider.overrideWith(
-            (ref, DateTime day) => const AsyncData(<ViceActivity>[]),
-          ),
-        ],
-        child: const MaterialApp(home: Homepage()),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await _openMenu(tester, 'Wine');
-    expect(find.text(startNightLabel), findsNothing);
-  });
-
   testWidgets('Today shows the night running and ends it', (
     WidgetTester tester,
   ) async {

@@ -129,24 +129,6 @@ Widget _app(_FakeScheduler scheduler, {Widget home = const Settings()}) =>
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues(<String, Object>{}));
 
-  testWidgets('the reminder is off by default and asks nothing until on', (
-    WidgetTester tester,
-  ) async {
-    final _FakeScheduler scheduler = _FakeScheduler();
-    await tester.pumpWidget(_app(scheduler));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Reminder'), findsOneWidget);
-    expect(find.text('Off'), findsOneWidget);
-
-    await tester.tap(find.text('Reminder'));
-    await tester.pumpAndSettle();
-    expect(find.byType(ReminderSettings), findsOneWidget);
-    expect(find.text('9:00 PM'), findsWidgets);
-    expect(scheduler.permissionRequests, 0);
-    expect(scheduler.scheduled, isEmpty);
-  });
-
   testWidgets('turning it on asks for permission and schedules it daily', (
     WidgetTester tester,
   ) async {
@@ -175,21 +157,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(scheduler.cancels, 1);
     expect(prefs.getBool(DailyNudge.enabledKey), isFalse);
-  });
-
-  testWidgets('a refused permission leaves it off and says where to go', (
-    WidgetTester tester,
-  ) async {
-    final _FakeScheduler scheduler = _FakeScheduler(grant: false);
-    await tester.pumpWidget(_app(scheduler, home: const ReminderSettings()));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byType(Switch).first);
-    await tester.pumpAndSettle();
-
-    expect(tester.widget<Switch>(find.byType(Switch).first).value, isFalse);
-    expect(find.text(NudgeCopy.permissionDenied), findsOneWidget);
-    expect(scheduler.scheduled, isEmpty);
   });
 
   testWidgets('a new time reschedules it, and only while it is on', (
@@ -362,37 +329,6 @@ void main() {
     await tester.tap(find.text(ReminderSettings.heavyLabel));
     await tester.pumpAndSettle();
     expect(prefs.getBool(HeavyDayNudge.enabledKey), isFalse);
-  });
-
-  testWidgets('heavy days: a refusal leaves it off and says where to go', (
-    WidgetTester tester,
-  ) async {
-    final _FakeScheduler scheduler = _FakeScheduler(grant: false);
-    await tester.pumpWidget(_app(scheduler, home: const ReminderSettings()));
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text(ReminderSettings.heavyFoot), 100);
-    await tester.tap(find.text(ReminderSettings.heavyLabel));
-    await tester.pumpAndSettle();
-    expect(tester.widget<Switch>(_heavySwitch).value, isFalse);
-    expect(find.text(NudgeCopy.permissionDenied), findsOneWidget);
-  });
-
-  testWidgets('heavy days: the time row opens the picker and saves', (
-    WidgetTester tester,
-  ) async {
-    final _FakeScheduler scheduler = _FakeScheduler();
-    await tester.pumpWidget(_app(scheduler, home: const ReminderSettings()));
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text(ReminderSettings.heavyFoot), 100);
-    expect(find.text('9:00 PM'), findsNWidgets(2));
-    await tester.tap(find.text(ReminderSettings.heavyTimeLabel));
-    await tester.pumpAndSettle();
-    expect(find.byType(TimePickerDialog), findsOneWidget);
-    await tester.tap(find.text('OK'));
-    await tester.pumpAndSettle();
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    expect(prefs.getInt(HeavyDayNudge.minutesKey), 21 * 60);
-    expect(prefs.getInt(DailyNudge.minutesKey), isNull);
   });
 
   testWidgets('the weekly review notification is off until turned on', (

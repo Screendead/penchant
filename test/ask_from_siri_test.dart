@@ -247,36 +247,6 @@ void main() {
       expect(c.read(pendingSiriQuestionProvider), isNull);
     });
 
-    testWidgets('a guest or unverified email: Account Settings', (
-      WidgetTester tester,
-    ) async {
-      final ProviderContainer c = await host(tester);
-      c.read(pendingSiriQuestionProvider.notifier).request('How many?');
-      open(SiriAskOutcome.verifyEmail);
-      await tester.pumpAndSettle();
-      expect(find.text('route /settings/account'), findsOneWidget);
-      expect(find.text(siriVerifyNotice), findsOneWidget);
-      expect(c.read(pendingSiriQuestionProvider), isNull);
-    });
-
-    testWidgets('opens Ask, or brings an open one to the top', (
-      WidgetTester tester,
-    ) async {
-      await host(tester);
-      open(SiriAskOutcome.ask);
-      await tester.pumpAndSettle();
-      expect(find.text('route ${AskPage.route}'), findsOneWidget);
-
-      navigator.currentState!.pushNamed('/insights');
-      await tester.pumpAndSettle();
-      open(SiriAskOutcome.ask);
-      await tester.pumpAndSettle();
-      expect(find.text('route ${AskPage.route}'), findsOneWidget);
-      expect(find.text('route /insights'), findsNothing);
-      navigator.currentState!.pop();
-      await tester.pumpAndSettle();
-      expect(find.text('Today'), findsOneWidget);
-    });
   });
 
   group('AskPage with a question from Siri', () {

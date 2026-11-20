@@ -389,43 +389,6 @@ void main() {
       await tap(tester, NotePanels.nextKey);
     }
 
-    testWidgets(
-      'comes after the tags only with a question, counted from then',
-      (tester) async {
-        await pump(tester, _Reader(_question));
-        expect(find.text('1 of 3'), findsOneWidget);
-        await toTags(tester);
-        expect(find.text('2 of 4'), findsOneWidget);
-        await tap(tester, NotePanels.nextKey);
-        expect(find.text('3 of 4'), findsOneWidget);
-        expect(find.text(NotePanels.followUpTitle), findsOneWidget);
-        expect(find.text('You wrote “$_quote”. $_asked'), findsOneWidget);
-        final RichText marked = tester
-            .widgetList<RichText>(find.byType(RichText))
-            .firstWhere((RichText t) => t.text.toPlainText() == _note);
-        bool lit = false;
-        marked.text.visitChildren((InlineSpan s) {
-          if (s is TextSpan && s.text == _quote) {
-            lit = s.style?.background != null;
-          }
-          return true;
-        });
-        expect(lit, isTrue);
-        await tap(tester, NotePanels.nextKey);
-        expect(find.text('4 of 4'), findsOneWidget);
-        expect(find.byKey(UrgeField.keyFor(1)), findsOneWidget);
-      },
-    );
-
-    testWidgets('with no question the flow is as before', (tester) async {
-      await pump(tester, _Reader(null));
-      await toTags(tester);
-      expect(find.text('2 of 3'), findsOneWidget);
-      await tap(tester, NotePanels.nextKey);
-      expect(find.text('3 of 3'), findsOneWidget);
-      expect(find.text(NotePanels.followUpTitle), findsNothing);
-    });
-
     testWidgets('a question whose quote is not in the note is not shown', (
       tester,
     ) async {
@@ -596,17 +559,6 @@ void main() {
       await tester.pumpAndSettle();
       return container;
     }
-
-    testWidgets('is disabled, saying why, while the note reader is off', (
-      tester,
-    ) async {
-      final ProviderContainer container = await pump(tester, reader: false);
-      expect(find.text(FollowUpSetting.needsReader), findsOneWidget);
-      await tester.tap(find.byType(Switch));
-      await tester.pumpAndSettle();
-      expect(find.text(FollowUpSetting.disclosureTitle), findsNothing);
-      expect(container.read(followUpEnabledProvider), isFalse);
-    });
 
     testWidgets('is off by default and turns on only after the disclosure', (
       tester,

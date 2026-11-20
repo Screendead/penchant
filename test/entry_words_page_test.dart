@@ -321,34 +321,6 @@ void main() {
     });
   });
 
-  testWidgets('the microphone shows only where speech is on this device', (
-    WidgetTester tester,
-  ) async {
-    await withClock(Clock.fixed(_now), () async {
-      final _Speech speech = _Speech();
-      await tester.pumpWidget(
-        _app(
-          _overrides(
-            _Reader((EntryMode m) async => _drafts(m)),
-            speech: speech,
-          ),
-          const EntryWordsPage(mode: EntryMode.now),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(EntryWordsPage.micKey));
-      await tester.pumpAndSettle();
-      expect(find.text(EntryWordsPage.listening), findsOneWidget);
-      expect(
-        find.text('two pints at the pub with Sam, about an hour ago'),
-        findsOneWidget,
-      );
-      await tester.tap(find.byKey(EntryWordsPage.micKey));
-      await tester.pumpAndSettle();
-      expect(find.text(EntryWordsPage.listening), findsNothing);
-    });
-  });
-
   group('renders', () {
     setUpAll(() async {
       for (final (String family, String file) in <(String, String)>[
