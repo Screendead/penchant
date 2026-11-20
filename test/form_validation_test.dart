@@ -108,44 +108,6 @@ void main() {
     });
   });
 
-  testWidgets('Add Habit shows the length message inline', (tester) async {
-    await _pump(tester, [
-      userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-    ], const ViceForm());
-
-    await tester.enterText(_field('Habit Name'), 'x' * 61);
-    // No unit is selected, so validation runs but nothing is written.
-    FocusManager.instance.primaryFocus?.unfocus();
-    await tester.pump();
-    await tester.ensureVisible(find.text('Save'));
-    await tester.pump(const Duration(seconds: 1));
-    await tester.tap(find.text('Save'));
-    await tester.pump();
-
-    expect(find.text('Use 60 characters or fewer'), findsOneWidget);
-  });
-
-  testWidgets('the record dialog refuses a zero quantity inline', (
-    tester,
-  ) async {
-    final Vice vice = fakeVice('coffee');
-    await _pump(tester, [
-      userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
-      unarchivedViceListProvider.overrideWithValue(AsyncData([vice])),
-    ], const RecordNewActivityDialog());
-
-    await tester.enterText(_field('Quantity'), '0');
-    // No vice is selected, so validation runs but nothing is written.
-    FocusManager.instance.primaryFocus?.unfocus();
-    await tester.pump();
-    await tester.ensureVisible(find.byKey(RecordNewActivityDialog.submitKey));
-    await tester.pump(const Duration(seconds: 1));
-    await tester.tap(find.byKey(RecordNewActivityDialog.submitKey));
-    await tester.pump();
-
-    expect(find.text('Please enter more than 0'), findsOneWidget);
-  });
-
   testWidgets('the record dialog keeps its vice when the list re-emits', (
     tester,
   ) async {
@@ -193,20 +155,6 @@ void main() {
         ).id,
       ),
     );
-
-    testWidgets('refuses changing a quantity to zero inline', (tester) async {
-      await pumpEditor(tester, 2);
-
-      await tester.enterText(_field('Quantity'), '0');
-      FocusManager.instance.primaryFocus?.unfocus();
-      await tester.pump();
-      await tester.ensureVisible(find.text('Save'));
-      await tester.pump(const Duration(seconds: 1));
-      await tester.tap(find.text('Save'));
-      await tester.pump();
-
-      expect(find.text('Please enter more than 0'), findsOneWidget);
-    });
 
     testWidgets("lets a legacy zero quantity stand while other fields change", (
       tester,

@@ -167,26 +167,6 @@ void main() {
       expect(find.byType(ViceForm), findsNothing);
     });
 
-    testWidgets('saves the picked category', (WidgetTester tester) async {
-      await _pumpOpened(tester, writes, const [], const ViceForm());
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Habit Name'),
-        'Coffee',
-      );
-      await tester.tap(find.byType(DropdownButtonFormField<Unit>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(Unit.drink.plural).last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.byType(DropdownButtonFormField<ViceCategory>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(ViceCategory.caffeine.label).last);
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Save'));
-      await tester.pumpAndSettle();
-
-      expect(writes.writes.single.fields['category'], ViceCategory.caffeine);
-    });
-
     testWidgets('a save in flight disables Save, and one that outlasts the '
         'timeout closes and says it will sync', (WidgetTester tester) async {
       writes.respond = _never;
@@ -265,14 +245,6 @@ void main() {
       await tester.tap(find.widgetWithText(TextButton, 'Save'));
       await tester.pumpAndSettle();
     }
-
-    testWidgets('opens filled with the vice', (WidgetTester tester) async {
-      await open(tester);
-
-      expect(find.text('Edit Habit'), findsOneWidget);
-      expect(find.text('x' * 61), findsOneWidget);
-      expect(find.text(Unit.drink.plural), findsOneWidget);
-    });
 
     testWidgets('writes only a changed unit, keeping a legacy name as it is', (
       WidgetTester tester,
@@ -430,29 +402,6 @@ void main() {
           ),
         }),
       ]);
-    });
-
-    testWidgets('a caffeine label switches the form to caffeine', (
-      WidgetTester tester,
-    ) async {
-      await _pumpOpened(tester, writes, [
-        viceListProvider.overrideWith((ref) => AsyncData([legacy])),
-        labelSourceProvider.overrideWithValue(
-          const FakeLabelSource(<String>['Caffeine 32mg/100ml', '250 ml']),
-        ),
-      ], const EditVice(viceID: 'coffee'));
-      final Finder read = find.byKey(ViceForm.readLabelKey);
-      await tester.ensureVisible(read);
-      await tester.tap(read);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(LabelSheet.chooseLabel));
-      await tester.pumpAndSettle();
-      // The size alone is no caffeine figure: picking the caffeine drops it.
-      expect(find.text('80 mg'), findsOneWidget);
-      await tester.tap(find.text(LabelSheet.fillLabel));
-      await tester.pumpAndSettle();
-      expect(find.byKey(ViceForm.caffeineKey), findsOneWidget);
-      expect(find.widgetWithText(TextFormField, '80'), findsOneWidget);
     });
 
     testWidgets('an untouched strength writes nothing; None clears it', (

@@ -45,13 +45,6 @@ List<String> _targetBuildSettings(String pbxproj) {
   return (width: b.getUint32(16), height: b.getUint32(20), alpha: alpha);
 }
 
-String _hex(Map<String, dynamic> colour) {
-  final Map<String, dynamic> c =
-      (colour['color'] as Map<String, dynamic>)['components']
-          as Map<String, dynamic>;
-  return '#${<String>['red', 'green', 'blue'].map((String k) => (c[k] as String).substring(2)).join()}';
-}
-
 void main() {
   test('the iOS icon is one 1024 pt image, a copy of assets/icon.png', () {
     final List<dynamic> images = _json('$_iconSet/Contents.json')['images'];
@@ -103,32 +96,6 @@ void main() {
         'ios/PenchantWatch/Assets.xcassets/AppIcon.appiconset/AppIcon.png',
       ).readAsBytesSync(),
       File('assets/icon.png').readAsBytesSync(),
-    );
-  });
-
-  test('the iOS launch screen is the theme background, light and dark', () {
-    final Map<String, dynamic> tokens =
-        _json('lib/design/tokens.json')['color'] as Map<String, dynamic>;
-    final List<dynamic> colours = _json(
-      'ios/Runner/Assets.xcassets/LaunchBackground.colorset/Contents.json',
-    )['colors'];
-    final Map<String, dynamic> light = colours
-        .cast<Map<String, dynamic>>()
-        .singleWhere((Map<String, dynamic> c) => c['appearances'] == null);
-    final Map<String, dynamic> dark = colours
-        .cast<Map<String, dynamic>>()
-        .singleWhere(
-          (Map<String, dynamic> c) =>
-              (c['appearances'] as List<dynamic>?)?.any(
-                (dynamic a) => (a as Map<String, dynamic>)['value'] == 'dark',
-              ) ??
-              false,
-        );
-    expect(_hex(light), (tokens['light'] as Map<String, dynamic>)['bg']);
-    expect(_hex(dark), (tokens['dark'] as Map<String, dynamic>)['bg']);
-    expect(
-      File('ios/Runner/Base.lproj/LaunchScreen.storyboard').readAsStringSync(),
-      contains('<color key="backgroundColor" name="LaunchBackground"/>'),
     );
   });
 

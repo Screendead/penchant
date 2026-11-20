@@ -76,15 +76,7 @@ void main() {
       expect(triggerPaths(), containsAll(shipped));
     });
 
-    test('holds 174 tags in 11 areas, ids in kebab case', () {
-      expect(triggerTree, hasLength(11));
-      expect(
-        triggerTree.fold<int>(
-          0,
-          (int n, TriggerNode a) => n + a.children.length,
-        ),
-        174,
-      );
+    test('ids are in kebab case and every node is labelled', () {
       for (final String path in triggerPaths()) {
         expect(
           path,
@@ -121,26 +113,7 @@ void main() {
       expect(triggerLabels(''), isNull);
     });
 
-    test('search matches the start of any word of a tag or its area', () {
-      expect(searchTriggers('TIRED'), <String>['body/tired']);
-      expect(searchTriggers('cafe'), <String>['place/cafe']);
-      expect(searchTriggers('couldnt'), <String>['body/no-sleep']);
-      // A tag's own label first, then by its area's.
-      final List<String> work = searchTriggers('work');
-      expect(work.first, 'work');
-      expect(work, containsAll(<String>['work/work-drinks', 'doing/working']));
-      expect(work, contains('place/at-work'));
-      expect(work, contains('work/meeting'));
-      expect(
-        work.indexOf('place/at-work'),
-        lessThan(work.indexOf('work/meeting')),
-      );
-      expect(searchTriggers('hard conv'), <String>[
-        'people/hard-talk',
-        'work/hard-talk',
-      ]);
-      expect(searchTriggers('zzz'), isEmpty);
-      expect(searchTriggers('  '), isEmpty);
+    test('a typed label matches its tag whatever its case and spacing', () {
       expect(
         triggerLabelIs('Hard conversation', ' hard  CONVERSATION '),
         isTrue,

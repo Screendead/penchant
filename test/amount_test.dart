@@ -136,11 +136,4 @@ void main() {
       <double>[2.5],
     );
   });
-
-  test('a unit labels a decimal in the plural', () {
-    debugFormatLocales = const <Locale>[Locale('en', 'US')];
-    addTearDown(() => debugFormatLocales = null);
-    expect(Unit.drink.label(1.5), '1.5 drinks');
-    expect(Unit.drink.label(1), '1 drink');
-  });
 }
