@@ -35,9 +35,8 @@ class SealException implements Exception {
 /// The key length is the [aes] instance's: 32 bytes for the journal key,
 /// 16 for the recovery key that wraps it.
 class Sealer {
-  Sealer({required this.aes, required List<int> key, Random? random})
-    : _key = SecretKey(List<int>.unmodifiable(key)),
-      _random = random ?? Random.secure() {
+  Sealer({required this.aes, required List<int> key})
+    : _key = SecretKey(List<int>.unmodifiable(key)) {
     if (key.length != aes.secretKeyLength) {
       throw ArgumentError(
         'The key is ${key.length} bytes; this AES-GCM takes '
@@ -48,7 +47,7 @@ class Sealer {
 
   final AesGcm aes;
   final SecretKey _key;
-  final Random _random;
+  final Random _random = Random.secure();
 
   static const int version = 1;
   static const int nonceLength = 12;
