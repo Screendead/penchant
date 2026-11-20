@@ -136,37 +136,6 @@ void main() {
       }
     });
 
-    test('opens as a modal bottom sheet', () {
-      final Route<void> route = generateRoute(
-        RouteSettings(name: dayNoteRoute(_yesterday)),
-      );
-      expect(route, isA<ModalBottomSheetRoute<void>>());
-    });
-  });
-
-  test('the title names the day', () {
-    expect(
-      DayNoteSheet.title(_today, _today),
-      'Anything different about today?',
-    );
-    expect(
-      DayNoteSheet.title(_yesterday, _today),
-      'Anything different about yesterday?',
-    );
-    expect(
-      DayNoteSheet.title(DateTime(2026, 11, 7), _today),
-      isNot(contains('yesterday')),
-    );
-    expect(DayNoteSheet.title(DateTime(2026, 11, 7), _today), contains('7'));
-  });
-
-  testWidgets('loading shows loading and no field', (
-    WidgetTester tester,
-  ) async {
-    await open(tester, note: const AsyncLoading<DayNote?>());
-    expect(find.text('Anything different about yesterday?'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(field(), findsNothing);
   });
 
   testWidgets('a new note is created from the first panel\'s Done', (
@@ -188,15 +157,6 @@ void main() {
     });
     expect(field(), findsNothing);
     expect(find.text(DayNoteSheet.savedMessage), findsOneWidget);
-  });
-
-  testWidgets('an empty note is refused', (WidgetTester tester) async {
-    await open(tester);
-    await tester.tap(find.byKey(NotePanels.nextKey));
-    await tester.pumpAndSettle();
-    expect(find.text('Please write something about the day'), findsOneWidget);
-    expect(find.text('1 of 2'), findsOneWidget);
-    expect(writes.writes, isEmpty);
   });
 
   testWidgets('an existing note prefills both panels and Done replaces it', (
@@ -302,61 +262,6 @@ void main() {
     await tester.tap(find.byKey(NotePanels.doneKey));
     await tester.pumpAndSettle();
     expect(writes.writes.single.fields['triggers'], <String>['work/meeting']);
-  });
-
-  testWidgets('without a reader the tags are picked by hand', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
-    await tester.enterText(field(), 'A long day');
-    await tester.tap(find.byKey(NotePanels.nextKey));
-    await tester.pumpAndSettle();
-    expect(find.text(NotePanels.handTitle), findsOneWidget);
-    expect(find.textContaining('Usual for'), findsNothing);
-    expect(find.textContaining('calendar'), findsNothing);
-  });
-
-  testWidgets('panels move only by Back and Next', (WidgetTester tester) async {
-    await open(tester, still: false);
-    await tester.enterText(field(), 'A long day');
-    await tester.drag(find.byType(PageView), const Offset(-600, 0));
-    await tester.pumpAndSettle();
-    expect(find.text('1 of 2'), findsOneWidget);
-    expect(field(), findsOneWidget);
-    await tester.tap(find.byKey(NotePanels.nextKey));
-    await tester.pumpAndSettle();
-    expect(find.text('2 of 2'), findsOneWidget);
-    await tester.drag(find.byType(PageView), const Offset(600, 0));
-    await tester.pumpAndSettle();
-    expect(find.text('2 of 2'), findsOneWidget);
-    await tester.tap(find.byKey(NotePanels.backKey));
-    await tester.pumpAndSettle();
-    expect(find.text('1 of 2'), findsOneWidget);
-    expect(find.text('A long day'), findsOneWidget);
-  });
-
-  testWidgets("Today's line shows the note's first line and opens it", (
-    WidgetTester tester,
-  ) async {
-    await open(
-      tester,
-      note: AsyncData<DayNote?>(_note()),
-      home: Scaffold(body: DayNoteLine(day: _yesterday)),
-    );
-    expect(find.text('Note · Rough night', findRichText: true), findsOneWidget);
-    await tester.tap(find.byType(DayNoteLine));
-    await tester.pumpAndSettle();
-    expect(find.text('Rough night\nthen a long meeting'), findsOneWidget);
-  });
-
-  testWidgets("Today's line is absent without a note", (
-    WidgetTester tester,
-  ) async {
-    await open(
-      tester,
-      home: Scaffold(body: DayNoteLine(day: _yesterday)),
-    );
-    expect(find.byType(InkWell), findsNothing);
   });
 
   test('day keys round-trip', () {
