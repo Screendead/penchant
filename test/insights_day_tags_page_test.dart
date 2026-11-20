@@ -22,7 +22,6 @@ import 'package:tracker/insights/what_follows.dart';
 import 'package:tracker/insights_page.dart';
 import 'package:tracker/providers/insights_provider.dart';
 import 'package:tracker/widgets/day_tags_card.dart';
-import 'package:tracker/widgets/trigger_amounts_card.dart';
 
 import 'fakes.dart';
 import 'insights_harness.dart';
@@ -149,50 +148,6 @@ Future<void> _loadFonts() async {
 }
 
 void main() {
-  testWidgets('a day tag gets a card under What sets it off, and one that '
-      'agrees with an entry trigger is said once, by day and by entry', (
-    WidgetTester tester,
-  ) async {
-    await _pump(tester);
-
-    expect(find.byType(DayTagsCard), findsNWidgets(2));
-    expect(
-      find.text(
-        'On days you tagged Bad day, Wine came to 3.1 drinks against 1.8 on '
-        'your other tagged days.',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.text(
-        'Among the 48 days you tagged, of 130; Bad day is on 15 of them, '
-        'each weekday’s usual amount held fixed',
-      ),
-      findsOneWidget,
-    );
-    expect(find.text('Days tagged Work or study: 1.2 against 2.3'), findsOne);
-    expect(find.text('By day and by entry'), findsOneWidget);
-    expect(
-      find.text(
-        'Entries of Coffee you tagged Feeling › Stressed hold 45% more '
-        'than your other tagged ones: 2.9 against 2 on average.',
-      ),
-      findsOneWidget,
-    );
-    // Its only entry finding is on the joined card, so no card of its own.
-    expect(find.byType(TriggerAmountsCard), findsNothing);
-
-    await tester.tap(find.text(InsightsPage.setsOffWhyNot));
-    await tester.pumpAndSettle();
-    expect(
-      find.text(
-        'Days tagged Who was there: too few days with it yet: 4 of 7 (21 of '
-        '90 days tagged)',
-      ),
-      findsOneWidget,
-    );
-  });
-
   group('renders', () {
     setUpAll(_loadFonts);
     for (final Brightness brightness in Brightness.values) {

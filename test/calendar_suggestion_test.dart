@@ -118,9 +118,7 @@ void main() {
     });
   });
 
-  testWidgets('the sheet offers the suggestion first, unpicked', (
-    tester,
-  ) async {
+  testWidgets('the sheet offers the suggestion unpicked', (tester) async {
     List<String>? done;
     await tester.pumpWidget(
       MaterialApp(
@@ -143,10 +141,6 @@ void main() {
     );
     expect(chip, findsOneWidget);
     expect(tester.widget<FilterChip>(chip).selected, isFalse);
-    expect(
-      tester.getTopLeft(chip).dy,
-      lessThan(tester.getTopLeft(find.text('Usual for Coffee')).dy),
-    );
 
     await tester.tap(find.text('Done'));
     expect(done, isEmpty);

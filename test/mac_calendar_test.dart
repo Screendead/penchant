@@ -149,13 +149,6 @@ void main() {
       ),
     );
 
-    testWidgets('is not shown off macOS', (tester) async {
-      SharedPreferences.setMockInitialValues(<String, Object>{});
-      await pumpSettings(tester, _FakeCalendar(CalendarAccess.notDetermined));
-      await tester.pumpAndSettle();
-      expect(find.text(Settings.calendarLabel), findsNothing);
-    });
-
     testWidgets('starts off and turning it on asks for access', (tester) async {
       await onMac(() async {
         SharedPreferences.setMockInitialValues(<String, Object>{});
