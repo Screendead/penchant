@@ -249,14 +249,8 @@ Future<void> screenshot(WidgetTester tester, String name) async {
   }
 }
 
-// A new account starts on the onboarding, which this skips unless told not
-// to: a test that drives it, or one whose habit list fails to load, which
-// shows none.
-Future<void> register(
-  WidgetTester tester,
-  String email, {
-  bool skipOnboarding = true,
-}) async {
+// A new account starts on the onboarding, which this skips.
+Future<void> register(WidgetTester tester, String email) async {
   // Auth keeps the signed-in user in the iOS keychain, which survives both
   // reinstalls and the emulator wipe.
   // A persisted user arrives asynchronously after launch, on the Mac later
@@ -287,9 +281,7 @@ Future<void> register(
   );
   await tap(tester, createAccount);
   await pumpUntil(tester, find.byType(Homepage));
-  if (skipOnboarding) {
-    await skipTheOnboarding(tester);
-  }
+  await skipTheOnboarding(tester);
 }
 
 // Skip, then the disclaimer, to the empty Today.
@@ -442,12 +434,10 @@ Future<void> setEntryTime(WidgetTester tester, DateTime at) async {
 
 // Records through Today's Log fan: a hold on the habit's wedge opens the
 // amount sheet with it chosen, or More does when the fan has no room for it.
-// With [at], picks its day and time on the sheet's time dial (setEntryTime).
 Future<void> recordActivity(
   WidgetTester tester,
   String viceName,
   num quantity, {
-  DateTime? at,
   List<String> triggerTaps = const <String>[],
 }) async {
   // Frames draw only on a pump here, and the fan keeps the habits the button
@@ -487,9 +477,6 @@ Future<void> recordActivity(
           .isEmpty) {
     await tap(tester, chosen);
     await tap(tester, find.text(viceName).last);
-  }
-  if (at != null) {
-    await setEntryTime(tester, at);
   }
   final String typed = formatAmount(quantity);
   await enterQuantity(tester, typed);
