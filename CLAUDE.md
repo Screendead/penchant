@@ -116,7 +116,7 @@ flutter build ios --release --config-only && (cd ios && xcodebuild -workspace Ru
 ```
 
 Never pass `-sdk` to an iOS xcodebuild: Runner embeds the Apple Watch app, which builds under the watchOS SDK
-(Apple Watch, below). For the same reason `flutter build ios --simulator` needs `-d <simulator udid>`.
+(`iphone-extras.md`). For the same reason `flutter build ios --simulator` needs `-d <simulator udid>`.
 
 Shipped version and build numbers come from `tools/build-version.sh`, never by hand: `release` skill
 (`.claude/skills/release/SKILL.md`). Seed data goes into emulators only, never production: `seed-emulators` skill
@@ -260,8 +260,7 @@ split view from 900 pt. Habits list oldest first everywhere; tests override both
 reduce motion the dial's motion is a 150 ms fade, so tests of pending entries cannot `pumpAndSettle` with animations on.
 
 **iPhone and Watch extras** (`iphone-extras.md`). Read a label (Vision on the device; nothing kept or sent), Night out
-(a local-only Live Activity), and the Apple Watch app, which holds no key, token or entry. Never pass `-sdk` to an iOS
-xcodebuild (Commands).
+(a local-only Live Activity), and the Apple Watch app, which holds no key, token or entry.
 
 **Platform** (`platform.md`). `lib/firebase_init.dart` does all Firebase setup; the emulator define points at
 `demo-tracker` and startup throws on a non-`demo-` project. Flagged builds strip the Firebase plist and never activate
