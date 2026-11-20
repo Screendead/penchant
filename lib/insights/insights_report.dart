@@ -257,9 +257,8 @@ List<DailyOutcome> withSessionZeros(
 }
 
 /// The fewest days with a mood log before [hs.HealthMetric.moodValence] is
-/// judged at all (Jack, round 16 `mood-floor` A): most people log mood now and
-/// then, and a handful of days would only add comparisons to the
-/// false-discovery family.
+/// judged at all: most people log mood now and then, and a handful of days
+/// would only add comparisons to the false-discovery family.
 const int minMoodDays = 14;
 
 /// [outcomes] without [hs.HealthMetric.moodValence] when it has fewer than
@@ -1032,8 +1031,7 @@ metricFloors = <String, ({double floor, MetricFamily family, FloorRule rule})>{
     family: MetricFamily.reminders,
     rule: FloorRule.fixed,
   ),
-  // Jack's call (round 16 `mood-floor` A): half the person's own SD of daily
-  // valence, after Norman 2003's half a standard deviation. The 2 here, the
+  // Half the person's own SD of daily valence, after Norman 2003's half a standard deviation. The 2 here, the
   // scale's whole width, would show nothing; withEnoughMood leaves mood out
   // before it could apply.
   'moodValence': (

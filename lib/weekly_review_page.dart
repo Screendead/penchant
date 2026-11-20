@@ -26,7 +26,7 @@ import 'package:tracker/widgets/settings_card.dart';
 
 /// Last Monday-to-Sunday week: totals against the four before, when in the
 /// day, the triggers noted, and what the engine's findings did. Words stay
-/// neutral (C16): a total is what was logged, never better or worse.
+/// neutral: a total is what was logged, never better or worse.
 class WeeklyReviewPage extends ConsumerWidget {
   const WeeklyReviewPage({super.key});
 

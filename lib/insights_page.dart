@@ -130,8 +130,8 @@ class InsightsPage extends ConsumerStatefulWidget {
       'Each habit needs $need days with both your journal and Apple Health. '
       'You have $have.';
 
-  // Engines p and q (HANDOVER item 7) fill the first; until a section has a
-  // finding it says what will be there, never a count nothing computes.
+  // Until a section has a finding it says what will be there, never a count
+  // nothing computes.
   static const String cuttingDownTitle = 'Nothing to show yet';
   static const String cuttingDownBody =
       'When a habit stays lower for a few weeks, this will show what moved '
