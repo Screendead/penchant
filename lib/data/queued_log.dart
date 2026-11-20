@@ -91,9 +91,9 @@ List<QueuedLog> decodeQueuedLogs(String json) {
   ];
 }
 
-// The widget offers Undo for 5 seconds (r10-widget-undo B, LastLog.undoWindow
-// in LogQueue.swift); a log is written only after that and a margin, so an
-// Undo inside the window never has to chase a written entry.
+// The widget offers Undo for 5 seconds (LastLog.undoWindow in LogQueue.swift);
+// a log is written only after that and a margin, so an Undo inside the window
+// never has to chase a written entry.
 const Duration queuedLogHold = Duration(seconds: 7);
 
 /// [uid]'s logs that are old enough to write at [now], in queue order, and

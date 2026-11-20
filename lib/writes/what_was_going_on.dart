@@ -19,9 +19,9 @@ import 'package:tracker/writes/tracker_writes.dart';
 const String whatWasGoingOnLabel = 'What was going on?';
 
 /// Opens the panels (note, triggers, urge) for the saved entry [activityID]
-/// of [vice] and writes what is picked to it; dismissing them writes nothing. The rest of the entry's sealed content (its zone,
-/// write time and source) is read from the device and sealed again with the
-/// answers; if the entry is not on the device, the answers are written alone.
+/// of [vice] and writes what is picked to it; dismissing them writes nothing.
+/// The rest of the entry's sealed content (its zone, write time and source)
+/// is read from the device and sealed again with the answers; if the entry is not on the device, the answers are written alone.
 /// [cancelled], asked once the panels close, stops the write (an entry undone
 /// meanwhile). [entry] names the entry if the server refuses the change. The
 /// panels' Undo log deletes the entry through [undoLog], then calls

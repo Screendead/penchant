@@ -14,8 +14,9 @@ const String sealedField = 'sealed';
 /// The content fields each collection seals. firestore.rules lists a vice's
 /// and an activity's `triggers` (`sealedAlone`, `changedContent`); a vice's
 /// strength fields and an activity's later fields were sealed from the start,
-/// and the rules' create and update key lists refuse them in plaintext. An activity's quantity and decimal amount stay plaintext (Jack,
-/// 2026-11-06), so a server-side job can aggregate them.
+/// and the rules' create and update key lists refuse them in plaintext. An
+/// activity's quantity and decimal amount stay plaintext (Jack, 2026-11-06),
+/// so a server-side job can aggregate them.
 const List<String> viceContentFields = <String>[
   'name',
   'unit',

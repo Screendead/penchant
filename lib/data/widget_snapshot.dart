@@ -4,7 +4,7 @@ import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/design/habit_mark.dart';
 
 // The days the snapshot carries, oldest first and ending today, and the window
-// that ranks the top habits (r10-widget-top: most logged in 30 days).
+// that ranks the top habits (most logged in 30 days).
 const int widgetWeekDays = 7;
 const int widgetTopWindowDays = 30;
 const int widgetTopCount = 8;

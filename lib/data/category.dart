@@ -23,8 +23,8 @@ enum ViceCategory {
 }
 
 // Matched at the start of a word of the vice name, ignoring case; the first
-// hit wins. The starter presets (r2-presets) and the seed data's names are
-// all here.
+// hit wins. The starter presets' and the seed data's names must all be
+// here.
 const List<(String, ViceCategory)> _keywords = <(String, ViceCategory)>[
   ('alcohol', ViceCategory.alcohol),
   ('booze', ViceCategory.alcohol),
