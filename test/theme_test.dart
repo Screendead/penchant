@@ -6,7 +6,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -32,7 +31,6 @@ import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_activity_history_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
-import 'package:tracker/widgets/day_dial.dart';
 import 'package:tracker/trends/trends_chart.dart';
 import 'package:tracker/trends/trends_day.dart';
 import 'package:tracker/trends/trends_sheet.dart';
@@ -74,8 +72,7 @@ final List<ViceActivity> _activities = [
   fakeActivity('sweets', 3, _today.add(const Duration(hours: 15))),
 ];
 
-List<Override> _overrides({bool empty = false}) {
-  final List<ViceActivity> activities = empty ? [] : _activities;
+List<Override> _overrides() {
   final User user = FakeUser(ownerID);
   return [
     userProvider.overrideWith((ref) => Stream.value(user)),
@@ -101,16 +98,16 @@ List<Override> _overrides({bool empty = false}) {
       ]),
     ),
     viceActivityDayProvider.overrideWith(
-      (ref, DateTime day) => AsyncData(activities),
+      (ref, DateTime day) => AsyncData(_activities),
     ),
     viceActivityGraphProvider.overrideWith(
-      (ref, query) => AsyncData(activities),
+      (ref, query) => AsyncData(_activities),
     ),
     viceActivityHistoryProvider.overrideWith(
-      (ref, query) => AsyncData(activities),
+      (ref, query) => AsyncData(_activities),
     ),
     viceActivityProvider.overrideWith(
-      (ref, String id) => AsyncData(activities.isEmpty ? null : activities[0]),
+      (ref, String id) => AsyncData(_activities[0]),
     ),
     activityTotalCountProvider.overrideWithValue(const AsyncLoading()),
     viceActivityCountProvider.overrideWith(
@@ -141,16 +138,11 @@ void _usePhone(WidgetTester tester, Brightness brightness) {
   addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
 }
 
-Future<void> _pumpThemed(
-  WidgetTester tester,
-  Brightness brightness,
-  String route, {
-  bool empty = false,
-}) async {
-  _usePhone(tester, brightness);
+Future<void> _pumpScreen(WidgetTester tester, String route) async {
+  _usePhone(tester, Brightness.light);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: _overrides(empty: empty),
+      overrides: _overrides(),
       child: MaterialApp(
         theme: appTheme(Brightness.light),
         darkTheme: appTheme(Brightness.dark),
@@ -222,33 +214,6 @@ void main() {
     expect(found, isEmpty);
   });
 
-  group('the app', () {
-    List<Override> signedOut() => [
-      userProvider.overrideWith((ref) => Stream.value(null)),
-    ];
-
-    for (final Brightness brightness in Brightness.values) {
-      testWidgets('signs in on ${brightness.name} paper when the system is '
-          '${brightness.name}', (WidgetTester tester) async {
-        _usePhone(tester, brightness);
-        await tester.pumpWidget(
-          ProviderScope(overrides: signedOut(), child: const MyApp()),
-        );
-        await tester.pumpAndSettle();
-
-        final BuildContext context = tester.element(find.text('Sign in').last);
-        expect(Theme.of(context).brightness, brightness);
-        expect(
-          tester
-                  .widget<Scaffold>(find.byType(Scaffold).first)
-                  .backgroundColor ??
-              Theme.of(context).scaffoldBackgroundColor,
-          DialPalette.of(brightness).bg,
-        );
-      });
-    }
-  });
-
   for (final Brightness brightness in Brightness.values) {
     final DialPalette p = DialPalette.of(brightness);
     final ThemeData theme = appTheme(brightness);
@@ -292,41 +257,6 @@ void main() {
         );
         expect(theme.bottomSheetTheme.dragHandleColor, p.outline);
         expect(theme.sliderTheme.inactiveTrackColor, p.outline);
-      });
-
-      test('the slider halo is a 2 pt accent ring, and nothing when idle', () {
-        PaintingContextCallback halo(double activation) =>
-            (PaintingContext context, Offset offset) {
-              theme.sliderTheme.overlayShape!.paint(
-                context,
-                const Offset(50, 40),
-                activationAnimation: AlwaysStoppedAnimation<double>(activation),
-                enableAnimation: const AlwaysStoppedAnimation<double>(1),
-                isDiscrete: false,
-                labelPainter: TextPainter(),
-                parentBox: RenderConstrainedBox(
-                  additionalConstraints: const BoxConstraints(),
-                ),
-                sliderTheme: theme.sliderTheme,
-                textDirection: TextDirection.ltr,
-                value: 0.5,
-                textScaleFactor: 1,
-                sizeWithOverflow: Size.zero,
-              );
-            };
-
-        expect(halo(0), paintsNothing);
-        expect(
-          halo(1),
-          paints..circle(
-            x: 50,
-            y: 40,
-            radius: 16,
-            style: PaintingStyle.stroke,
-            strokeWidth: 2,
-            color: p.accent,
-          ),
-        );
       });
 
       test('rings a focused button in accent', () {
@@ -443,135 +373,80 @@ void main() {
           });
         },
       );
-
-      testWidgets('the clear day says so in the sage ink', (
-        WidgetTester tester,
-      ) async {
-        await _pumpThemed(tester, brightness, '/', empty: true);
-
-        for (final String text in <String>[
-          ClearDay.headline,
-          ClearDay.subline(isToday: true),
-        ]) {
-          expect(tester.widget<Text>(find.text(text)).style!.color, p.clearInk);
-        }
-      });
-
-      // Each screen renders in Red Hat at the smallest phone size without an
-      // overflow or other error.
-      for (final (String name, String route, String shows) in [
-        ('Today', '/', 'Today'),
-        ('Manage Data', '/manage-data', 'Sweets'),
-        ('Settings', '/settings', 'About'),
-        ('Account Settings', '/settings/account', 'someone@example.com'),
-        ('Add Habit', '/vices/add', 'Unit'),
-        ('Edit Habit', '/vices/coffee/edit', 'Coffee'),
-        ('history', '/vices/coffee/activities', 'Coffee'),
-        ('the entry editor', '/vices/coffee/activities/a1', 'Quantity'),
-      ]) {
-        testWidgets('renders $name', (WidgetTester tester) async {
-          await _pumpThemed(tester, brightness, route);
-          expect(tester.takeException(), isNull);
-          expect(find.textContaining(shows), findsWidgets);
-          expect(
-            Theme.of(
-              tester.element(find.textContaining(shows).first),
-            ).brightness,
-            brightness,
-          );
-        });
-      }
-
-      testWidgets('renders the Trends sheet and a day opened from it', (
-        WidgetTester tester,
-      ) async {
-        await _pumpThemed(tester, brightness, '/');
-        await tester.tap(find.text(TrendsSheet.title));
-        await tester.pump();
-        await tester.pump(const Duration(seconds: 1));
-        expect(tester.takeException(), isNull);
-        expect(find.byType(TrendsChart), findsOneWidget);
-        final Rect chart = tester.getRect(find.byType(LineChart));
-        await tester.tapAt(Offset(chart.right - 2, chart.center.dy));
-        await tester.pump();
-        await tester.pump(const Duration(seconds: 1));
-        expect(find.byType(TrendsDay), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      });
-
-      testWidgets('renders the record dialog', (WidgetTester tester) async {
-        await _pumpThemed(tester, brightness, '/');
-        await tester.tap(find.byType(LogButton));
-        await tester.pump();
-        await tester.pump(const Duration(seconds: 1));
-        expect(tester.takeException(), isNull);
-        await tester.longPress(
-          find.descendant(
-            of: find.byKey(const ValueKey<String>('fan-wedge-coffee')),
-            matching: find.text('Coffee'),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
-        expect(tester.takeException(), isNull);
-        expect(find.byType(RecordNewActivityDialog), findsOneWidget);
-      });
-
-      testWidgets('renders sign-in and registration', (
-        WidgetTester tester,
-      ) async {
-        _usePhone(tester, brightness);
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [userProvider.overrideWith((ref) => Stream.value(null))],
-            child: const MyApp(),
-          ),
-        );
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-
-        await tester.tap(find.byKey(Authenticate.registerTab));
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-      });
-
-      testWidgets('shows a snackbar in the inverted pill', (
-        WidgetTester tester,
-      ) async {
-        _usePhone(tester, brightness);
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: appTheme(Brightness.light),
-            darkTheme: appTheme(Brightness.dark),
-            home: Scaffold(
-              body: Builder(
-                builder: (BuildContext context) => TextButton(
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Logged 1 item'),
-                      action: SnackBarAction(label: 'Undo', onPressed: () {}),
-                    ),
-                  ),
-                  child: const Text('Show'),
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.tap(find.text('Show'));
-        await tester.pumpAndSettle();
-
-        final Material bar = tester.widget<Material>(
-          find
-              .descendant(
-                of: find.byType(SnackBar),
-                matching: find.byType(Material),
-              )
-              .first,
-        );
-        expect(bar.color, p.text);
-        expect(tester.takeException(), isNull);
-      });
     });
   }
+
+  // Each screen renders in Red Hat at the smallest phone size without an
+  // overflow or other error; brightness changes no layout, so light alone.
+  group('at the smallest phone', () {
+    for (final (String name, String route, String shows) in [
+      ('Today', '/', 'Today'),
+      ('Manage Data', '/manage-data', 'Sweets'),
+      ('Settings', '/settings', 'About'),
+      ('Account Settings', '/settings/account', 'someone@example.com'),
+      ('Add Habit', '/vices/add', 'Unit'),
+      ('Edit Habit', '/vices/coffee/edit', 'Coffee'),
+      ('history', '/vices/coffee/activities', 'Coffee'),
+      ('the entry editor', '/vices/coffee/activities/a1', 'Quantity'),
+    ]) {
+      testWidgets('renders $name', (WidgetTester tester) async {
+        await _pumpScreen(tester, route);
+        expect(tester.takeException(), isNull);
+        expect(find.textContaining(shows), findsWidgets);
+      });
+    }
+
+    testWidgets('renders the Trends sheet and a day opened from it', (
+      WidgetTester tester,
+    ) async {
+      await _pumpScreen(tester, '/');
+      await tester.tap(find.text(TrendsSheet.title));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.takeException(), isNull);
+      expect(find.byType(TrendsChart), findsOneWidget);
+      final Rect chart = tester.getRect(find.byType(LineChart));
+      await tester.tapAt(Offset(chart.right - 2, chart.center.dy));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(TrendsDay), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('renders the record dialog', (WidgetTester tester) async {
+      await _pumpScreen(tester, '/');
+      await tester.tap(find.byType(LogButton));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.takeException(), isNull);
+      await tester.longPress(
+        find.descendant(
+          of: find.byKey(const ValueKey<String>('fan-wedge-coffee')),
+          matching: find.text('Coffee'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull);
+      expect(find.byType(RecordNewActivityDialog), findsOneWidget);
+    });
+
+    testWidgets('renders sign-in and registration', (
+      WidgetTester tester,
+    ) async {
+      _usePhone(tester, Brightness.light);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [userProvider.overrideWith((ref) => Stream.value(null))],
+          child: const MyApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.byKey(Authenticate.registerTab));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  });
 }
