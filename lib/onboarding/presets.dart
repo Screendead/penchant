@@ -9,7 +9,6 @@ class HabitPreset {
   final IconData icon;
 }
 
-// r2-presets A, the plain names (Jack, 2026-11-06).
 const List<HabitPreset> habitPresets = <HabitPreset>[
   HabitPreset('Alcohol', Unit.drink, Icons.wine_bar_outlined),
   HabitPreset('Coffee', Unit.drink, Icons.coffee_outlined),
@@ -53,7 +52,6 @@ class OnboardingCopy {
   static const String waitingForKey = 'Waiting for your journal key';
   static String countedIn(Unit unit) => 'Counted in ${unit.plural}';
   static const String disclaimerTitle = 'Before you start';
-  // Fixed by ideas/release-blockers/neutral-framing-and-age-rating.md.
   static const String disclaimer =
       'A personal journal, not medical advice. Talk to a doctor about your '
       'health.';

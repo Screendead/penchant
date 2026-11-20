@@ -91,7 +91,6 @@ class TrendsChart extends StatelessWidget {
   final List<double> totals;
   final List<double> smoothed;
   final int window;
-  // The bucket the readout describes.
   final int cursor;
   final ValueChanged<int> onCursor;
   final ValueChanged<int>? onOpenBucket;
@@ -202,7 +201,6 @@ class TrendsChart extends StatelessWidget {
         '$marked$urged$under';
   }
 
-  // The date under bucket [index], and in the readout.
   static String bucketLabel(UsageRange range, int index, DateTime today) {
     final DateTime start = range.bucketStart(index);
     if (range.stepDays == 1) {
@@ -225,7 +223,6 @@ class TrendsChart extends StatelessWidget {
     return '${formatShortDay(start)}–${formatShortDay(addDays(next, -1))}';
   }
 
-  // What a screen reader says for the bucket under the cursor.
   static String readoutSpoken({
     required Vice vice,
     required UsageRange range,

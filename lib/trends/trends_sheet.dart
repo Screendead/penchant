@@ -348,7 +348,6 @@ class _TrendsSheetState extends ConsumerState<TrendsSheet> {
   List<String> compared = const <String>[];
   // The bucket the readout describes; null is the newest.
   int? cursor;
-  // A day opened from the chart.
   DateTime? openDay;
   // Where in the panel the opened day grows from: its point's place on the
   // chart's x axis, near the chart's height.
