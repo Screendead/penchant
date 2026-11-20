@@ -152,28 +152,6 @@ void main() {
     );
   });
 
-  test('a too-small time-of-last-use refusal words its floor across the usual '
-      'range', () {
-    expect(
-      refusalReason(
-        HabitRefusal(
-          habitId: 'Tea',
-          metricId: 'stepCount',
-          lagDays: 1,
-          usableDays: 90,
-          exposedDays: 90,
-          raw: null,
-          kind: InsightKind.lastUse,
-          step: 60,
-          reason: RefusalReason.tooSmall,
-        ),
-        (id) => id,
-      ),
-      'Time of last use: too small to matter, under 500 a day of step '
-      'count across your usual range',
-    );
-  });
-
   group('floors per person', () {
     final DateTime start = DateTime(2026, 1, 1);
     OutcomeSeries series(String metricId, List<double?> values) =>

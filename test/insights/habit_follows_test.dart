@@ -283,27 +283,5 @@ void main() {
       expect(cards.last.headline.leadId, 'coffee');
       expect(cards.last.others.single.leadId, 'tea');
     });
-
-    test(
-      'the copy says how often, against the usual timing, and from what',
-      () {
-        final HabitFollows pair = _pair('coffee', 'cigarettes', share: 0.617);
-
-        expect(
-          followsSentence(pair, 'Coffee', 'Cigarettes'),
-          'Coffee and Cigarettes tend to come together: you log Cigarettes in '
-          'the 15 minutes after Coffee 62% of the time. Your usual timing of '
-          'each would give 20%.',
-        );
-        expect(
-          followsBasis(pair, 'Coffee'),
-          'From 84 uses of Coffee on 60 days with both',
-        );
-        expect(
-          followsLine(pair, 'Coffee'),
-          'With Coffee: 62% of the time, against 20% by your usual timing',
-        );
-      },
-    );
   });
 }

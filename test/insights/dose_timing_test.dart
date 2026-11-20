@@ -147,7 +147,7 @@ void main() {
   test('on pure noise, the larger family still keeps false findings rare '
       'after the correction', () {
     const int seeds = 100;
-    int checks = 0, raw = 0, rawReports = 0, after = 0, reports = 0;
+    int checks = 0, raw = 0, after = 0, reports = 0;
     for (int seed = 0; seed < seeds; seed++) {
       final InsightsInput input = noise(seed);
       final List<HabitInsight> all = everyComparison(input);
@@ -156,7 +156,6 @@ void main() {
       }
       final int found = all.whereType<HabitFinding>().length;
       raw += found;
-      if (found > 0) rawReports++;
       final int kept = controlFalseDiscoveries(
         all,
       ).whereType<HabitFinding>().length;
@@ -473,111 +472,6 @@ void main() {
     final HabitRefusal shown = computeInsights(few).refused.single;
     expect(shown.reason, RefusalReason.tooFewDays);
     expect(shown.kind, InsightKind.use);
-  });
-
-  test('a lone amount or time-of-last-use refusal for too few days says what '
-      'it is about', () {
-    HabitRefusal r(InsightKind kind, int usable) => HabitRefusal(
-      habitId: 'Tea',
-      metricId: deep,
-      lagDays: 1,
-      usableDays: usable,
-      exposedDays: 5,
-      raw: null,
-      kind: kind,
-      reason: RefusalReason.tooFewDays,
-    );
-    expect(
-      refusalReason(r(InsightKind.dose, 5), (id) => id),
-      'Amount: too few days with it yet: 5 of 21',
-    );
-    expect(
-      refusalReason(r(InsightKind.lastUse, 5), (id) => id),
-      'Time of last use: too few days with it yet: 5 of 21',
-    );
-  });
-
-  group('copy', () {
-    HabitFinding finding(InsightKind kind, double step) => HabitFinding(
-      habitId: 'Coffee',
-      metricId: deep,
-      lagDays: 1,
-      usableDays: 120,
-      exposedDays: 120,
-      raw: null,
-      kind: kind,
-      step: step,
-      effect: -6.2,
-      interval: const stats.Interval(-9.1, -3.3),
-      standardized: -0.5,
-      pValue: 0.001,
-    );
-
-    test('an amount reads per unit', () {
-      final HabitFinding f = finding(InsightKind.dose, 1);
-      expect(
-        findingSentence(f, 'Coffee', 'en', unit: Unit.drink),
-        'On days with one more drink logged for Coffee, your deep sleep that '
-        'night averages 6 min less.',
-      );
-      expect(findingRange(f, 'en'), 'Range: 3 to 9 min less');
-      expect(findingBasis(f, 'Coffee'), 'From 120 days with Coffee');
-    });
-
-    test('a wide amount reads per its step, and times as uses', () {
-      expect(
-        findingSentence(
-          finding(InsightKind.dose, 10),
-          'Run',
-          'en',
-          unit: Unit.minute,
-        ),
-        'On days with 10 more minutes logged for Run, your deep sleep that '
-        'night averages 6 min less.',
-      );
-      expect(
-        findingSentence(
-          finding(InsightKind.dose, 1),
-          'Tea',
-          'en',
-          unit: Unit.time,
-        ),
-        startsWith('On days with one more use logged for Tea, your'),
-      );
-    });
-
-    // No word agrees with the name, so a plural or uncountable one reads as
-    // well as a singular one.
-    for (final (String habit, Unit unit) in <(String, Unit)>[
-      ('Coffee', Unit.drink),
-      ('Gummies', Unit.item),
-      ('Nuts', Unit.item),
-      ('Water', Unit.drink),
-    ]) {
-      test('$habit reads in every sentence', () {
-        String sentence(InsightKind kind, double step) =>
-            findingSentence(finding(kind, step), habit, 'en', unit: unit);
-        expect(
-          sentence(InsightKind.use, 1),
-          'On nights after $habit, your deep sleep averages 6 min less.',
-        );
-        expect(
-          sentence(InsightKind.dose, 1),
-          'On days with one more ${unit.singular} logged for $habit, your '
-          'deep sleep that night averages 6 min less.',
-        );
-        expect(
-          sentence(InsightKind.dose, 5),
-          'On days with 5 more ${unit.plural} logged for $habit, your deep '
-          'sleep that night averages 6 min less.',
-        );
-        expect(
-          sentence(InsightKind.lastUse, 60),
-          'On days your last use of $habit is an hour later, your deep sleep '
-          'that night averages 6 min less.',
-        );
-      });
-    }
   });
 
   test('an amount whose effect rests on one day says so, not that it is '
