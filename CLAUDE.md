@@ -12,6 +12,12 @@ a decision) stays one until Jack decides.
 `tech-debt/` (debt register) and `ideas/` (product backlog) burn down by deletion; each README says how
 (`tools/tech-debt-recount.py` keeps the register's counts).
 
+## How work is done
+
+`CONSTITUTION.md` (Jack, 2026-11-20): one owner per piece, done means impeccable to Jack's eye on his iPhone and Mac,
+no review rounds, and tests only for what the eye cannot see. Read it before writing a brief or a test. The workflow
+`constitution-audit` (`.claude/workflows/constitution-audit.js`) brings the code back into line between waves.
+
 ## Hard rules
 
 - **Production Firestore is untouchable.** Never read or write `screendead-vice-tracker`'s live data or run a
