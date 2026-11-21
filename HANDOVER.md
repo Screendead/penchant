@@ -419,7 +419,8 @@ handover to do next rather than starting them yourself"; none is started). Each 
   question (a phrase cannot carry free text: Xcode refuses a String parameter in one), then opens Ask with it asked
   as if typed; with Ask off, a guest or unverified email, or an emulator build, it opens the place that says why and
   sends nothing. Nothing of it is proven on a device (Siri, the cold-launch hand-off, behind the app lock).
-  **Jack's call, pitched:** whether Siri also speaks the answer without opening the app (about 4 days more: Ask
+  **Jack's call (2026-11-21, #377: "A · Stop here for now"):** Siri does not speak the answer; nothing more to build.
+  What was pitched: whether Siri also speaks the answer without opening the app (about 4 days more: Ask
   moved out of its page into a headless entry point, the spoken sentence built on the phone from a single-number
   card, since the model never sees results; a cold start plus Ask's call of up to 40 s against Siri's patience is
   unmeasured, and a spoken answer skips the app lock unless the intent asks for Face ID). The probe (no code): an
@@ -1103,10 +1104,9 @@ Round 25 (`docs/pitch/round-25/index.html`, https://claude.ai/artifact/Pn7BJkeUU
 Call 1 answered (Jack, 2026-11-16: "Merge and install"): the Watch app is merged (#350) and build 1883 (`master` at
 #350) is on the iPhone and Mac, the watch app and its complications embedded in the iPhone app; nothing of it is
 proven on a watch yet (the look, the iPhone waking for a log with Penchant closed, the haptic, Undo, sign-out).
-Still open: (2) the watch keeps the account's uid, as built, or a per-sign-in token, about half a day (Claude: keep
-the uid); (3) Siri stops at opening Ask with the question, or also speaks a single-number answer, about 4 days with
-a device timing test first (Claude: stop for now). Both are on Jack's Calls page as issues #376 (the watch's account ID) and #377 (Siri speaking
-the answer), opened 2026-11-21. The Ask trial after #350 (its schema note gained `watch`):
+Call 2 answered (Jack, 2026-11-21, #376: "A · Keep the account ID"): the watch keeps the account's uid, as built; no
+work. Call 3 answered (Jack, 2026-11-21, #377: "A · Stop here for now"): Siri stops at opening Ask with the question
+and speaks no answer; no work. The Ask trial after #350 (its schema note gained `watch`):
 29 passed, 1 failed, 10 unchecked of 40, as before (the steps question is declined as `unknown_habit`).
 
 Round 24 (`docs/pitch/round-24/next-ideas/pitch.html`, https://claude.ai/artifact/2oXcwWedx2PyhYcjgDWYSX): Jack
