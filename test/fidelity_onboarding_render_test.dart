@@ -1,6 +1,9 @@
 // Renders the onboarding's four steps at the mock-up's size, for side-by-side
 // comparison with the stills on the tag archive/mockup/onboarding-presets (plain-*.png):
 //   flutter test test/fidelity_onboarding_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

@@ -2,6 +2,9 @@
 // setting under Settings › Reminder, turned on, and the check-in sheet.
 // Skipped unless a directory is given:
 //   flutter test test/check_in_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

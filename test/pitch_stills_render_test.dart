@@ -1,7 +1,10 @@
-// Renders the built-but-undecided features as light stills for a pitch page:
-// a habit's own unit and price, Trends' spend, Health and trigger views, the
+// Renders light stills of surfaces no other render shows: a habit's own unit
+// and price, Trends' spend, Health and trigger views, the
 // place and calendar cards, and the picker's calendar suggestion:
 //   flutter test test/pitch_stills_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

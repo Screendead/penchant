@@ -1,6 +1,9 @@
 // Renders the Backup page, a restore's confirmation and its result at
 // 390x844, light and dark, to PNGs. Skipped unless a directory is given:
 //   flutter test test/backup_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;

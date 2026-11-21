@@ -3,6 +3,9 @@
 // side-by-side comparison with it (tools/fidelity/README.md):
 //   flutter test test/fidelity_render_test.dart --dart-define=RENDER_DIR=<dir>
 // It prints each block's rect for the busy light shot.
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;

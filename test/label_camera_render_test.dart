@@ -2,6 +2,9 @@
 // habit form's Read a label button, the sheet with what it read, and the
 // sheet when a photo holds nothing to fill in:
 //   flutter test test/label_camera_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

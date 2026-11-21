@@ -2,6 +2,9 @@
 //   flutter test test/motion_frames_render_test.dart --dart-define=RENDER_DIR=<dir>
 // Each scene writes <dir>/<scene>/frame-NNN.png; tools/motion-frames.sh turns
 // them into GIFs and contact sheets.
+@Tags(<String>['render'])
+library;
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;

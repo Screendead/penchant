@@ -2,6 +2,9 @@
 // page, light and dark, at 390x844:
 //   flutter test test/deleted_habit_render_test.dart --dart-define=RENDER_DIR=<dir>
 // The stills in docs/pitch/round-13/built/ come from this.
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:ui' as ui;
 

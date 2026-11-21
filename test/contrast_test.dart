@@ -129,31 +129,33 @@ void main() {
     ('light', DialPalette.light),
     ('dark', DialPalette.dark),
   ]) {
-    final Map<String, Color> palette = paletteByName(p);
-    for (final dynamic raw in _pairs) {
-      final Map<String, dynamic> pair = raw as Map<String, dynamic>;
-      final List<dynamic>? themes = pair['themes'] as List<dynamic>?;
-      if (themes != null && !themes.contains(theme)) {
-        continue;
-      }
-      final bool perHabit = pair['per_habit'] == true;
-      for (final int? n in perHabit ? <int>[1, 2, 3, 4, 5] : <int?>[null]) {
-        List<String> sub(dynamic side) => <String>[
-          for (final String l in _layers(side))
-            n == null ? l : l.replaceAll('{n}', '$n'),
-        ];
-        final List<String> fg = sub(pair['fg']), bg = sub(pair['bg']);
-        if (pair['kind'] == 'decoration') {
-          test('$theme: ${fg.join(' over ')} on ${bg.join(' over ')} '
-              'is decoration (${pair['purpose']})', () {
-            expect(pair.containsKey('min'), isFalse, reason: pair['purpose']);
-            _flatten(<String>[...fg, ...bg], palette, rounded: true);
-          });
+    test('$theme: every listed pair meets its minimum', () {
+      final Map<String, Color> palette = paletteByName(p);
+      final List<String> failures = <String>[];
+      for (final dynamic raw in _pairs) {
+        final Map<String, dynamic> pair = raw as Map<String, dynamic>;
+        final List<dynamic>? themes = pair['themes'] as List<dynamic>?;
+        if (themes != null && !themes.contains(theme)) {
           continue;
         }
-        final double min = (pair['min'] as num).toDouble();
-        test('$theme: ${fg.join(' over ')} on ${bg.join(' over ')} '
-            'meets $min:1 (${pair['purpose']})', () {
+        final bool perHabit = pair['per_habit'] == true;
+        for (final int? n in perHabit ? <int>[1, 2, 3, 4, 5] : <int?>[null]) {
+          List<String> sub(dynamic side) => <String>[
+            for (final String l in _layers(side))
+              n == null ? l : l.replaceAll('{n}', '$n'),
+          ];
+          final List<String> fg = sub(pair['fg']), bg = sub(pair['bg']);
+          final String name =
+              '${fg.join(' over ')} on ${bg.join(' over ')} '
+              '(${pair['purpose']})';
+          if (pair['kind'] == 'decoration') {
+            if (pair.containsKey('min')) {
+              failures.add('$name: a decoration has no minimum');
+            }
+            _flatten(<String>[...fg, ...bg], palette, rounded: true);
+            continue;
+          }
+          final double min = (pair['min'] as num).toDouble();
           double worst = double.infinity;
           for (final bool rounded in <bool>[false, true]) {
             worst = math.min(
@@ -164,9 +166,12 @@ void main() {
               ),
             );
           }
-          expect(worst, greaterThanOrEqualTo(min), reason: pair['purpose']);
-        });
+          if (worst < min) {
+            failures.add('$name: ${worst.toStringAsFixed(2)} < $min');
+          }
+        }
       }
-    }
+      expect(failures, isEmpty);
+    });
   }
 }

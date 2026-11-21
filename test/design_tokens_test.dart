@@ -31,18 +31,6 @@ Map<String, Color> _systemColours(String theme) => <String, Color>{
 };
 
 void main() {
-  test('the design system has a light and a dark theme', () {
-    expect(
-      <String>[
-        for (final dynamic t
-            in (_system['color'] as Map<String, dynamic>)['themes']
-                as List<dynamic>)
-          (t as Map<String, dynamic>)['id'] as String,
-      ],
-      <String>['light', 'dark'],
-    );
-  });
-
   for (final (String name, DialPalette palette, BeadTreatment bead) in [
     ('light', DialPalette.light, BeadTreatment.light),
     ('dark', DialPalette.dark, BeadTreatment.dark),

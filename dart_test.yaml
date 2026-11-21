@@ -1,0 +1,4 @@
+tags:
+  # Writes PNGs for the eye under RENDER_DIR and is skipped without it; CI
+  # excludes it so the file is never compiled there.
+  render:

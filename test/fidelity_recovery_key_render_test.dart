@@ -2,6 +2,9 @@
 // side-by-side comparison with the e2e-encryption mock-up's screens
 // (tools/fidelity/README.md):
 //   flutter test test/fidelity_recovery_key_render_test.dart --dart-define=RENDER_DIR=<dir>
+@Tags(<String>['render'])
+library;
+
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;

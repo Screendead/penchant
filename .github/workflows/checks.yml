@@ -36,4 +36,5 @@ jobs:
         # A zone with daylight saving, so the day-arithmetic tests can fail.
         env:
           TZ: Europe/London
-        run: flutter test
+        # Render tools only write PNGs under RENDER_DIR; excluded, they are not compiled.
+        run: flutter test --exclude-tags render

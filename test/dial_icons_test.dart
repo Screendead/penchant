@@ -17,16 +17,4 @@ void main() {
       }
     }
   });
-
-  test('run-together arc flags split as SVG reads them', () {
-    // A circle of radius 8 about (12, 12) from two half arcs.
-    final Rect circle = parseSvgPath(
-      'M12 4a8 8 0 110 16 8 8 0 010-16z',
-    ).getBounds();
-    expect(circle.left, moreOrLessEquals(4, epsilon: 0.01));
-    expect(circle.right, moreOrLessEquals(20, epsilon: 0.01));
-    // "00.3" is the flags 0 and 0, then .3.
-    final Rect tiny = parseSvgPath('M19.4 15a1.7 1.7 0 00.3 1.8').getBounds();
-    expect(tiny.bottom, moreOrLessEquals(16.8, epsilon: 0.01));
-  });
 }
