@@ -279,9 +279,6 @@ class OlderNotesRunner extends Notifier<OlderNotesState> {
     state = OlderNotesState(progress: state.progress);
   }
 
-  void clearProblem() =>
-      state = OlderNotesState(progress: state.progress, reading: state.reading);
-
   /// Sends each of [batch]'s notes in turn, keeping [work] current.
   Future<void> read(List<ViceActivity> batch, {ClaudeWork? work}) async {
     final NoteReader? reader = ref.read(olderNoteReaderProvider);

@@ -26,7 +26,7 @@ class NudgeCopy {
       'Notifications are off for Penchant, so the reminder won\'t arrive. '
       'Turn them on in the system Settings and it will start again.';
   static const String reviewBody = 'Last week’s review is ready.';
-  // Names no habit and no amount (Jack, round 20).
+  // Names no habit and no amount.
   static const String heavyToday = 'Anything different about today?';
   static const String heavyYesterday = 'Anything different about yesterday?';
   // An urge's check-in: names no habit and no strength.
