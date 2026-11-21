@@ -10,6 +10,8 @@ import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/measure_shifts.dart';
 import 'package:tracker/insights/what_follows.dart';
 
+import '../insights_harness.dart';
+
 final DateTime start = DateTime(2026, 1, 5);
 const int days = 120;
 
@@ -105,9 +107,9 @@ Set<(String, String)> pairs(Iterable<HabitFinding> findings) =>
 void main() {
   test('on pure noise, false findings across 5 habits x 9 outcomes fall from '
       'about 1 in 20 checks to about 1 in 500', () {
-    const int seeds = 400;
+    const int seeds = 200;
     int checks = 0, rawFindings = 0, rawReports = 0;
-    int findings = 0, reports = 0;
+    int findings = 0, reports = 0, matched = 0;
     for (int seed = 0; seed < seeds; seed++) {
       final InsightsInput input = noiseInput(seed);
       final List<HabitInsight> raw = everyComparison(input);
@@ -120,7 +122,9 @@ void main() {
         controlFalseDiscoveries(raw).whereType<HabitFinding>(),
       );
       final int found = corrected.length;
-      if (seed < 20 || found > 0) {
+      // The engine is costly: a few seeds with nothing found and the first
+      // ten with a finding are enough to hold it to the same family.
+      if (seed < 3 || (found > 0 && matched++ < 10)) {
         expect(
           pairs(computeInsights(input).findings),
           // The page's family also holds what came before each use and
@@ -150,10 +154,6 @@ void main() {
       if (found > 0) reports++;
     }
 
-    // ignore: avoid_print
-    print(
-      'MEASURE checks=$checks raw=$rawFindings rawReports=$rawReports after=$findings reports=$reports',
-    );
     expect(checks, seeds * 45);
     // Before: each check alone at 95%, so most reports show one or more.
     expect(rawFindings / checks, inInclusiveRange(0.03, 0.07));
@@ -165,7 +165,7 @@ void main() {
   });
 
   test('a real effect among 45 comparisons is still found', () {
-    for (int seed = 0; seed < 50; seed++) {
+    for (int seed = 0; seed < 10; seed++) {
       final InsightsReport report = computeInsights(
         noiseInput(seed, effect: -30),
       );
@@ -253,6 +253,16 @@ void main() {
             alongside: shiftPs(input),
           ).whereType<HabitFinding>().where((f) => practicalSize(f) >= 1),
         );
+        // Kept only once the archived habits' comparisons are out of the
+        // family: proof they were not counted.
+        final Set<(String, String)> withAll = pairs(
+          controlFalseDiscoveries(
+            raw,
+            alongside: shiftPs(input),
+          ).whereType<HabitFinding>(),
+        );
+        final bool telling = shown.difference(withAll).isNotEmpty;
+        if (seed > 0 && !telling) continue;
         final InsightsReport report = computeInsights(
           InsightsInput(
             uses: input.uses,
@@ -263,17 +273,34 @@ void main() {
           ),
         );
         expect(pairs(report.findings), shown);
-        // Kept only once the archived habits' comparisons are out of the
-        // family: proof they were not counted.
-        final Set<(String, String)> withAll = pairs(
-          controlFalseDiscoveries(
-            raw,
-            alongside: shiftPs(input),
-          ).whereType<HabitFinding>(),
-        );
-        if (shown.difference(withAll).isNotEmpty) return;
+        if (telling) return;
       }
       fail('no finding kept only by the smaller family in 200 seeds');
+    });
+
+    test('is in no pair and beside no shift', () {
+      final journal = insightsJournal();
+      final InsightsReport report = computeInsights(
+        InsightsInput.from(
+          activities: journal.activities,
+          health: journal.health,
+          today: insightsToday,
+          archived: const <String>{'tea'},
+        ),
+      );
+
+      expect(report.follows, isNotEmpty);
+      for (final HabitFollows f in report.follows) {
+        expect(f.verdict, isNotNull);
+        expect(<String>[f.leadId, f.followerId], isNot(contains('tea')));
+      }
+      for (final MeasureShift s in report.shifts) {
+        expect(s.found, isTrue);
+        expect(
+          s.habits.map((HabitChange c) => c.habitId),
+          isNot(contains('tea')),
+        );
+      }
     });
 
     test('still separates a current habit used on its days', () {

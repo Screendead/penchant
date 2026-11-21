@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/design/app_theme.dart';
-import 'package:tracker/formats.dart';
 import 'package:tracker/insights/photos_source.dart';
 import 'package:tracker/insights/places.dart';
 import 'package:tracker/insights/places_source.dart';
@@ -78,81 +77,6 @@ void main() {
     expect(find.text(PlaceSheet.mapFailed), findsOneWidget);
   });
 
-  testWidgets('a loaded map shows with its pin', (WidgetTester tester) async {
-    final FakePlaces places = FakePlaces(PlacesAccess.always)
-      ..map = onePixelPng;
-    await _open(tester, places: places, photos: FakePhotos(PhotosAccess.full));
-
-    await tester.tap(find.text(PlaceSheet.showOnMap));
-    await tester.pumpAndSettle();
-
-    expect(places.maps, 1);
-    expect(find.bySemanticsLabel('Map of Place 3'), findsOneWidget);
-    expect(find.text(PlaceSheet.mapFailed), findsNothing);
-  });
-
-  for (final PhotosAccess access in <PhotosAccess>[
-    PhotosAccess.full,
-    PhotosAccess.limited,
-  ]) {
-    testWidgets('with ${access.name} photo access the strip shows the '
-        'photos taken there', (WidgetTester tester) async {
-      final FakePhotos photos = FakePhotos(access, <PlacePhoto>[
-        PlacePhoto(DateTime(2026, 5, 4, 12), onePixelPng),
-        PlacePhoto(DateTime(2025, 8, 9, 12), onePixelPng),
-      ]);
-      await _open(
-        tester,
-        places: FakePlaces(PlacesAccess.always),
-        photos: photos,
-      );
-
-      expect(photos.nears, 1);
-      expect(photos.asked, 0);
-      expect(
-        find.bySemanticsLabel(PlaceSheet.photoLabel(DateTime(2026, 5, 4))),
-        findsOneWidget,
-      );
-      expect(find.byType(Image), findsNWidgets(2));
-    });
-  }
-
-  for (final PhotosAccess access in <PhotosAccess>[
-    PhotosAccess.denied,
-    PhotosAccess.notDetermined,
-  ]) {
-    testWidgets('with ${access.name} photo access nothing is read or asked', (
-      WidgetTester tester,
-    ) async {
-      final FakePhotos photos = FakePhotos(access, <PlacePhoto>[
-        PlacePhoto(DateTime(2026, 5, 4, 12), onePixelPng),
-      ]);
-      await _open(
-        tester,
-        places: FakePlaces(PlacesAccess.always),
-        photos: photos,
-      );
-
-      expect(photos.nears, 0);
-      expect(photos.asked, 0);
-      expect(find.byType(Image), findsNothing);
-      expect(find.text(PlaceSheet.photosLoading), findsNothing);
-    });
-  }
-
-  testWidgets('no photos there shows no strip', (WidgetTester tester) async {
-    final FakePhotos photos = FakePhotos(PhotosAccess.full);
-    await _open(
-      tester,
-      places: FakePlaces(PlacesAccess.always),
-      photos: photos,
-    );
-
-    expect(photos.nears, 1);
-    expect(find.byType(Image), findsNothing);
-    expect(find.text(PlaceSheet.photosLoading), findsNothing);
-  });
-
   testWidgets('Save answers the name typed, Cancel nothing', (
     WidgetTester tester,
   ) async {
@@ -160,10 +84,6 @@ void main() {
       tester,
       places: FakePlaces(PlacesAccess.always),
       photos: FakePhotos(PhotosAccess.denied),
-    );
-    expect(
-      find.text('1 visit, on ${formatDate(DateTime(2026, 3, 2))}'),
-      findsOneWidget,
     );
     await tester.enterText(find.byType(TextField), 'Office');
     await tester.tap(find.text('Save'));

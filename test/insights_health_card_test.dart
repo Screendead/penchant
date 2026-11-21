@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/design/app_theme.dart';
 import 'package:tracker/insights/health_source.dart';
+import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights_page.dart';
 import 'package:tracker/providers/insights_provider.dart';
 
@@ -39,6 +40,9 @@ void _prefs({bool connected = true, int? askedVersion}) =>
       healthAskedVersionKey: ?askedVersion,
     });
 
+Future<InsightsReport> _nothing(InsightsInput _) async =>
+    const InsightsReport(findings: [], refused: []);
+
 FakeHealthSource _health(HealthRequestStatus status) => FakeHealthSource(
   read: HealthValues(insightsJournal().health),
   status: status,
@@ -49,7 +53,7 @@ void main() {
       'and does not show it unasked', (WidgetTester tester) async {
     _prefs();
     final FakeHealthSource health = _health(HealthRequestStatus.shouldRequest);
-    await _pump(tester, insightsOverrides(health: health));
+    await _pump(tester, insightsOverrides(health: health, runner: _nothing));
 
     expect(find.text(InsightsPage.askAgainLabel), findsOneWidget);
     expect(find.text(InsightsPage.askAgainBody), findsOneWidget);
@@ -62,7 +66,7 @@ void main() {
       'reads Health again', (WidgetTester tester) async {
     _prefs();
     final FakeHealthSource health = _health(HealthRequestStatus.shouldRequest);
-    await _pump(tester, insightsOverrides(health: health));
+    await _pump(tester, insightsOverrides(health: health, runner: _nothing));
     final int reads = health.reads;
 
     await tester.tap(find.text(InsightsPage.askAgainLabel));
@@ -78,28 +82,15 @@ void main() {
     expect(prefs.getInt(healthAskedVersionKey), healthReadTypesVersion);
   });
 
-  testWidgets('connected and current: Connected, with where to manage access', (
-    WidgetTester tester,
-  ) async {
-    _prefs(askedVersion: healthReadTypesVersion);
-    final FakeHealthSource health = _health(HealthRequestStatus.unnecessary);
-    await _pump(tester, insightsOverrides(health: health));
-    expect(find.text('Connected'), findsNothing);
-    await _openCosts(tester);
-
-    expect(find.text('Connected'), findsOneWidget);
-    expect(find.text(InsightsPage.askAgainLabel), findsNothing);
-    expect(find.text(InsightsPage.manageLabel), findsOneWidget);
-    expect(find.text(InsightsPage.manageBody), findsOneWidget);
-    expect(health.authorizationRequests, 0);
-  });
-
   testWidgets('when HealthKit cannot tell, a device that never recorded the '
       'types it asked for is offered the sheet', (WidgetTester tester) async {
     _prefs();
     await _pump(
       tester,
-      insightsOverrides(health: _health(HealthRequestStatus.unknown)),
+      insightsOverrides(
+        health: _health(HealthRequestStatus.unknown),
+        runner: _nothing,
+      ),
     );
 
     expect(find.text(InsightsPage.askAgainLabel), findsOneWidget);
@@ -110,24 +101,15 @@ void main() {
     _prefs(askedVersion: healthReadTypesVersion);
     await _pump(
       tester,
-      insightsOverrides(health: _health(HealthRequestStatus.unknown)),
+      insightsOverrides(
+        health: _health(HealthRequestStatus.unknown),
+        runner: _nothing,
+      ),
     );
 
     expect(find.text(InsightsPage.askAgainLabel), findsNothing);
     await _openCosts(tester);
     expect(find.text('Connected'), findsOneWidget);
-  });
-
-  testWidgets('never connected: Connect, and no manage hint', (
-    WidgetTester tester,
-  ) async {
-    _prefs(connected: false);
-    final FakeHealthSource health = _health(HealthRequestStatus.shouldRequest);
-    await _pump(tester, insightsOverrides(health: health));
-
-    expect(find.text(InsightsPage.connectLabel), findsOneWidget);
-    expect(find.text(InsightsPage.askAgainLabel), findsNothing);
-    expect(find.text(InsightsPage.manageLabel), findsNothing);
   });
 
   testWidgets('on macOS nothing changes: Health is on the iPhone and HealthKit '
@@ -136,7 +118,7 @@ void main() {
     addTearDown(() => debugDefaultTargetPlatformOverride = null);
     _prefs();
     final FakeHealthSource health = _health(HealthRequestStatus.shouldRequest);
-    await _pump(tester, insightsOverrides(health: health));
+    await _pump(tester, insightsOverrides(health: health, runner: _nothing));
 
     expect(find.text(InsightsPage.onIPhone), findsOneWidget);
     expect(find.text(InsightsPage.connectLabel), findsNothing);

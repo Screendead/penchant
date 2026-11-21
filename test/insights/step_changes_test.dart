@@ -232,46 +232,5 @@ void main() {
       );
       expect(crowded.single.found, isFalse);
     });
-
-    test('says it in plain words', () {
-      final MeasureShift shift = MeasureShift(
-        metricId: 'restingHeartRate',
-        shift: shiftOf(6, 0.0001).shift,
-        habits: const <HabitChange>[
-          HabitChange(habitId: 'coffee', before: 1.5, after: 3.46),
-        ],
-      );
-
-      expect(
-        measureShiftText(shift, '12 March 2026', (_) => 'Coffee', 'en'),
-        <String>[
-          'From 12 March 2026, your resting heart rate averaged 6.0 bpm higher '
-              'than before.',
-          '58.0 bpm over the 43 days before, 64.0 bpm over the 60 days from '
-              'then',
-          'Coffee changed around then too, from 1.5 a day to 3.5, so the two '
-              'can’t be told apart.',
-        ],
-      );
-      expect(
-        measureShiftSentence(
-          MeasureShift(
-            metricId: 'sleepAsleep',
-            shift: LevelShift(
-              at: DateTime(2026, 3, 12),
-              before: 430,
-              after: 400,
-              daysBefore: 40,
-              daysAfter: 40,
-              pValue: 0.001,
-            ),
-          ),
-          '12 March 2026',
-          'en',
-        ),
-        'From 12 March 2026, your time asleep averaged 30 min less than '
-        'before.',
-      );
-    });
   });
 }

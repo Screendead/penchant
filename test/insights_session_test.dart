@@ -59,6 +59,7 @@ class _Harness {
     Map<HealthSampleMetric, List<HealthSample>> samples =
         const <HealthSampleMetric, List<HealthSample>>{},
     this.calendar,
+    bool engine = false,
   }) : journal = journal ?? insightsJournal().activities,
        health = _ChangingHealth(
          health ?? HealthValues(insightsJournal().health),
@@ -71,7 +72,9 @@ class _Harness {
           readActivities: () => this.journal,
           runner: (InsightsInput input) async {
             runs++;
-            return computeInsights(input);
+            return engine
+                ? computeInsights(input)
+                : const InsightsReport(findings: [], refused: []);
           },
           uid: (Ref ref) => ref.watch(_uidProvider),
         ),
@@ -298,6 +301,7 @@ void main() {
         for (final HealthSampleMetric m in HealthSampleMetric.values)
           if (s.samples[m.id] case final List<HealthSample> list) m: list,
       },
+      engine: true,
     );
     h.open();
     final InsightsView first = await h.settled();

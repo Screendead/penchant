@@ -56,9 +56,9 @@ Future<void> _pump(
           health: FakeHealthSource(
             read: HealthValues(insightsJournal().health),
           ),
-          runner: (InsightsInput input) async {
+          runner: (_) async {
             onRun?.call();
-            return computeInsights(input);
+            return const InsightsReport(findings: [], refused: []);
           },
         ),
         calendarSourceProvider.overrideWithValue(calendar),

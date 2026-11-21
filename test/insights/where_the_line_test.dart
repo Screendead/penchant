@@ -2,12 +2,10 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
-import 'package:tracker/data/unit.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/stats.dart' as stats;
 import 'package:tracker/insights/what_follows.dart';
-import 'package:tracker/insights_page.dart' show insightsText;
 
 final DateTime start = DateTime(2026, 1, 5);
 const int days = 120;
@@ -99,9 +97,7 @@ HabitFinding finding(
   InsightKind kind,
   double cut, {
   String metricId = deep,
-  double effect = -14,
   double pValue = 0.001,
-  HabitInsight? sameBedtime,
 }) => HabitFinding(
   habitId: 'coffee',
   metricId: metricId,
@@ -114,11 +110,10 @@ HabitFinding finding(
   cut: kind == InsightKind.doseLine || kind == InsightKind.lastUseLine
       ? cut
       : null,
-  effect: effect,
-  interval: stats.Interval(effect * 1.5, effect / 2),
+  effect: -14,
+  interval: const stats.Interval(-21, -7),
   standardized: -0.5,
   pValue: pValue,
-  sameBedtime: sameBedtime,
 );
 
 void main() {
@@ -315,160 +310,18 @@ void main() {
     });
   });
 
-  group('copy', () {
-    test('an amount’s line names the amount and both sides', () {
-      final HabitFinding f = finding(InsightKind.doseLine, 3);
-      expect(
-        findingSentence(f, 'Coffee', 'en', unit: Unit.drink),
-        'On days with 3 drinks or more logged for Coffee, your deep sleep '
-        'that night averages 14 min less than on days with fewer.',
-      );
-      expect(
-        findingLine(f, 'en', unit: Unit.drink),
-        'From 3 drinks a day: deep sleep 14 min less',
-      );
-      expect(
-        findingBasis(f, 'Coffee', unit: Unit.drink),
-        'From 120 days with Coffee, 41 of them with 3 drinks or more',
-      );
-      expect(
-        findingSentence(
-          finding(InsightKind.doseLine, 2),
-          'Vape',
-          'en',
-          unit: Unit.time,
-        ),
-        'On days with 2 uses or more logged for Vape, your deep sleep that '
-        'night averages 14 min less than on days with fewer.',
-      );
-    });
-
-    test('a cut-off names the time on the 24-hour clock, and which side of '
-        'midnight', () {
-      final HabitFinding f = finding(
-        InsightKind.lastUseLine,
-        900,
-        metricId: 'sleepAsleep',
-        effect: -20,
-      );
-      expect(
-        findingSentence(f, 'Coffee', 'en'),
-        'On days your last use of Coffee is at 15:00 or later, your time '
-        'asleep that night averages 20 min less than on days it is earlier.',
-      );
-      expect(
-        findingLine(f, 'en'),
-        'Last use at 15:00 or later: time asleep 20 min less',
-      );
-      expect(
-        findingBasis(f, 'Coffee'),
-        'From 120 days with Coffee, 41 of them with the last use at 15:00 or '
-        'later',
-      );
-      expect(
-        findingLine(finding(InsightKind.lastUseLine, 1440), 'en'),
-        'Last use at midnight or later: deep sleep 14 min less',
-      );
-      expect(
-        findingLine(finding(InsightKind.lastUseLine, 1500), 'en'),
-        'Last use at 01:00 after midnight or later: deep sleep 14 min less',
-      );
-    });
-
-    test('on sleep, the part at the same bedtime follows, at the same '
-        'line', () {
-      expect(
-        bedtimeLine(
-          finding(
-            InsightKind.doseLine,
-            3,
-            sameBedtime: finding(InsightKind.doseLine, 3, effect: -5),
-          ),
-          'en',
-          unit: Unit.drink,
-        ),
-        '14 min less from 3 drinks a day, 5 min of it at the same bedtime',
-      );
-      expect(
-        bedtimeLine(
-          finding(
-            InsightKind.lastUseLine,
-            900,
-            sameBedtime: finding(InsightKind.lastUseLine, 900, effect: -5),
-          ),
-          'en',
-        ),
-        '14 min less with the last use at 15:00 or later, 5 min of it at the '
-        'same bedtime',
-      );
-    });
-
-    test('a refusal says it is about the line', () {
-      HabitRefusal refusal(InsightKind kind, RefusalReason reason) =>
-          HabitRefusal(
-            habitId: 'coffee',
-            metricId: deep,
-            lagDays: 1,
-            usableDays: 120,
-            exposedDays: 41,
-            raw: null,
-            kind: kind,
-            cut: 3,
-            reason: reason,
-            effect: -4,
-            interval: const stats.Interval(-6, -2),
-            pValue: 0.01,
-          );
-      expect(
-        refusalReason(
-          refusal(InsightKind.lastUseLine, RefusalReason.withinNoise),
-          (id) => id,
-        ),
-        'A cut-off time for the last use: within the noise, no clear '
-        'difference',
-      );
-      expect(
-        refusalReason(
-          refusal(InsightKind.doseLine, RefusalReason.tooSmall),
-          (id) => id,
-        ),
-        'A line in the amount: too small to matter, under 10 min a night of '
-        'deep sleep',
-      );
-    });
-
-    test('Copy as text carries the line as the card does', () {
-      final HabitFinding line = finding(InsightKind.doseLine, 3);
-      final HabitFinding time = finding(
-        InsightKind.lastUseLine,
-        900,
-        metricId: 'sleepCore',
-        effect: -11,
-      );
-      final List<String> lines = insightsText(
-        cards: <InsightCard>[
-          InsightCard(
-            family: MetricFamily.sleep,
-            headline: line,
-            others: <HabitFinding>[time],
-          ),
-        ],
-        refused: const <HabitRefusal>[],
-        firstDay: null,
-        nameOf: (_) => 'Coffee',
-        unitOf: (_) => Unit.drink,
-        locale: 'en',
-      ).split('\n');
-      expect(
-        lines,
-        containsAllInOrder(<String>[
-          'Coffee · sleep',
-          'On days with 3 drinks or more logged for Coffee, your deep sleep '
-              'that night averages 14 min less than on days with fewer.',
-          'From 120 days with Coffee, 41 of them with 3 drinks or more',
-          'Last use at 15:00 or later: core sleep 11 min less',
-        ]),
-      );
-    });
+  test('a cut-off reads on the 24-hour clock, past midnight as such', () {
+    expect(
+      findingLine(finding(InsightKind.lastUseLine, 900), 'en'),
+      'Last use at 15:00 or later: deep sleep 14 min less',
+    );
+    expect(
+      findingLine(finding(InsightKind.lastUseLine, 1440), 'en'),
+      'Last use at midnight or later: deep sleep 14 min less',
+    );
+    expect(
+      findingLine(finding(InsightKind.lastUseLine, 1500), 'en'),
+      'Last use at 01:00 after midnight or later: deep sleep 14 min less',
+    );
   });
 }

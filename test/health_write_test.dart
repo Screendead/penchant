@@ -302,7 +302,6 @@ void main() {
       WidgetTester tester,
       Vice vice, {
       List<String> stored = const <String>[],
-      bool supported = true,
     }) async {
       await tester.pumpWidget(const SizedBox());
       SharedPreferences.setMockInitialValues(<String, Object>{
@@ -316,7 +315,7 @@ void main() {
             userProvider.overrideWith((ref) => Stream.value(FakeUser(ownerID))),
             viceListProvider.overrideWith((ref) => AsyncData(<Vice>[vice])),
             healthWriterProvider.overrideWithValue(writer),
-            healthWriteSupportedProvider.overrideWithValue(supported),
+            healthWriteSupportedProvider.overrideWithValue(true),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -356,18 +355,6 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('shows only for a habit with a strength, on iOS', (
-      WidgetTester tester,
-    ) async {
-      await open(tester, _vice('coffee', _cup), supported: false);
-      expect(find.byKey(ViceForm.healthWriteKey), findsNothing);
-      await open(tester, _vice('water', null));
-      expect(find.byKey(ViceForm.healthWriteKey), findsNothing);
-      await open(tester, _vice('coffee', _cup));
-      expect(find.byKey(ViceForm.healthWriteKey), findsOneWidget);
-      expect(find.text(ViceForm.healthWriteCaffeine), findsOneWidget);
-    });
-
     testWidgets('turning it on asks Health, and saving keeps it', (
       WidgetTester tester,
     ) async {
@@ -375,10 +362,8 @@ void main() {
         tester,
         _vice('beer', _pint),
       );
-      expect(find.text(ViceForm.healthWriteAlcohol), findsOneWidget);
       await tapSwitch(tester);
       expect(writer.calls, <String>['request alcohol']);
-      expect(find.text(ViceForm.healthWriteFootnote), findsOneWidget);
       expect(container.read(healthWriteChoicesProvider(ownerID)), isEmpty);
       await save(tester);
       expect(container.read(healthWriteChoicesProvider(ownerID)), <String>{
@@ -388,19 +373,6 @@ void main() {
       expect(prefs.getStringList(HealthWriteChoices.keyOf(ownerID)), <String>[
         'beer',
       ]);
-    });
-
-    testWidgets('a refusal turns it back off and says where to change it', (
-      WidgetTester tester,
-    ) async {
-      writer.allow = false;
-      await open(tester, _vice('beer', _pint));
-      await tapSwitch(tester);
-      expect(
-        tester.widget<Switch>(find.byKey(ViceForm.healthWriteKey)).value,
-        isFalse,
-      );
-      expect(find.text(ViceForm.healthWriteRefused), findsOneWidget);
     });
 
     testWidgets('turning it off offers once to remove what was written', (

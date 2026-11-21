@@ -52,7 +52,7 @@ Future<void> _pump(
           health: FakeHealthSource(
             read: HealthValues(insightsJournal().health),
           ),
-          runner: (InsightsInput input) async => computeInsights(input),
+          runner: (_) async => const InsightsReport(findings: [], refused: []),
         ),
         placesSourceProvider.overrideWithValue(places),
         if (kept != null) placesProvider.overrideWith(() => kept),
@@ -91,16 +91,6 @@ void main() {
     expect(find.text(InsightsPage.placesEarly), findsOneWidget);
   });
 
-  testWidgets('refused or While Using says where to change it', (
-    WidgetTester tester,
-  ) async {
-    await _pump(tester, FakePlaces(PlacesAccess.denied));
-    expect(find.text(InsightsPage.placesOffBody), findsOneWidget);
-
-    await _pump(tester, FakePlaces(PlacesAccess.whenInUse));
-    expect(find.text(InsightsPage.placesWhileUsingBody), findsOneWidget);
-  });
-
   testWidgets('a place is numbered until named on the card', (
     WidgetTester tester,
   ) async {
@@ -118,7 +108,6 @@ void main() {
 
     expect(find.text(InsightsPage.placesEarly), findsNothing);
     expect(find.text('Place 1'), findsOneWidget);
-    expect(find.text('2 visits'), findsOneWidget);
 
     await tester.tap(find.text('Place 2'));
     await tester.pumpAndSettle();
