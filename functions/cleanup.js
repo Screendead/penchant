@@ -126,5 +126,4 @@ module.exports = {
   missingUids,
   reconcile,
   runCleanup,
-  validUid,
 };

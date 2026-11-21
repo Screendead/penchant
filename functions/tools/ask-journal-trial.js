@@ -468,4 +468,4 @@ async function main() {
 
 if (require.main === module) main();
 
-module.exports = { HABITS, INPUT, QUESTIONS, REFERENCE, buildJournal, runSql, verdict };
+module.exports = { INPUT, QUESTIONS, REFERENCE, buildJournal, runSql, verdict };

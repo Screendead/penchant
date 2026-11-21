@@ -284,11 +284,7 @@ async function main() {
   console.log(RULE);
 }
 
-if (require.main === module) {
-  main().catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
-}
-
-module.exports = { journals };
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

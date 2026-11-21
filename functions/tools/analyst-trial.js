@@ -107,4 +107,4 @@ async function main() {
 
 if (require.main === module) main();
 
-module.exports = { QUESTIONS, cell, result };
+module.exports = { QUESTIONS, cell };

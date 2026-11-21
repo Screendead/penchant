@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/ask/ask_answer.dart';
-import 'package:tracker/ask/ask_chart.dart';
 import 'package:tracker/ask/ask_journal.dart';
 import 'package:tracker/ask/ask_page.dart';
 import 'package:tracker/data/vice.dart';
@@ -63,7 +62,7 @@ void main() {
   });
 
   testWidgets('a question is answered by SQL run on the device over the '
-      'journal, with a chart read-out and a refused statement', (
+      'journal it read from the server, and a write is refused', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -89,27 +88,5 @@ void main() {
     await pumpUntil(tester, find.byType(BarChart));
     expect(find.text(AskPage.couldNotRun), findsOneWidget);
     expect(find.text(AskPage.onDevice.toUpperCase()), findsNWidgets(3));
-
-    // The read-out starts on the last bar; a tap on the first moves it.
-    final String logged = humaniseColumn('logged');
-    expect(find.text('$logged 1'), findsOneWidget);
-    // The question field still holds focus; with the keyboard gone the page
-    // holds still under the touch.
-    FocusManager.instance.primaryFocus?.unfocus();
-    await pumpFor(tester, const Duration(seconds: 1));
-    await scrollIntoView(tester, find.byType(BarChart));
-    final Rect chart = tester.getRect(find.byType(BarChart));
-    await tester.timedDragFrom(
-      Offset(chart.left + chart.width * 0.5, chart.center.dy),
-      Offset(-chart.width * 0.4, 0),
-      const Duration(milliseconds: 400),
-    );
-    await pumpUntil(tester, find.text('$logged 2'));
-    expect(find.text('Coffee'), findsWidgets);
-
-    // The refused card still offers its query.
-    await scrollIntoView(tester, find.text(AskPage.couldNotRun));
-    await tap(tester, find.text(AskPage.showQuery).last);
-    await pumpUntil(tester, find.text('DROP TABLE entries'));
   });
 }

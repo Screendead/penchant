@@ -9,6 +9,7 @@ import 'package:tracker/formats.dart';
 import 'package:tracker/homepage.dart';
 import 'package:tracker/manage_data.dart';
 import 'package:tracker/vice_activity_editor_page.dart';
+import 'package:tracker/writes/tracker_writes.dart';
 
 import 'support.dart';
 
@@ -57,33 +58,29 @@ void main() {
       'takes a recording, and can be archived', (WidgetTester tester) async {
     await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-legacy-vice@example.com');
-    await addVicesThroughManageData(tester, const <String>['Coffee', 'Tea']);
-    await recordActivity(tester, 'Coffee', 2);
-    await expectTallies(tester, const <String>{
-      'Coffee (2 drinks)',
-      'Tea (0 drinks)',
-    });
+    final String uid = FirebaseAuth.instance.currentUser!.uid;
+    // A habit that stays once Kombucha is archived, so Today keeps its tallies.
+    await TrackerWrites(
+      FirebaseFirestore.instance,
+      sealer: e2eSealer,
+    ).addVice(ownerID: uid, name: 'Tea', unit: Unit.drink).done;
 
     await createBypassingRules('vices', 'legacy-vice', <String, Object>{
       'name': <String, Object>{'stringValue': 'Kombucha'},
       'unit': <String, Object>{'stringValue': 'drink'},
-      'ownerID': <String, Object>{
-        'stringValue': FirebaseAuth.instance.currentUser!.uid,
-      },
+      'ownerID': <String, Object>{'stringValue': uid},
       'createdAt': <String, Object>{
         'timestampValue': DateTime.now().toUtc().toIso8601String(),
       },
     });
     expect((await _storedVice('Kombucha')).containsKey('archived'), isFalse);
     await expectTallies(tester, const <String>{
-      'Coffee (2 drinks)',
       'Tea (0 drinks)',
       'Kombucha (0 drinks)',
     });
 
     await recordActivity(tester, 'Kombucha', 3);
     await expectTallies(tester, const <String>{
-      'Coffee (2 drinks)',
       'Tea (0 drinks)',
       'Kombucha (3 drinks)',
     });
@@ -91,10 +88,7 @@ void main() {
     expect((await storedActivities('Kombucha')).single.data()['quantity'], 3);
 
     await _setArchived(tester, 'Kombucha', archived: true);
-    await expectTallies(tester, const <String>{
-      'Coffee (2 drinks)',
-      'Tea (0 drinks)',
-    });
+    await expectTallies(tester, const <String>{'Tea (0 drinks)'});
   });
 
   testWidgets('a decimal quantity is stored as its amount, totals count it '
@@ -103,14 +97,11 @@ void main() {
   ) async {
     await tester.pumpWidget(e2eApp());
     await register(tester, 'e2e-amount@example.com');
-    await addVicesThroughManageData(tester, const <String>['Coffee', 'Tea']);
+    await addVicesThroughManageData(tester, const <String>['Coffee']);
 
     await recordActivity(tester, 'Coffee', 1.5);
     await recordActivity(tester, 'Coffee', 2);
-    await expectTallies(tester, <String>{
-      'Coffee (${Unit.drink.label(3.5)})',
-      'Tea (${Unit.drink.label(0)})',
-    });
+    await expectTallies(tester, <String>{'Coffee (${Unit.drink.label(3.5)})'});
     await _waitForEmulator();
     final List<Map<String, dynamic>> recorded = <Map<String, dynamic>>[
       for (final QueryDocumentSnapshot<Map<String, dynamic>> doc

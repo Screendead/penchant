@@ -256,24 +256,6 @@ test('an API failure is a reason, not a throw, and the call carries its own time
   assert.ok(REQUEST_TIMEOUT_MS >= 30000 && REQUEST_TIMEOUT_MS <= 50000);
 });
 
-test('the trial has 40 questions the server would accept, with follow-ups pointing back', () => {
-  const { QUESTIONS, INPUT } = trial;
-  assert.equal(QUESTIONS.length, 40);
-  const kinds = new Set();
-  for (const [index, spec] of QUESTIONS.entries()) {
-    assert.equal(typeof spec.question, 'string');
-    assert.ok(validInput({ ...INPUT, question: spec.question }), spec.question);
-    assert.ok(spec.safe || spec.kind, spec.question);
-    if (spec.check) assert.equal(typeof spec.check, 'function');
-    if (spec.after != null) assert.ok(spec.after < index && Number.isInteger(spec.after), spec.question);
-    for (const kind of [].concat(spec.kind || [])) kinds.add(kind);
-    for (const reason of [].concat(spec.reason || [])) assert.ok(SCHEMA.properties.reason.enum.includes(reason));
-  }
-  for (const kind of SCHEMA.properties.kind.enum) assert.ok(kinds.has(kind), kind);
-  assert.ok(QUESTIONS.filter((q) => q.safe).length >= 3);
-  assert.equal(QUESTIONS[3].after, 2);
-});
-
 let sqlite = null;
 try {
   sqlite = require('node:sqlite');

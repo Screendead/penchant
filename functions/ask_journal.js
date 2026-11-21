@@ -284,23 +284,10 @@ async function askJournal(client, input, model = MODEL) {
 }
 
 module.exports = {
-  KINDS,
   MAX_CARDS,
-  MAX_COLUMN,
-  MAX_EXPLAIN,
-  MAX_HABITS,
-  MAX_HABIT_ID,
-  MAX_HISTORY,
-  MAX_NAME,
-  MAX_QUESTION,
-  MAX_SQL,
-  MAX_TITLE,
-  MAX_TOKENS,
-  MAX_UNIT,
   MAX_Y,
   MODEL,
   MODELS,
-  REASONS,
   REQUEST_TIMEOUT_MS,
   SCHEMA,
   SQL_FUNCTIONS,

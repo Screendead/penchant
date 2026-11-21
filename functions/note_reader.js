@@ -43,8 +43,8 @@ const SCHEMA = {
   additionalProperties: false,
 };
 
-// The rules the model is given for the follow-up question. FILTERS below
-// enforces again every one that code can check.
+// The rules the model is given for the follow-up question. checkQuestion
+// below enforces again every one that code can check.
 const QUESTION_RULES = [
   'Also write question: one short follow-up question that picks up something the person wrote,',
   'so that their answer adds detail the note left out. Rules, all of them, always:',
@@ -67,7 +67,6 @@ const QUESTION_RULES = [
 ].join('\n');
 
 const QUESTION_SYSTEM = `${SYSTEM}\n${QUESTION_RULES}`;
-
 
 const QUESTION_SCHEMA = {
   type: 'object',
@@ -266,16 +265,12 @@ class DailyCap {
 }
 
 module.exports = {
-  DAILY_CAP,
   DENIED_TERMS,
   DailyCap,
   LEAF_PATHS,
-  MAX_NOTE,
   MAX_QUESTION,
   MAX_QUOTE,
-  MAX_TAGS,
   MODEL,
-  QUESTION_RULES,
   checkQuestion,
   checkTags,
   messageRequest,

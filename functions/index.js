@@ -107,8 +107,6 @@ async function refreshSummaries(db, now = new Date()) {
   logger.info('Summaries refreshed', { users: uids.size, removed });
 }
 
-exports.refreshSummaries = refreshSummaries;
-
 exports.monthlySummaries = onSchedule(
   {
     schedule: '0 3 1 * *',
