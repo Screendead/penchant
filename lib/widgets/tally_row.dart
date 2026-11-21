@@ -99,11 +99,6 @@ class TallyRow extends StatefulWidget {
   static String label(Vice vice, num total) =>
       '${vice.name}, ${vice.units.label(total)}';
 
-  // "2 of 3 a day", or "22 of 30 in 7 days" for a week line.
-  static String lineText(HabitLine line, num lineTotal) =>
-      '${formatCount(lineTotal)} of ${formatCount(line.amount)} '
-      '${_linePeriod(line)}';
-
   static String _linePeriod(HabitLine line) =>
       line.period == LinePeriod.day ? 'a day' : 'in 7 days';
 

@@ -440,5 +440,4 @@ class DialMotion {
     stiffness: 220,
     damping: 22,
   );
-  static const SpringDescription sheetSnap = landing;
 }

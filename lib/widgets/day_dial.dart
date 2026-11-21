@@ -21,7 +21,6 @@ import 'package:tracker/widgets/bead_arrivals.dart';
 import 'package:tracker/widgets/bead_painter.dart';
 import 'package:tracker/widgets/dial_face_painter.dart';
 
-// One entry as the dial draws it.
 class DialEntry {
   const DialEntry({
     required this.id,
@@ -1346,7 +1345,6 @@ class _BeadsPainter extends CustomPainter {
   final Color surface;
   final TextStyle labelStyle;
   final TextScaler textScaler;
-  // The pending rims' turn, in radians.
   final ValueListenable<double> spin;
   final List<({Offset centre, double radius, HabitMark mark, double k})>
   ripples;

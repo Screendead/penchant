@@ -108,7 +108,6 @@ class TimeDial extends StatefulWidget {
   static const double knobTrack = 112;
   static const double knobRadius = 11;
 
-  // The minute of the day shown.
   final int minute;
   // The last minute that can be picked: now's on today, else the day's last.
   final int latest;
