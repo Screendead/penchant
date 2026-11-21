@@ -415,7 +415,9 @@ handover to do next rather than starting them yourself"; none is started). Each 
   `analyst-trial`, `tag-tidy-trial`). The key comes from the session's environment, which Jack sets up; never
   print, log or commit it. Run only the trial for the prompt that changed: the Haiku ones are a few dozen short
   calls; `letter-review` and `analyst-trial` use Opus and cost far more, so only when their code changed.
-- **N2. Ask your journal from Siri.** First half merged 2026-11-16 (#351): "Ask Penchant" makes Siri ask for the
+- ~~**N2. Ask your journal from Siri.**~~ Stopped at the first half (Jack, 2026-11-21, #377: "A · Stop here for
+  now"): Siri opens Ask with the question asked; the spoken answer is set aside until he says opening the app
+  annoys him. First half merged 2026-11-16 (#351): "Ask Penchant" makes Siri ask for the
   question (a phrase cannot carry free text: Xcode refuses a String parameter in one), then opens Ask with it asked
   as if typed; with Ask off, a guest or unverified email, or an emulator build, it opens the place that says why and
   sends nothing. Nothing of it is proven on a device (Siri, the cold-launch hand-off, behind the app lock).
@@ -1103,10 +1105,10 @@ Round 25 (`docs/pitch/round-25/index.html`, https://claude.ai/artifact/Pn7BJkeUU
 Call 1 answered (Jack, 2026-11-16: "Merge and install"): the Watch app is merged (#350) and build 1883 (`master` at
 #350) is on the iPhone and Mac, the watch app and its complications embedded in the iPhone app; nothing of it is
 proven on a watch yet (the look, the iPhone waking for a log with Penchant closed, the haptic, Undo, sign-out).
-Still open: (2) the watch keeps the account's uid, as built, or a per-sign-in token, about half a day (Claude: keep
-the uid); (3) Siri stops at opening Ask with the question, or also speaks a single-number answer, about 4 days with
-a device timing test first (Claude: stop for now). Both are on Jack's Calls page as issues #376 (the watch's account ID) and #377 (Siri speaking
-the answer), opened 2026-11-21. The Ask trial after #350 (its schema note gained `watch`):
+Calls 2 and 3 answered on 2026-11-21 on Jack's Calls page: (2) the watch keeps the account's uid, as built, rather
+than a per-sign-in token (#376, Jack: "A · Keep the account ID"); (3) Siri stops at opening Ask with the question
+and does not speak an answer (#377, Jack: "A · Stop here for now"). Neither needs code. Round 25 has no open
+calls. The Ask trial after #350 (its schema note gained `watch`):
 29 passed, 1 failed, 10 unchecked of 40, as before (the steps question is declined as `unknown_habit`).
 
 Round 24 (`docs/pitch/round-24/next-ideas/pitch.html`, https://claude.ai/artifact/2oXcwWedx2PyhYcjgDWYSX): Jack
