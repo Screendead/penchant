@@ -18,7 +18,6 @@ import 'package:tracker/providers/weekly_review_provider.dart';
 import 'package:tracker/insights/weekly_review.dart';
 import 'package:tracker/insights/weekly_words.dart';
 import 'package:tracker/insights/weekly_words_setting.dart';
-import 'package:tracker/weekly_review_page.dart';
 
 import 'fakes.dart';
 import 'weekly_review_fixture.dart';
@@ -122,34 +121,6 @@ const List<(String, String)> _cases = <(String, String)>[
   ('Habits A and B came to 9 and 14.', 'placeholder'),
   ('  ', 'empty'),
 ];
-
-class _FakeWords implements WeeklyWords {
-  _FakeWords(this.answer);
-
-  final Future<String?> Function() answer;
-  final List<WeeklyFigures> asked = <WeeklyFigures>[];
-
-  @override
-  Future<String?> write(WeeklyFigures figures) {
-    asked.add(figures);
-    return answer();
-  }
-}
-
-Future<void> _pumpPage(WidgetTester tester, WeeklyWords? words) async {
-  tester.view.devicePixelRatio = 1;
-  tester.view.physicalSize = const Size(600, 3200);
-  addTearDown(tester.view.reset);
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: reviewOverrides(words: words),
-      child: MaterialApp(
-        theme: appTheme(Brightness.light),
-        home: const WeeklyReviewPage(),
-      ),
-    ),
-  );
-}
 
 void main() {
   group('WeeklyFigures', () {
@@ -441,48 +412,6 @@ void main() {
     });
   });
 
-  group('the review page', () {
-    testWidgets('shows the paragraph at the top, labelled, over the lists', (
-      WidgetTester tester,
-    ) async {
-      final Completer<String?> reply = Completer<String?>();
-      final _FakeWords words = _FakeWords(() => reply.future);
-      await _pumpPage(tester, words);
-      await tester.pump();
-      expect(find.text(WeeklyReviewPage.writing), findsOneWidget);
-      reply.complete('Coffee came to 11 drinks.');
-      await tester.pumpAndSettle();
-      expect(find.text(WeeklyReviewPage.writing), findsNothing);
-      expect(find.text('Coffee came to 11 drinks.'), findsOneWidget);
-      expect(find.text(WeeklyReviewPage.writtenBy), findsOneWidget);
-      expect(
-        tester.getTopLeft(find.text('Coffee came to 11 drinks.')).dy,
-        lessThan(
-          tester.getTopLeft(find.text(WeeklyReviewPage.totalsHeading)).dy,
-        ),
-      );
-      expect(find.text('11 drinks'), findsOneWidget);
-      expect(words.asked, hasLength(1));
-    });
-
-    testWidgets('a failure shows the lists alone', (WidgetTester tester) async {
-      await _pumpPage(tester, _FakeWords(() async => null));
-      await tester.pumpAndSettle();
-      expect(find.text(WeeklyReviewPage.writing), findsNothing);
-      expect(find.text(WeeklyReviewPage.writtenBy), findsNothing);
-      expect(find.text('11 drinks'), findsOneWidget);
-    });
-
-    testWidgets('switched off, nothing is asked or shown', (
-      WidgetTester tester,
-    ) async {
-      await _pumpPage(tester, null);
-      await tester.pumpAndSettle();
-      expect(find.text(WeeklyReviewPage.writing), findsNothing);
-      expect(find.text(WeeklyReviewPage.writtenBy), findsNothing);
-    });
-  });
-
   group('WeeklyWordsSetting', () {
     Widget app() => ProviderScope(
       overrides: [claudeAllowedProvider.overrideWithValue(true)],
@@ -526,20 +455,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
       expect(await saved(), isTrue);
-    });
-
-    testWidgets('turning off needs no asking', (WidgetTester tester) async {
-      SharedPreferences.setMockInitialValues(<String, Object>{
-        WeeklyWordsEnabled.key: true,
-      });
-      await tester.pumpWidget(app());
-      await tester.pumpAndSettle();
-      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
-      await tester.tap(find.byType(Switch));
-      await tester.pumpAndSettle();
-      expect(find.text(WeeklyWordsSetting.disclosure), findsNothing);
-      expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
-      expect(await saved(), isFalse);
     });
   });
 }

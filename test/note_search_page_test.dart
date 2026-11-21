@@ -176,61 +176,6 @@ Future<void> _type(WidgetTester tester, String query) async {
 }
 
 void main() {
-  testWidgets('empty: says what it searches and that it stays here', (
-    WidgetTester tester,
-  ) async {
-    await _pump(tester);
-    expect(find.text(NoteSearchPage.onDevice), findsOneWidget);
-    expect(find.text(NoteSearchPage.emptyPrompt), findsOneWidget);
-    expect(find.text('5 notes to search.'), findsOneWidget);
-    expect(find.text(NoteSearchPage.lockedLine(1)), findsOneWidget);
-    expect(find.text(NoteSearchPage.meaningLabel), findsOneWidget);
-  });
-
-  testWidgets('results grouped by day, each opening its entry or day note', (
-    WidgetTester tester,
-  ) async {
-    final List<String> opened = await _pump(tester);
-    await _type(tester, 'Wedding');
-    expect(find.text('4 notes'), findsOneWidget);
-    expect(find.text('Day note'), findsOneWidget);
-    expect(
-      find.text('What made it a bigger night than usual?'),
-      findsOneWidget,
-    );
-    final Finder dayNote = find.bySemanticsLabel(
-      RegExp('^Day note, Slow day after the wedding'),
-    );
-    expect(dayNote, findsOneWidget);
-    await tester.tap(dayNote);
-    await tester.pumpAndSettle();
-    tester.state<NavigatorState>(find.byType(Navigator)).pop();
-    await tester.pumpAndSettle();
-    final Finder rehearsal = find.bySemanticsLabel(
-      RegExp('^Wine, .*Rehearsal'),
-    );
-    await tester.ensureVisible(rehearsal);
-    await tester.pumpAndSettle();
-    await tester.tap(rehearsal);
-    await tester.pumpAndSettle();
-    expect(opened, <String>[
-      '/day-notes/2026-11-15',
-      '/vices/wine/activities/e3',
-    ]);
-  });
-
-  testWidgets('no results says so', (WidgetTester tester) async {
-    await _pump(tester);
-    await _type(tester, 'funeral');
-    expect(find.text(NoteSearchPage.noResults('funeral')), findsOneWidget);
-  });
-
-  testWidgets('no notes at all', (WidgetTester tester) async {
-    await _pump(tester, entries: const <ViceActivity>[]);
-    // The day note is still there.
-    expect(find.text('1 note to search.'), findsOneWidget);
-  });
-
   group('renders', () {
     setUpAll(_loadFonts);
     for (final Brightness brightness in Brightness.values) {

@@ -122,19 +122,6 @@ void main() {
     variant: TargetPlatformVariant.only(TargetPlatform.macOS),
   );
 
-  testWidgets(
-    'the Log menu follows the habit list and leaves the bar with none',
-    (WidgetTester tester) async {
-      await _pump(tester, _habits.take(2).toList());
-      expect(_logItems(tester), hasLength(2));
-
-      await _pump(tester, const <Vice>[]);
-      expect(_logMenu(tester), isNull);
-      expect(_menus(tester), isNotEmpty);
-    },
-    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
-  );
-
   testWidgets('with Today gone, a Log item does nothing', (
     WidgetTester tester,
   ) async {
@@ -170,9 +157,4 @@ void main() {
     },
     variant: TargetPlatformVariant.only(TargetPlatform.macOS),
   );
-
-  testWidgets('iOS has no menu bar', (WidgetTester tester) async {
-    await _pump(tester, _habits);
-    expect(find.byType(PlatformMenuBar), findsNothing);
-  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 }

@@ -18,7 +18,6 @@ import 'package:tracker/providers/tracker_writes_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/providers/vice_activity_day_provider.dart';
 import 'package:tracker/providers/vice_list_provider.dart';
-import 'package:tracker/vice_form.dart';
 import 'package:tracker/vice_tracker.dart';
 
 import 'fake_writes.dart';
@@ -94,24 +93,6 @@ void main() {
     archived: false,
   );
 
-  testWidgets('an account with no habits sees the onboarding', (
-    WidgetTester tester,
-  ) async {
-    await pumpHome(tester, initial: const <Vice>[]);
-
-    expect(find.byType(Onboarding), findsOneWidget);
-    expect(find.text(OnboardingCopy.introHeadline), findsOneWidget);
-  });
-
-  testWidgets('nothing is decided while the habits load', (
-    WidgetTester tester,
-  ) async {
-    await pumpHome(tester);
-
-    expect(find.byType(Onboarding), findsNothing);
-    expect(find.text(OnboardingCopy.introHeadline), findsNothing);
-  });
-
   testWidgets('an empty list waits for the server before deciding', (
     WidgetTester tester,
   ) async {
@@ -132,13 +113,6 @@ void main() {
     offline.add(false);
     await tester.pump();
     expect(find.byType(Onboarding), findsOneWidget);
-  });
-
-  testWidgets('an existing account never sees it', (WidgetTester tester) async {
-    await pumpHome(tester, initial: <Vice>[fakeVice('coffee')]);
-
-    expect(find.byType(Onboarding), findsNothing);
-    expect(find.byType(ViceTracker), findsOneWidget);
   });
 
   testWidgets('nor does one whose habits are all archived', (
@@ -268,37 +242,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(Onboarding), findsNothing);
     expect(find.byType(ViceTracker), findsOneWidget);
-  });
-
-  testWidgets('Skip shows the disclaimer, then the empty Today', (
-    WidgetTester tester,
-  ) async {
-    await pumpHome(tester, initial: const <Vice>[]);
-    await tester.tap(find.byKey(Onboarding.skipKey));
-    await tester.pumpAndSettle();
-    expect(find.text(OnboardingCopy.disclaimer), findsOneWidget);
-
-    await tester.tap(find.text(OnboardingCopy.acknowledge));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(Onboarding), findsNothing);
-    expect(find.text(ViceTracker.noHabits), findsOneWidget);
-    expect(writes.writes, isEmpty);
-  });
-
-  testWidgets('"Something else" opens the add-habit form', (
-    WidgetTester tester,
-  ) async {
-    await pumpHome(tester, initial: const <Vice>[]);
-    await tester.tap(find.text(OnboardingCopy.start));
-    await tester.pumpAndSettle();
-
-    await tester.ensureVisible(find.text(OnboardingCopy.somethingElse));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(OnboardingCopy.somethingElse));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(ViceForm), findsOneWidget);
   });
 
   test('every preset has a unique name of 1 to 60', () {

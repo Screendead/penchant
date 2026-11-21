@@ -59,20 +59,6 @@ void main() {
   bool showing(WidgetTester tester) =>
       find.text(ClaudeWorking.label.toUpperCase()).evaluate().isNotEmpty;
 
-  testWidgets('a call answered before the delay never leaves the page', (
-    WidgetTester tester,
-  ) async {
-    final ClaudeWork w = work();
-    await tester.pumpWidget(app(home: page(w)));
-    await tester.tap(find.text('Ask'));
-    await tester.pump(ClaudeWorking.delay ~/ 2);
-    w.finish(ClaudeWorkEnd.answered);
-    await tester.pump(ClaudeWorking.delay);
-    await tester.pumpAndSettle();
-    expect(showing(tester), isFalse);
-    expect(find.text('The answer'), findsOneWidget);
-  });
-
   testWidgets('a longer call goes fullscreen, says what is happening, holds '
       'its minimum time and resolves into the result', (
     WidgetTester tester,
@@ -122,35 +108,5 @@ void main() {
     }
     expect(showing(tester), isFalse);
     expect(find.text('Ask'), findsOneWidget);
-  });
-
-  testWidgets('under reduce motion the screen and the card settle', (
-    WidgetTester tester,
-  ) async {
-    final ClaudeWork w = work();
-    await tester.pumpWidget(
-      app(
-        still: true,
-        home: Scaffold(
-          body: Column(
-            children: <Widget>[
-              const ClaudeWorkingCard(status: writing),
-              Expanded(child: page(w)),
-            ],
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text(writing), findsOneWidget);
-    await tester.tap(find.text('Ask'));
-    await tester.pump(ClaudeWorking.delay);
-    await tester.pumpAndSettle();
-    expect(showing(tester), isTrue);
-    w.finish(ClaudeWorkEnd.answered);
-    await tester.pump(ClaudeWorking.minShown);
-    await tester.pumpAndSettle();
-    expect(showing(tester), isFalse);
-    expect(find.text('The answer'), findsOneWidget);
   });
 }

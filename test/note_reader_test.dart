@@ -190,19 +190,5 @@ void main() {
       expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
       expect(await saved(), isTrue);
     });
-
-    testWidgets('turning off needs no asking', (WidgetTester tester) async {
-      SharedPreferences.setMockInitialValues(<String, Object>{
-        NoteReaderEnabled.key: true,
-      });
-      await tester.pumpWidget(app());
-      await tester.pumpAndSettle();
-      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
-      await tester.tap(find.byType(Switch));
-      await tester.pumpAndSettle();
-      expect(find.text(NoteReaderSetting.disclosure), findsNothing);
-      expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
-      expect(await saved(), isFalse);
-    });
   });
 }

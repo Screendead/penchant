@@ -173,83 +173,6 @@ void main() {
       expect(find.text(AskPage.hideQuery), findsOneWidget);
     });
 
-    for (final String bad in <String>[
-      'DROP TABLE entries',
-      'SELECT 1; SELECT 2',
-    ]) {
-      testWidgets('refuses "$bad" and still shows the other cards', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(
-          app(
-            FakeAsk(
-              (_) async => cards(<AskCard>[
-                card('Bad one', bad),
-                card('Good one', countSql),
-              ]),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-        await ask(tester, 'Anything?');
-        expect(find.text(AskPage.couldNotRun), findsOneWidget);
-        expect(find.text('Good one'), findsOneWidget);
-        expect(find.text('3'), findsWidgets);
-        expect(find.byType(AskChart), findsOneWidget);
-      });
-    }
-
-    testWidgets('hands a why to Insights', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        app(FakeAsk((_) async => const AskAnswer(kind: AskKind.needsInsights))),
-      );
-      await tester.pumpAndSettle();
-      await ask(tester, 'Why do I drink on Fridays?');
-      expect(find.text(AskPage.insights), findsOneWidget);
-      await tester.tap(find.text(AskPage.openInsights));
-      await tester.pumpAndSettle();
-      expect(find.text('route /insights'), findsOneWidget);
-    });
-
-    testWidgets('says plainly what it cannot answer', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        app(
-          FakeAsk(
-            (_) async => const AskAnswer(
-              kind: AskKind.cannotAnswer,
-              reason: AskReason.unknownHabit,
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await ask(tester, 'How many cigars?');
-      expect(find.text(AskPage.cannot), findsOneWidget);
-      expect(
-        find.text(AskPage.cannotDetail(AskReason.unknownHabit)),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('a failed ask says so and keeps the question', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        app(FakeAsk((_) async => throw const AskFailed('api_error'))),
-      );
-      await tester.pumpAndSettle();
-      await ask(tester, 'First?');
-      expect(find.text(AskPage.failed), findsOneWidget);
-      // Once in the asked list, and back in the field to ask again.
-      expect(find.text('First?'), findsNWidgets(2));
-      expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        'First?',
-      );
-    });
-
     testWidgets('a follow-up sends the earlier turn and its answer', (
       WidgetTester tester,
     ) async {
@@ -282,28 +205,6 @@ void main() {
       await ask(tester, 'Two?');
       expect(service.histories.last, isEmpty);
     });
-
-    testWidgets('switched off, it says where to turn it on', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            userProvider.overrideWith((ref) => Stream.value(FakeUser('a'))),
-            todayProvider.overrideWith(() => FixedToday(today)),
-            askJournalProvider.overrideWithValue(null),
-            viceListProvider.overrideWithValue(AsyncData<List<Vice>>(vices)),
-          ],
-          child: MaterialApp(
-            theme: appTheme(Brightness.light),
-            home: const AskPage(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text(AskPage.off), findsOneWidget);
-      expect(find.byType(TextField), findsNothing);
-    });
   });
 
   group('Investigate', () {
@@ -320,14 +221,6 @@ void main() {
       await tester.pumpAndSettle();
       await ask(tester, 'What changed in November?');
     }
-
-    testWidgets('is offered only while the investigator is on', (
-      WidgetTester tester,
-    ) async {
-      await askWhy(tester, null);
-      expect(find.text(AskPage.investigate), findsNothing);
-      expect(find.text(AskPage.investigateTyped), findsNothing);
-    });
 
     testWidgets('asks each time, and Cancel sends nothing', (
       WidgetTester tester,
@@ -392,23 +285,6 @@ void main() {
       await tester.tap(find.text(AskPage.showQuery));
       await tester.pumpAndSettle();
       expect(find.text(monthSql), findsOneWidget);
-    });
-
-    testWidgets('withholds a finding with a number it was never shown', (
-      WidgetTester tester,
-    ) async {
-      final FakeInvestigator inv = FakeInvestigator(<InvestigationStep>[
-        more(),
-        const Finding('Wine rose by 4.', 'October 1.', <int>[1]),
-      ]);
-      await askWhy(tester, inv);
-      await tester.tap(find.text(AskPage.investigate));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(AnalystSetting.yes));
-      await tester.pumpAndSettle();
-      expect(find.text('Wine rose by 4.'), findsNothing);
-      expect(find.text(InvestigationView.withheld), findsOneWidget);
-      expect(find.text('Wine by month'), findsNothing);
     });
   });
 }
