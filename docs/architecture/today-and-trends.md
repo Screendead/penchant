@@ -68,7 +68,8 @@ whole split view, or around Today alone under the sheet; the chart's own `Focus`
 opens at 1200×780 (`r8-mac-window` B) to show the split view, minimum 390×600, frame saved as `MainWindow`
 (`macos/Runner/MainFlutterWindow.swift`). On Quit the app delegate hides every window at once; Dart answers the exit request once every write
 is acknowledged or after 3 s (`lib/writes/quit_when_synced.dart`), and the process exits half a second after that
-rather than wait out Flutter's and Firebase's shutdown (it took seconds). Widget tests run at 800×600 (phone layout). The e2e suite follows whichever layout it gets
+rather than wait out Flutter's and Firebase's shutdown (it took seconds). Widget tests run at 800×600 (phone layout); `test/split_view_test.dart`
+resizes the view to reach the split at 900, 1200 and 1600 pt. The e2e suite follows whichever layout it gets
 (`splitLayout`, `integration_test/support.dart`).
 
 Reduce motion (Settings: Follow system / Reduce / Full, `reduceMotionProvider`) reaches widgets through
