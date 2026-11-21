@@ -1105,7 +1105,8 @@ Call 1 answered (Jack, 2026-11-16: "Merge and install"): the Watch app is merged
 proven on a watch yet (the look, the iPhone waking for a log with Penchant closed, the haptic, Undo, sign-out).
 Still open: (2) the watch keeps the account's uid, as built, or a per-sign-in token, about half a day (Claude: keep
 the uid); (3) Siri stops at opening Ask with the question, or also speaks a single-number answer, about 4 days with
-a device timing test first (Claude: stop for now). The Ask trial after #350 (its schema note gained `watch`):
+a device timing test first (Claude: stop for now). Both are on Jack's Calls page as issues #376 (the watch's account ID) and #377 (Siri speaking
+the answer), opened 2026-11-21. The Ask trial after #350 (its schema note gained `watch`):
 29 passed, 1 failed, 10 unchecked of 40, as before (the steps question is declined as `unknown_habit`).
 
 Round 24 (`docs/pitch/round-24/next-ideas/pitch.html`, https://claude.ai/artifact/2oXcwWedx2PyhYcjgDWYSX): Jack
