@@ -50,14 +50,6 @@ void _configureFirestoreCache({required bool onDisk}) {
 // SDK evicts any that no listener uses.
 const int _firestoreCacheBytes = 100 * 1024 * 1024;
 
-// Collection is set on every launch: the override persists, and an emulator
-// build of the same bundle ID on this device turned it off.
-void _reportToCrashlytics() {
-  final FirebaseCrashlytics crashlytics = FirebaseCrashlytics.instance;
-  errorForwarder = crashlyticsForwarder(crashlytics.recordError);
-  _setCrashlyticsCollection(true);
-}
-
 // Not awaited, and a failure is only reported: Bootstrap shows its retry
 // screen when initializeFirebase throws, so a crash reporter that failed or
 // hung would keep the user out of the app on every launch.
@@ -122,7 +114,12 @@ Future<void> _initializeFirebase({required bool diskCache}) async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    _reportToCrashlytics();
+    errorForwarder = crashlyticsForwarder(
+      FirebaseCrashlytics.instance.recordError,
+    );
+    // Set on every launch: the override persists, and an emulator build of
+    // the same bundle ID on this device turned it off.
+    _setCrashlyticsCollection(true);
     // App Attest yields no token App Check accepts until the Runner target
     // has the App Attest entitlement, which the current signing team cannot
     // sign (HANDOVER.md, "For Jack to do"). firebase_app_check 0.4.9 picks App

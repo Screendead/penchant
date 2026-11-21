@@ -168,7 +168,6 @@ class KeyService {
     required this.aes128,
     required this.aes256,
     DateTime Function()? now,
-    this.serverWait = const Duration(seconds: 10),
     this.rechecks = _noRechecks,
   }) : _now = now ?? DateTime.now;
 
@@ -177,7 +176,7 @@ class KeyService {
   final AesGcm aes128;
   final AesGcm aes256;
   final DateTime Function() _now;
-  final Duration serverWait;
+  static const Duration _serverWait = Duration(seconds: 10);
 
   /// While the journal is locked, each event re-reads the keychain, since
   /// iCloud Keychain can deliver the key after this device first looked.
@@ -211,7 +210,7 @@ class KeyService {
   Future<JournalKeyState?> _ask(String uid, StoredKey? stored) async {
     final KeyRecord? record;
     try {
-      record = await directory.fetch(uid).timeout(serverWait);
+      record = await directory.fetch(uid).timeout(_serverWait);
     } on TimeoutException {
       return null;
     } on FirebaseException catch (e) {

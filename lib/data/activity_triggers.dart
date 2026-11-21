@@ -1,7 +1,6 @@
-// Every read and write of an activity's `triggers` field goes through here,
-// so that sealing it (r2-e2ee) changes this file alone. Each entry is a
-// trigger_tree.dart path or a free-text label; firestore.rules and
-// lib/data/limits.dart bound the list.
+// Every read and write of an activity's `triggers` field goes through here.
+// Each entry is a trigger_tree.dart path or a free-text label; firestore.rules
+// and lib/data/limits.dart bound the list.
 
 const String triggersField = 'triggers';
 

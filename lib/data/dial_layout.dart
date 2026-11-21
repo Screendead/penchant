@@ -34,7 +34,7 @@ abstract final class DialFace {
 
 // A spoke's opacity, as a fraction of the spoke token's, for [clear] from 0
 // (entries) to 1 (a clear day). On a clear day the majors are decoration
-// (Jack, r8-clear-spokes B, 2026-11-06): the 00/06/12/18 numerals give the
+// (Jack, 2026-11-06): the 00/06/12/18 numerals give the
 // time, so the majors drop below the 3:1 floor to the mock-up's 25% with the
 // minors.
 double spokeOpacity({required bool major, required double clear}) =>

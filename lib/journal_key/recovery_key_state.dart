@@ -86,8 +86,9 @@ class _NoKeyActions implements RecoveryKeyActions {
       Future<void>.error(StateError('This build has no journal key service.'));
 }
 
-// The key service (`keyServiceOverrides`) overrides these. Until it does there is no key: the
-// card and the gate stay out of the way and the screen says so.
+// The key service (`keyServiceOverrides`) overrides these. Until it does
+// there is no key: the card and the gate stay out of the way and the screen
+// says so.
 final recoveryKeyStatusProvider = Provider<RecoveryKeyStatus?>((ref) => null);
 
 final recoveryKeyActionsProvider = Provider<RecoveryKeyActions>(
