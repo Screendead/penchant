@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
+import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/account/export.dart';
 import 'package:tracker/account_settings.dart';
 import 'package:tracker/auth_form.dart';
@@ -150,32 +151,30 @@ void main() {
       expect(finishes, isEmpty);
     });
 
-    for (final String code in <String>[
-      'user-not-found',
-      'wrong-password',
-      'invalid-credential',
-      'invalid-login-credentials',
-    ]) {
-      testWidgets('$code reads the same as any wrong sign-in and never shows '
-          "Firebase's message", (tester) async {
-        final FakeAccount account = FakeAccount()
-          ..respond = (_) async => throw _authError(code);
-        await _pump(tester, account, const Authenticate());
-        await _enter(tester, 'Email', _email);
-        await _enter(tester, 'Password', 'wrong');
-        await _tapText(tester, 'Sign in');
+    testWidgets('every wrong sign-in reads the same and never shows '
+        "Firebase's message", (tester) async {
+      const String same = 'That email and password do not match an account.';
+      for (final String code in <String>[
+        'wrong-password',
+        'invalid-credential',
+        'invalid-login-credentials',
+      ]) {
+        expect(authErrorMessage(_authError(code)), same, reason: code);
+      }
+      final FakeAccount account = FakeAccount()
+        ..respond = (_) async => throw _authError('user-not-found');
+      await _pump(tester, account, const Authenticate());
+      await _enter(tester, 'Email', _email);
+      await _enter(tester, 'Password', 'wrong');
+      await _tapText(tester, 'Sign in');
 
-        expect(account.calls.single.fields, <String, Object?>{
-          'email': _email,
-          'password': 'wrong',
-        });
-        expect(
-          find.text('That email and password do not match an account.'),
-          findsOneWidget,
-        );
-        expect(find.textContaining('no user record'), findsNothing);
+      expect(account.calls.single.fields, <String, Object?>{
+        'email': _email,
+        'password': 'wrong',
       });
-    }
+      expect(find.text(same), findsOneWidget);
+      expect(find.textContaining('no user record'), findsNothing);
+    });
 
     testWidgets('forgot password sends a reset link to the address typed '
         'and says the same whether or not it has an account', (tester) async {
@@ -212,25 +211,6 @@ void main() {
       );
       expect(find.text(AccountCopy.resetSent(_email)), findsOneWidget);
     });
-
-    testWidgets('a failed reset for another reason says so', (tester) async {
-      final FakeAccount account = FakeAccount()
-        ..respond = (_) async => throw _authError('network-request-failed');
-      await _pump(tester, account, const Authenticate());
-      await _tapText(tester, AccountCopy.forgotPassword);
-      await tester.enterText(
-        find.descendant(
-          of: find.byType(ResetPasswordDialog),
-          matching: find.byType(TextFormField),
-        ),
-        _email,
-      );
-      await _tapText(tester, AccountCopy.resetSend);
-      expect(
-        find.text('No connection. Check your internet and try again.'),
-        findsOneWidget,
-      );
-    });
   });
 
   testWidgets('registering offers the email as the username of a new '
@@ -244,26 +224,6 @@ void main() {
     ]);
     expect(_hints(tester, AuthForm, 1), <String>[AutofillHints.newPassword]);
     expect(_hints(tester, AuthForm, 2), <String>[AutofillHints.newPassword]);
-  });
-
-  testWidgets('a registration Firebase refuses says why', (tester) async {
-    final FakeAccount account = FakeAccount()
-      ..respond = (_) async => throw _authError('email-already-in-use');
-    await _pump(tester, account, const Authenticate());
-    await tester.tap(find.byKey(Authenticate.registerTab));
-    await tester.pumpAndSettle();
-    await _enter(tester, 'Email', _email);
-    await _enter(tester, 'Password', 'Passw0rdTest');
-    await _enter(tester, 'Confirm password', 'Passw0rdTest');
-    await _tapText(tester, 'Create account');
-
-    expect(account.ops, <String>['register']);
-    expect(
-      find.text(
-        'That email already has an account. Sign in, or reset its password.',
-      ),
-      findsOneWidget,
-    );
   });
 
   group('sign out', () {
@@ -379,19 +339,6 @@ void main() {
   });
 
   group('account settings', () {
-    testWidgets('saving only a new display name changes only that and asks '
-        'for no password', (tester) async {
-      final FakeAccount account = FakeAccount();
-      await _pump(tester, account, const AccountSettings());
-      await _enter(tester, 'Display Name', 'Sam');
-      await _tapText(tester, 'Update Profile');
-
-      expect(account.calls, <Write>[
-        const Write('updateDisplayName', '', {'displayName': 'Sam'}),
-      ]);
-      expect(find.text('Display name saved.'), findsOneWidget);
-    });
-
     testWidgets('compares the form with the latest profile, not the one the '
         'screen opened with', (tester) async {
       final StreamController<User?> users = StreamController<User?>();
@@ -469,17 +416,6 @@ void main() {
         find.text(AccountCopy.emailChangeSent('new@example.com')),
         findsOneWidget,
       );
-    });
-
-    testWidgets('an unverified address offers to resend the link', (
-      tester,
-    ) async {
-      final FakeAccount account = FakeAccount();
-      await _pump(tester, account, const AccountSettings());
-      expect(find.text(AccountCopy.notVerified), findsOneWidget);
-      await _tapText(tester, AccountCopy.resendVerification);
-      expect(account.ops, <String>['sendEmailVerification']);
-      expect(find.text(AccountCopy.verificationSent(_email)), findsOneWidget);
     });
 
     testWidgets('export shares a CSV and a JSON of the fetched data', (

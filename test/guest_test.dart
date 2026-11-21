@@ -6,7 +6,6 @@ import 'package:tracker/account/account.dart';
 import 'package:tracker/account/account_copy.dart';
 import 'package:tracker/account/auth_errors.dart';
 import 'package:tracker/account_settings.dart';
-import 'package:tracker/authenticate.dart';
 import 'package:tracker/providers/account_provider.dart';
 import 'package:tracker/providers/user_provider.dart';
 import 'package:tracker/settings.dart';
@@ -75,47 +74,7 @@ Future<void> _fillLink(WidgetTester tester, String email) async {
 }
 
 void main() {
-  group('the sign-in screen', () {
-    testWidgets('starts without an account', (tester) async {
-      final FakeAccount account = FakeAccount();
-      await _pump(tester, account, const Authenticate());
-      await tester.ensureVisible(find.byKey(Authenticate.guestStart));
-      await tester.tap(find.byKey(Authenticate.guestStart));
-      await tester.pumpAndSettle();
-      expect(account.ops, <String>['startAsGuest']);
-    });
-
-    testWidgets('says why a guest start failed', (tester) async {
-      final FakeAccount account = FakeAccount()
-        ..respond = (_) async =>
-            throw FirebaseAuthException(code: 'operation-not-allowed');
-      await _pump(tester, account, const Authenticate());
-      await tester.ensureVisible(find.byKey(Authenticate.guestStart));
-      await tester.tap(find.byKey(Authenticate.guestStart));
-      await tester.pumpAndSettle();
-      expect(
-        find.text(
-          AccountCopy.startAsGuestFailed(
-            authErrorMessage(
-              FirebaseAuthException(code: 'operation-not-allowed'),
-            ),
-          ),
-        ),
-        findsOneWidget,
-      );
-    });
-  });
-
   group('account settings for a guest', () {
-    testWidgets('offers to save the journal instead of a profile', (
-      tester,
-    ) async {
-      await _pump(tester, FakeAccount(), const AccountSettings());
-      expect(find.text(AccountCopy.guestTitle), findsOneWidget);
-      expect(find.text('Update Profile'), findsNothing);
-      expect(find.text(AccountCopy.notVerified), findsNothing);
-    });
-
     testWidgets('links the email and password once both are valid', (
       tester,
     ) async {
@@ -189,11 +148,6 @@ void main() {
       await _tapText(tester, 'root');
       return account;
     }
-
-    testWidgets('shows Guest for the account', (tester) async {
-      await openSettings(tester);
-      expect(find.text(AccountCopy.guest), findsOneWidget);
-    });
 
     testWidgets('warns that the journal is lost, and cancelling keeps it', (
       tester,

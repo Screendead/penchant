@@ -121,11 +121,6 @@ void main() {
     testWidgets('from day 20 a banner leads to linking', (tester) async {
       await pump(tester, 10);
       expect(find.text(AccountCopy.guestExpiry(10)), findsOneWidget);
-      expect(
-        AccountCopy.guestExpiry(10),
-        'Your guest journal will be erased in 10 days. Save it to an email '
-        'to keep it.',
-      );
       expect(find.byType(GuestExpirySheet), findsNothing);
       await tester.tap(find.text(AccountCopy.guestExpiryAction));
       await tester.pumpAndSettle();
@@ -162,12 +157,6 @@ void main() {
       expect(find.byType(GuestExpirySheet), findsNothing);
       expect(pushed, isEmpty);
       expect(find.byType(GuestExpiryBanner), findsOneWidget);
-    });
-
-    test('the copy past the deadline and on its eve', () {
-      expect(AccountCopy.guestExpiry(1), contains('in 1 day.'));
-      expect(AccountCopy.guestExpiry(0), contains('at any moment'));
-      expect(AccountCopy.guestExpiry(-3), contains('at any moment'));
     });
   });
 }

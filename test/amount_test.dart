@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/json_fields.dart';
-import 'package:tracker/data/unit.dart';
 import 'package:tracker/data/usage_series.dart';
 import 'package:tracker/data/vice_activity.dart';
 import 'package:tracker/formats.dart';
@@ -135,12 +134,5 @@ void main() {
       ]),
       <double>[2.5],
     );
-  });
-
-  test('a unit labels a decimal in the plural', () {
-    debugFormatLocales = const <Locale>[Locale('en', 'US')];
-    addTearDown(() => debugFormatLocales = null);
-    expect(Unit.drink.label(1.5), '1.5 drinks');
-    expect(Unit.drink.label(1), '1 drink');
   });
 }

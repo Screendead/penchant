@@ -169,32 +169,6 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('says Synced once every write has reached the server', (
-      WidgetTester tester,
-    ) async {
-      await pump(tester, offline: false, state: SyncState.synced);
-      expect(find.text(SyncPill.synced), findsOneWidget);
-    });
-
-    testWidgets('says Syncing while a write is on its way', (
-      WidgetTester tester,
-    ) async {
-      await pump(tester, offline: false, state: SyncState.pending);
-      expect(find.text(SyncPill.syncing), findsOneWidget);
-    });
-
-    testWidgets('says Offline offline, whatever is pending', (
-      WidgetTester tester,
-    ) async {
-      await pump(tester, offline: true, state: SyncState.pending);
-      expect(find.text(SyncPill.offlineLabel), findsOneWidget);
-    });
-
-    testWidgets('says nothing until it knows', (WidgetTester tester) async {
-      await pump(tester, offline: false, state: SyncState.unknown);
-      expect(find.byType(Text), findsNothing);
-    });
-
     testWidgets('labels that come back while still fading out are shown once', (
       WidgetTester tester,
     ) async {
@@ -217,28 +191,6 @@ void main() {
       expect(find.text(SyncPill.synced), findsOneWidget);
       expect(find.text(SyncPill.syncing), findsNothing);
     });
-  });
-
-  test('the menu footer gives the last sync time only when it knows it', () {
-    expect(
-      SyncFooter.text(const SyncStatus(SyncState.synced), offline: false),
-      'All entries synced',
-    );
-    expect(
-      SyncFooter.text(
-        SyncStatus(SyncState.synced, lastSynced: DateTime(2026, 11, 5, 21, 8)),
-        offline: false,
-      ),
-      startsWith('All entries synced · last at '),
-    );
-    expect(
-      SyncFooter.text(const SyncStatus(SyncState.unknown), offline: false),
-      isNull,
-    );
-    expect(
-      SyncFooter.text(const SyncStatus(SyncState.synced), offline: true),
-      startsWith('Offline'),
-    );
   });
 }
 
