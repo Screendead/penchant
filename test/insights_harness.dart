@@ -189,7 +189,6 @@ final List<Vice> insightsVices = <Vice>[
 ({List<ViceActivity> activities, List<DailyOutcome> health}) insightsJournal({
   double deepSleepEffect = -18,
   double heartRateEffect = 6,
-  bool teaWithCoffee = false,
   int seed = 7,
 }) {
   final Random random = Random(seed);
@@ -217,7 +216,7 @@ final List<Vice> insightsVices = <Vice>[
         ),
       );
     final bool coffee = random.nextBool();
-    final bool tea = teaWithCoffee ? coffee : random.nextBool();
+    final bool tea = random.nextBool();
     final DateTime at = day.add(const Duration(hours: 9));
     if (coffee) activities.add(fakeActivity('coffee', 2, at));
     if (tea) activities.add(fakeActivity('tea', 1, at));

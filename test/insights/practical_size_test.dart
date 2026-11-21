@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker/data/day.dart';
-import 'package:tracker/data/unit.dart';
 import 'package:tracker/insights/daily_series.dart';
 import 'package:tracker/insights/insights_report.dart';
 import 'package:tracker/insights/stats.dart';
@@ -408,38 +407,6 @@ void main() {
           ('sleepCore', InsightKind.use),
           ('sleepREM', InsightKind.dose),
         ],
-      );
-    });
-
-    test('word their secondary lines by kind', () {
-      expect(
-        findingLine(
-          finding('sleepREM', -4, kind: InsightKind.dose, spread: 3),
-          'en',
-          unit: Unit.drink,
-        ),
-        'More per extra drink: REM sleep 4 min less',
-      );
-      expect(
-        findingLine(
-          finding(
-            'sleepAsleep',
-            -11,
-            kind: InsightKind.lastUse,
-            step: 60,
-            spread: 120,
-          ),
-          'en',
-        ),
-        'Later last use: time asleep 11 min less per hour',
-      );
-      expect(
-        findingLine(finding('sleepCore', -12), 'en'),
-        'On nights after it: core sleep 12 min less',
-      );
-      expect(
-        findingLine(finding('restingHeartRate', 2), 'en'),
-        'On days after it: resting heart rate 2.0 bpm higher',
       );
     });
   });

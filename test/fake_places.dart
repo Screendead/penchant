@@ -48,8 +48,6 @@ class FakePlaces implements PlacesSource {
   @override
   Stream<void> get reported => _reported.stream;
 
-  /// What [mapSnapshot] answers.
-  Uint8List? map;
   int maps = 0;
 
   @override
@@ -63,7 +61,7 @@ class FakePlaces implements PlacesSource {
     required bool dark,
   }) async {
     maps++;
-    return map;
+    return null;
   }
 }
 
