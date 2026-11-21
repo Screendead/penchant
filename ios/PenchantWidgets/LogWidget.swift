@@ -115,7 +115,7 @@ struct LogView: View {
   }
 }
 
-// Jack 2026-11-08: Hero with Glow. The first habit is a dial with a + badge;
+// Hero with Glow: the first habit is a dial with a + badge;
 // the rest are pills with their count and a + button. Each sits on a soft glow
 // of its own colour.
 @available(iOS 17.0, macOS 14.0, *)
